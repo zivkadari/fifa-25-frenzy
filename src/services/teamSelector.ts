@@ -2,9 +2,11 @@ import { Club, Pair } from '@/types/tournament';
 import { getClubsByStars, getNationalTeams, getRandomClub } from '@/data/clubs';
 
 export class TeamSelector {
-  generateTeamPools(pairs: Pair[]): Club[][] {
+  generateTeamPools(pairs: Pair[], excludeClubIds: string[] = []): Club[][] {
     const pools: Club[][] = [];
-    const usedClubs = new Set<string>();
+    const usedClubs = new Set<string>(excludeClubIds); // Include previously used clubs
+    
+    console.log('Generating team pools, excluding clubs:', excludeClubIds);
     
     pairs.forEach((pair, pairIndex) => {
       const pool: Club[] = [];
@@ -70,8 +72,8 @@ export class TeamSelector {
     return pools;
   }
   
-  generateClubsForMatch(pair1: Pair, pair2: Pair): [Club[], Club[]] {
-    const pools = this.generateTeamPools([pair1, pair2]);
+  generateClubsForMatch(pair1: Pair, pair2: Pair, excludeClubIds: string[] = []): [Club[], Club[]] {
+    const pools = this.generateTeamPools([pair1, pair2], excludeClubIds);
     return [pools[0], pools[1]];
   }
 }

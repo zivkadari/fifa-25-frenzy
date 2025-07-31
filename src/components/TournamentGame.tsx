@@ -34,6 +34,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [currentRound, setCurrentRound] = useState(0);
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
+  const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set()); // Track used clubs
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -42,6 +43,18 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
   // Initialize first round
   useEffect(() => {
+    // Load used clubs from previous matches
+    const usedIds = new Set<string>();
+    currentEvening.rounds.forEach(round => {
+      round.matches.forEach(match => {
+        if (match.completed && match.clubs) {
+          usedIds.add(match.clubs[0].id);
+          usedIds.add(match.clubs[1].id);
+        }
+      });
+    });
+    setUsedClubIds(usedIds);
+
     if (currentEvening.rounds.length === 0) {
       startNextRound();
     } else {
@@ -76,9 +89,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.pointsToWin);
     const teamSelector = new TeamSelector();
-    const pools = teamSelector.generateClubsForMatch(roundPairs[0], roundPairs[1]);
+    // Pass used clubs to avoid repeating them
+    const pools = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds));
     
-    setTeamPools(pools);
+    setTeamPools([pools[0], pools[1]]);
     setSelectedClubs([null, null]);
     setGamePhase('team-selection');
     
@@ -93,8 +107,11 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     const round = currentEvening.rounds[currentRound];
     if (round) {
       const teamSelector = new TeamSelector();
-      const pools = teamSelector.generateClubsForMatch(round.matches[0].pairs[0], round.matches[0].pairs[1]);
-      setTeamPools(pools);
+      const pools = teamSelector.generateTeamPools(
+        [round.matches[0].pairs[0], round.matches[0].pairs[1]], 
+        Array.from(usedClubIds)
+      );
+      setTeamPools([pools[0], pools[1]]);
       setGamePhase('team-selection');
     }
   };
@@ -172,6 +189,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     };
 
     setCurrentEvening(updatedEvening);
+
+    // Add selected clubs to used clubs list to avoid repeating them
+    if (selectedClubs[0] && selectedClubs[1]) {
+      const newUsedIds = new Set([...usedClubIds, selectedClubs[0]!.id, selectedClubs[1]!.id]);
+      setUsedClubIds(newUsedIds);
+      console.log('Updated used clubs:', Array.from(newUsedIds));
+    }
 
     // Calculate winner names for logging and notification
     const winnerNames = winner ? 
@@ -412,21 +436,44 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               <Crown className="h-4 w-4 text-neon-green" />
               Live Scoreboard
             </h3>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
               {currentEvening.rounds.map((round, roundIndex) => 
                 round.matches.filter(match => match.completed).map((match, matchIndex) => (
-                  <div key={`${roundIndex}-${matchIndex}`} className="flex justify-between items-center border-b border-border/30 pb-2">
-                    <div className="text-xs">
-                      <p className="text-muted-foreground">Round {round.number}</p>
-                      <p className="text-foreground">
-                        {match.clubs[0]?.name} vs {match.clubs[1]?.name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-neon-green">
+                  <div key={`${roundIndex}-${matchIndex}`} className="border-b border-border/30 pb-3 last:border-b-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-muted-foreground text-xs">Round {round.number}</span>
+                      <span className="font-bold text-neon-green text-lg">
                         {match.score?.[0]}-{match.score?.[1]}
-                      </p>
+                      </span>
                     </div>
+                    
+                    {/* Teams and players */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="text-left">
+                        <p className="font-medium text-foreground">
+                          {match.pairs[0].players.map(p => p.name).join(' + ')}
+                        </p>
+                        <p className="text-muted-foreground">{match.clubs[0]?.name}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-foreground">
+                          {match.pairs[1].players.map(p => p.name).join(' + ')}
+                        </p>
+                        <p className="text-muted-foreground">{match.clubs[1]?.name}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Winner highlight */}
+                    {match.winner && (
+                      <div className="mt-2 text-center">
+                        <Badge variant="secondary" className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
+                          🏆 {match.winner === match.pairs[0].id ? 
+                            match.pairs[0].players.map(p => p.name).join(' + ') :
+                            match.pairs[1].players.map(p => p.name).join(' + ')
+                          } Won!
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

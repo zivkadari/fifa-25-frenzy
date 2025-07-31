@@ -7,26 +7,30 @@ export class TournamentEngine {
       throw new Error('Tournament requires exactly 4 players');
     }
 
-    // Generate all possible pairs for round-robin
+    // Create a shuffled copy of players for randomization
+    const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+
+    // Generate all possible unique pairs for round-robin
     const rounds: Pair[][] = [
-      // Round 1: [P1,P2] vs [P3,P4]
+      // Round 1: Random pairing
       [
-        { id: 'p1-p2-r1', players: [players[0], players[1]] },
-        { id: 'p3-p4-r1', players: [players[2], players[3]] }
+        { id: `${shuffledPlayers[0].id}-${shuffledPlayers[1].id}-r1`, players: [shuffledPlayers[0], shuffledPlayers[1]] },
+        { id: `${shuffledPlayers[2].id}-${shuffledPlayers[3].id}-r1`, players: [shuffledPlayers[2], shuffledPlayers[3]] }
       ],
-      // Round 2: [P1,P3] vs [P2,P4]
+      // Round 2: Different pairing
       [
-        { id: 'p1-p3-r2', players: [players[0], players[2]] },
-        { id: 'p2-p4-r2', players: [players[1], players[3]] }
+        { id: `${shuffledPlayers[0].id}-${shuffledPlayers[2].id}-r2`, players: [shuffledPlayers[0], shuffledPlayers[2]] },
+        { id: `${shuffledPlayers[1].id}-${shuffledPlayers[3].id}-r2`, players: [shuffledPlayers[1], shuffledPlayers[3]] }
       ],
-      // Round 3: [P1,P4] vs [P2,P3]
+      // Round 3: Final pairing
       [
-        { id: 'p1-p4-r3', players: [players[0], players[3]] },
-        { id: 'p2-p3-r3', players: [players[1], players[2]] }
+        { id: `${shuffledPlayers[0].id}-${shuffledPlayers[3].id}-r3`, players: [shuffledPlayers[0], shuffledPlayers[3]] },
+        { id: `${shuffledPlayers[1].id}-${shuffledPlayers[2].id}-r3`, players: [shuffledPlayers[1], shuffledPlayers[2]] }
       ]
     ];
 
-    return rounds;
+    // Shuffle the rounds order for more randomness
+    return rounds.sort(() => Math.random() - 0.5);
   }
 
   static createRound(roundNumber: number, pairs: Pair[], pointsToWin: number): Round {
