@@ -33,6 +33,8 @@ export class TournamentEngine {
     const teamSelector = new TeamSelector();
     const clubPools = teamSelector.generateTeamPools(pairs);
     
+    // In 4-player 2v2 tournament, each round has exactly ONE match
+    // The "pointsToWin" applies to cumulative points across all rounds
     const match: Match = {
       id: `match-r${roundNumber}`,
       pairs: [pairs[0], pairs[1]],
@@ -45,7 +47,7 @@ export class TournamentEngine {
       number: roundNumber,
       matches: [match],
       completed: false,
-      pointsToWin
+      pointsToWin // This is now used for overall tournament scoring, not round completion
     };
   }
 

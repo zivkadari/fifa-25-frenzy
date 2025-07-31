@@ -158,7 +158,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     const updatedRound = {
       ...round,
-      matches: [updatedMatch]
+      matches: [updatedMatch],
+      completed: true // Round is complete after the single match
     };
 
     const updatedEvening = {
@@ -172,29 +173,38 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     setCurrentEvening(updatedEvening);
 
-    // Check if round is complete
-    const pairPoints = TournamentEngine.getRoundPairPoints(updatedRound);
-    const isRoundComplete = TournamentEngine.isRoundComplete(updatedRound, pairPoints);
+    // Calculate winner names for logging and notification
+    const winnerNames = winner ? 
+      (winner === match.pairs[0].id ? 
+        match.pairs[0].players.map(p => p.name).join(' + ') :
+        match.pairs[1].players.map(p => p.name).join(' + ')
+      ) : 'Draw';
 
-    if (isRoundComplete || currentRound === 2) { // Round complete or final round
-      setCurrentRound(prev => prev + 1);
-      toast({
-        title: `Round ${round.number} Complete!`,
-        description: "Moving to next round...",
-      });
+    console.log('Match completed:', {
+      round: round.number,
+      score: `${score1}-${score2}`,
+      winner: winnerNames,
+      nextRound: currentRound + 1
+    });
+
+    // Show result notification
+    
+    toast({
+      title: `Match Complete!`,
+      description: winner ? `${winnerNames} wins ${score1}-${score2}!` : `Draw ${score1}-${score2}`,
+    });
+
+    // Check if tournament is complete (all 3 rounds played)
+    if (currentRound === 2) { // This was the final round (round 3)
       setTimeout(() => {
-        if (currentRound === 2) {
-          completeEvening();
-        } else {
-          startNextRound();
-        }
+        completeEvening();
       }, 2000);
     } else {
-      // Continue current round with new match
-      setTeamPools(pools => pools); // Keep same pools
-      setSelectedClubs([null, null]);
-      setGamePhase('team-selection');
-      setScoreInput('');
+      // Move to next round
+      setTimeout(() => {
+        setCurrentRound(prev => prev + 1);
+        startNextRound();
+      }, 2000);
     }
   };
 
@@ -227,7 +237,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               Round {currentRoundData?.number || 1}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {currentEvening.pointsToWin} points to win
+              Round-robin tournament
             </p>
           </div>
           <Button 
