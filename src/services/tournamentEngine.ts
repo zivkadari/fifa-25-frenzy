@@ -33,25 +33,24 @@ export class TournamentEngine {
     return rounds.sort(() => Math.random() - 0.5);
   }
 
-  static createRound(roundNumber: number, pairs: Pair[], pointsToWin: number): Round {
-    const teamSelector = new TeamSelector();
-    const clubPools = teamSelector.generateTeamPools(pairs);
-    
-    // In 4-player 2v2 tournament, each round has exactly ONE match
-    // The "pointsToWin" applies to cumulative points across all rounds
-    const match: Match = {
-      id: `match-r${roundNumber}`,
-      pairs: [pairs[0], pairs[1]],
-      clubs: [clubPools[0][0], clubPools[1][0]], // Default to first clubs
-      completed: false
-    };
+  static createRound(roundNumber: number, pairs: Pair[], matchesPerRound: number): Round {
+    // Create multiple matches for this round (one for each match the pairs will play)
+    const matches: Match[] = [];
+    for (let i = 0; i < matchesPerRound; i++) {
+      matches.push({
+        id: `match-r${roundNumber}-${i + 1}`,
+        pairs: [pairs[0], pairs[1]],
+        clubs: [{ id: '', name: '', stars: 0, league: '' }, { id: '', name: '', stars: 0, league: '' }], // Will be set during team selection
+        completed: false
+      });
+    }
 
     return {
       id: `round-${roundNumber}`,
       number: roundNumber,
-      matches: [match],
+      matches,
       completed: false,
-      pointsToWin // This is now used for overall tournament scoring, not round completion
+      currentMatchIndex: 0
     };
   }
 
@@ -147,13 +146,8 @@ export class TournamentEngine {
     return rankings;
   }
 
-  static isRoundComplete(round: Round, pairPoints: Map<string, number>): boolean {
-    for (const [pairId, points] of pairPoints) {
-      if (points >= round.pointsToWin) {
-        return true;
-      }
-    }
-    return false;
+  static isRoundComplete(round: Round): boolean {
+    return round.matches.every(match => match.completed);
   }
 
   static getRoundPairPoints(round: Round): Map<string, number> {

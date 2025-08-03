@@ -32,9 +32,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);
+  const [currentMatchInRound, setCurrentMatchInRound] = useState(0);
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
-  const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set()); // Track used clubs
+  const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set()); // Track used clubs for current round
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -43,18 +44,6 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
   // Initialize first round
   useEffect(() => {
-    // Load used clubs from previous matches
-    const usedIds = new Set<string>();
-    currentEvening.rounds.forEach(round => {
-      round.matches.forEach(match => {
-        if (match.completed && match.clubs) {
-          usedIds.add(match.clubs[0].id);
-          usedIds.add(match.clubs[1].id);
-        }
-      });
-    });
-    setUsedClubIds(usedIds);
-
     if (currentEvening.rounds.length === 0) {
       startNextRound();
     } else {
@@ -87,31 +76,42 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       return;
     }
 
-    const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.pointsToWin);
-    const teamSelector = new TeamSelector();
-    // Pass used clubs to avoid repeating them
-    const pools = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds));
-    
-    setTeamPools([pools[0], pools[1]]);
-    setSelectedClubs([null, null]);
-    setGamePhase('team-selection');
+    const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.matchesPerRound);
     
     const updatedEvening = {
       ...currentEvening,
       rounds: [...currentEvening.rounds, newRound]
     };
     setCurrentEvening(updatedEvening);
+    setCurrentMatchInRound(0);
+    setUsedClubIds(new Set()); // Reset used clubs for new round
+    loadTeamsForCurrentMatch(updatedEvening, currentRound, 0);
   };
 
   const loadCurrentRound = () => {
-    const round = currentEvening.rounds[currentRound];
-    if (round) {
+    loadTeamsForCurrentMatch(currentEvening, currentRound, currentMatchInRound);
+  };
+
+  const loadTeamsForCurrentMatch = (evening: Evening, roundIndex: number, matchIndex: number) => {
+    const round = evening.rounds[roundIndex];
+    if (round && round.matches[matchIndex]) {
+      // Load used clubs from current round only
+      const roundUsedIds = new Set<string>();
+      round.matches.forEach((match, idx) => {
+        if (idx < matchIndex && match.completed && match.clubs) {
+          roundUsedIds.add(match.clubs[0].id);
+          roundUsedIds.add(match.clubs[1].id);
+        }
+      });
+      setUsedClubIds(roundUsedIds);
+
       const teamSelector = new TeamSelector();
       const pools = teamSelector.generateTeamPools(
-        [round.matches[0].pairs[0], round.matches[0].pairs[1]], 
-        Array.from(usedClubIds)
+        [round.matches[matchIndex].pairs[0], round.matches[matchIndex].pairs[1]], 
+        Array.from(roundUsedIds)
       );
       setTeamPools([pools[0], pools[1]]);
+      setSelectedClubs([null, null]);
       setGamePhase('team-selection');
     }
   };
@@ -153,7 +153,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     const [score1, score2] = scoreInput.split('-').map(Number);
     const round = currentEvening.rounds[currentRound];
-    const match = round.matches[0];
+    const match = round.matches[currentMatchInRound];
     
     let winner: string;
     if (score1 > score2) {
@@ -173,10 +173,18 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       completed: true
     };
 
+    // Update the specific match in the round
+    const updatedMatches = [...round.matches];
+    updatedMatches[currentMatchInRound] = updatedMatch;
+
+    // Check if all matches in this round are completed
+    const allMatchesCompleted = updatedMatches.every(m => m.completed);
+    
     const updatedRound = {
       ...round,
-      matches: [updatedMatch],
-      completed: true // Round is complete after the single match
+      matches: updatedMatches,
+      completed: allMatchesCompleted,
+      currentMatchIndex: currentMatchInRound + 1
     };
 
     const updatedEvening = {
@@ -190,44 +198,46 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     setCurrentEvening(updatedEvening);
 
-    // Add selected clubs to used clubs list to avoid repeating them
+    // Add selected clubs to used clubs list
     if (selectedClubs[0] && selectedClubs[1]) {
       const newUsedIds = new Set([...usedClubIds, selectedClubs[0]!.id, selectedClubs[1]!.id]);
       setUsedClubIds(newUsedIds);
-      console.log('Updated used clubs:', Array.from(newUsedIds));
     }
 
-    // Calculate winner names for logging and notification
+    // Calculate winner names for notification
     const winnerNames = winner ? 
       (winner === match.pairs[0].id ? 
         match.pairs[0].players.map(p => p.name).join(' + ') :
         match.pairs[1].players.map(p => p.name).join(' + ')
       ) : 'Draw';
 
-    console.log('Match completed:', {
-      round: round.number,
-      score: `${score1}-${score2}`,
-      winner: winnerNames,
-      nextRound: currentRound + 1
-    });
-
-    // Show result notification
-    
     toast({
-      title: `Match Complete!`,
+      title: `Match ${currentMatchInRound + 1} Complete!`,
       description: winner ? `${winnerNames} wins ${score1}-${score2}!` : `Draw ${score1}-${score2}`,
     });
 
-    // Check if tournament is complete (all 3 rounds played)
-    if (currentRound === 2) { // This was the final round (round 3)
-      setTimeout(() => {
-        completeEvening();
-      }, 2000);
+    setScoreInput('');
+
+    // Check if this was the last match of the round
+    if (currentMatchInRound === currentEvening.matchesPerRound - 1) {
+      // Round complete
+      if (currentRound === 2) { 
+        // Tournament complete
+        setTimeout(() => {
+          completeEvening();
+        }, 2000);
+      } else {
+        // Move to next round
+        setTimeout(() => {
+          setCurrentRound(prev => prev + 1);
+          startNextRound();
+        }, 2000);
+      }
     } else {
-      // Move to next round
+      // Move to next match in same round
       setTimeout(() => {
-        setCurrentRound(prev => prev + 1);
-        startNextRound();
+        setCurrentMatchInRound(prev => prev + 1);
+        loadTeamsForCurrentMatch(updatedEvening, currentRound, currentMatchInRound + 1);
       }, 2000);
     }
   };
@@ -246,7 +256,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   };
 
   const currentRoundData = currentEvening.rounds[currentRound];
-  const currentMatch = currentRoundData?.matches[0];
+  const currentMatch = currentRoundData?.matches[currentMatchInRound];
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4">
@@ -258,10 +268,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           </Button>
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground">
-              Round {currentRoundData?.number || 1}
+              Round {currentRoundData?.number || 1} - Match {currentMatchInRound + 1}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Round-robin tournament
+              {currentMatchInRound + 1}/{currentEvening.matchesPerRound} matches this round
             </p>
           </div>
           <Button 
@@ -276,10 +286,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {/* Progress */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Tournament Progress</span>
-            <span>{currentRound + 1}/3 rounds</span>
+            <span>Round Progress</span>
+            <span>{currentMatchInRound + 1}/{currentEvening.matchesPerRound} matches</span>
           </div>
-          <Progress value={((currentRound) / 3) * 100} className="h-2" />
+          <Progress value={((currentMatchInRound + 1) / currentEvening.matchesPerRound) * 100} className="h-2" />
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>Tournament: Round {currentRound + 1}/3</span>
+          </div>
         </div>
 
         {/* Current Matchup */}

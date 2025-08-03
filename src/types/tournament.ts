@@ -30,7 +30,7 @@ export interface Round {
   number: number;
   matches: Match[];
   completed: boolean;
-  pointsToWin: number;
+  currentMatchIndex: number;
 }
 
 export interface Evening {
@@ -38,7 +38,7 @@ export interface Evening {
   date: string;
   players: Player[];
   rounds: Round[];
-  pointsToWin: number;
+  matchesPerRound: number;
   completed: boolean;
   rankings?: {
     alpha: Player[];

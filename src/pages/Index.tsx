@@ -35,13 +35,13 @@ const Index = () => {
     setCurrentEvening(null);
   };
 
-  const handleStartEvening = (players: Player[]) => {
+  const handleStartEvening = (players: Player[], matchesPerRound: number) => {
     const newEvening: Evening = {
       id: `evening-${Date.now()}`,
       date: new Date().toISOString(),
       players,
       rounds: [],
-      pointsToWin: 5, // Default value, not used in round-robin format
+      matchesPerRound,
       completed: false
     };
 

@@ -3,18 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, Trophy } from "lucide-react";
 import { Player } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 
 interface EveningSetupProps {
   onBack: () => void;
-  onStartEvening: (players: Player[]) => void;
+  onStartEvening: (players: Player[], matchesPerRound: number) => void;
 }
 
 export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
   const { toast } = useToast();
   const [playerNames, setPlayerNames] = useState(['', '', '', '']);
+  const [matchesPerRound, setMatchesPerRound] = useState(4);
 
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
@@ -53,10 +54,10 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
 
     toast({
       title: "Tournament Starting!",
-      description: "3 rounds • Round-robin format",
+      description: `3 rounds • ${matchesPerRound} matches per round`,
     });
 
-    onStartEvening(players);
+    onStartEvening(players, matchesPerRound);
   };
 
   return (
@@ -98,6 +99,43 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
             </div>
           </Card>
 
+          {/* Matches Per Round */}
+          <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5 text-neon-green" />
+              <h2 className="text-lg font-semibold text-foreground">Matches Per Round</h2>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="matches-per-round" className="text-sm text-muted-foreground">
+                How many matches should each pair play per round?
+              </Label>
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setMatchesPerRound(Math.max(1, matchesPerRound - 1))}
+                  disabled={matchesPerRound <= 1}
+                >
+                  -
+                </Button>
+                <span className="text-2xl font-bold text-neon-green min-w-[3ch] text-center">
+                  {matchesPerRound}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setMatchesPerRound(Math.min(10, matchesPerRound + 1))}
+                  disabled={matchesPerRound >= 10}
+                >
+                  +
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Each pair will get {matchesPerRound} different teams to choose from
+              </p>
+            </div>
+          </Card>
+
           {/* Tournament Info */}
           <Card className="bg-gaming-surface/50 border-border/50 p-4">
             <div className="text-center space-y-2">
@@ -108,7 +146,7 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
                 Round 1: P1+P2 vs P3+P4 • Round 2: P1+P3 vs P2+P4 • Round 3: P1+P4 vs P2+P3
               </p>
               <p className="text-xs text-muted-foreground">
-                Each round = 1 match • Winner gets 1 point • Most points wins tournament
+                Each round = {matchesPerRound} matches • Winner gets 1 point per match • Most points wins tournament
               </p>
             </div>
           </Card>
