@@ -95,22 +95,24 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const loadTeamsForCurrentMatch = (evening: Evening, roundIndex: number, matchIndex: number) => {
     const round = evening.rounds[roundIndex];
     if (round && round.matches[matchIndex]) {
-      // Load used clubs from current round only
-      const roundUsedIds = new Set<string>();
-      round.matches.forEach((match, idx) => {
-        if (idx < matchIndex && match.completed && match.clubs) {
-          roundUsedIds.add(match.clubs[0].id);
-          roundUsedIds.add(match.clubs[1].id);
-        }
-      });
-      setUsedClubIds(roundUsedIds);
-
-      const teamSelector = new TeamSelector();
-      const pools = teamSelector.generateTeamPools(
-        [round.matches[matchIndex].pairs[0], round.matches[matchIndex].pairs[1]], 
-        Array.from(roundUsedIds)
-      );
-      setTeamPools([pools[0], pools[1]]);
+      if (matchIndex === 0) {
+        // First match - generate full pools
+        const teamSelector = new TeamSelector();
+        const pools = teamSelector.generateTeamPools(
+          [round.matches[matchIndex].pairs[0], round.matches[matchIndex].pairs[1]], 
+          [],
+          currentEvening.matchesPerRound
+        );
+        setTeamPools([pools[0], pools[1]]);
+        setUsedClubIds(new Set());
+      } else {
+        // Subsequent matches - remove used clubs from existing pools
+        const newPools: [Club[], Club[]] = [
+          teamPools[0].filter(club => !usedClubIds.has(club.id)),
+          teamPools[1].filter(club => !usedClubIds.has(club.id))
+        ];
+        setTeamPools(newPools);
+      }
       setSelectedClubs([null, null]);
       setGamePhase('team-selection');
     }

@@ -2,7 +2,7 @@ import { Club, Pair } from '@/types/tournament';
 import { getClubsByStars, getNationalTeams, getRandomClub } from '@/data/clubs';
 
 export class TeamSelector {
-  generateTeamPools(pairs: Pair[], excludeClubIds: string[] = []): Club[][] {
+  generateTeamPools(pairs: Pair[], excludeClubIds: string[] = [], clubsPerPair: number = 5): Club[][] {
     const pools: Club[][] = [];
     const usedClubs = new Set<string>(excludeClubIds); // Include previously used clubs
     
@@ -36,8 +36,8 @@ export class TeamSelector {
         usedClubs.add(selectedTeam.id);
       }
       
-      // Slot 5+: Random clubs with balance rule
-      while (pool.length < 5) {
+      // Additional slots: Random clubs with balance rule
+      while (pool.length < clubsPerPair) {
         // For the second pair, apply balance rule if this is a random slot
         if (pairIndex === 1 && pools[0] && pools[0].length > pool.length) {
           const otherPairClub = pools[0][pool.length];
@@ -72,8 +72,8 @@ export class TeamSelector {
     return pools;
   }
   
-  generateClubsForMatch(pair1: Pair, pair2: Pair, excludeClubIds: string[] = []): [Club[], Club[]] {
-    const pools = this.generateTeamPools([pair1, pair2], excludeClubIds);
+  generateClubsForMatch(pair1: Pair, pair2: Pair, excludeClubIds: string[] = [], clubsPerPair: number = 5): [Club[], Club[]] {
+    const pools = this.generateTeamPools([pair1, pair2], excludeClubIds, clubsPerPair);
     return [pools[0], pools[1]];
   }
 }
