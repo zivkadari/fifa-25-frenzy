@@ -123,6 +123,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     newSelected[pairIndex] = club;
     setSelectedClubs(newSelected);
 
+    // Add selected club to used clubs immediately
+    const newUsedIds = new Set([...usedClubIds, club.id]);
+    setUsedClubIds(newUsedIds);
+
     if (newSelected[0] && newSelected[1]) {
       // Both teams selected, start countdown
       setGamePhase('countdown');
