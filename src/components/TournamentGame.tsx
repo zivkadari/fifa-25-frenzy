@@ -131,7 +131,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       
       // Generate team pools for selection
       const teamSelector = new TeamSelector();
-      const pools = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), Math.max(1, 7 - round.matches.length));
+      const maxMatches = currentEvening.winsToComplete * 2 - 1;
+      const pools = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), Math.max(1, maxMatches - round.matches.length));
       setTeamPools([pools[0], pools[1]]);
     }
     
