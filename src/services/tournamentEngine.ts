@@ -33,24 +33,42 @@ export class TournamentEngine {
     return rounds.sort(() => Math.random() - 0.5);
   }
 
-  static createRound(roundNumber: number, pairs: Pair[], matchesPerRound: number): Round {
-    // Create multiple matches for this round (one for each match the pairs will play)
+  static createRound(roundNumber: number, pairs: Pair[], winsToComplete: number): Round {
+    // Start with empty matches array - matches will be created dynamically
     const matches: Match[] = [];
-    for (let i = 0; i < matchesPerRound; i++) {
-      matches.push({
-        id: `match-r${roundNumber}-${i + 1}`,
-        pairs: [pairs[0], pairs[1]],
-        clubs: [{ id: '', name: '', stars: 0, league: '' }, { id: '', name: '', stars: 0, league: '' }], // Will be set during team selection
-        completed: false
-      });
-    }
+    
+    // Initialize pair scores
+    const pairScores: { [pairId: string]: number } = {};
+    pairScores[pairs[0].id] = 0;
+    pairScores[pairs[1].id] = 0;
 
     return {
       id: `round-${roundNumber}`,
       number: roundNumber,
       matches,
       completed: false,
-      currentMatchIndex: 0
+      currentMatchIndex: 0,
+      pairScores
+    };
+  }
+
+  static createNextMatch(round: Round, pairs: Pair[]): Match {
+    const matchNumber = round.matches.length + 1;
+    return {
+      id: `match-r${round.number}-${matchNumber}`,
+      pairs: [pairs[0], pairs[1]],
+      clubs: [{ id: '', name: '', stars: 0, league: '' }, { id: '', name: '', stars: 0, league: '' }],
+      completed: false
+    };
+  }
+
+  static createDeciderMatch(round: Round, pairs: Pair[]): Match {
+    const matchNumber = round.matches.length + 1;
+    return {
+      id: `match-r${round.number}-decider-${matchNumber}`,
+      pairs: [pairs[0], pairs[1]],
+      clubs: [{ id: '', name: '', stars: 0, league: '' }, { id: '', name: '', stars: 0, league: '' }],
+      completed: false
     };
   }
 
@@ -146,8 +164,28 @@ export class TournamentEngine {
     return rankings;
   }
 
-  static isRoundComplete(round: Round): boolean {
-    return round.matches.every(match => match.completed);
+  static isRoundComplete(round: Round, winsToComplete: number): boolean {
+    // Check if any pair has reached the required wins
+    const maxScore = Math.max(...Object.values(round.pairScores));
+    return maxScore >= winsToComplete;
+  }
+
+  static isRoundTied(round: Round, winsToComplete: number): boolean {
+    // Check if both pairs have the same score and it's equal to winsToComplete
+    const scores = Object.values(round.pairScores);
+    return scores.length === 2 && scores[0] === winsToComplete && scores[1] === winsToComplete;
+  }
+
+  static getRoundWinner(round: Round): string | null {
+    const pairIds = Object.keys(round.pairScores);
+    const scores = Object.values(round.pairScores);
+    
+    if (scores[0] > scores[1]) {
+      return pairIds[0];
+    } else if (scores[1] > scores[0]) {
+      return pairIds[1];
+    }
+    return null; // Tie
   }
 
   static getRoundPairPoints(round: Round): Map<string, number> {

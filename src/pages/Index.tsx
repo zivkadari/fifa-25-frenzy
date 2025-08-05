@@ -35,13 +35,13 @@ const Index = () => {
     setCurrentEvening(null);
   };
 
-  const handleStartEvening = (players: Player[], matchesPerRound: number) => {
+  const handleStartEvening = (players: Player[], winsToComplete: number) => {
     const newEvening: Evening = {
       id: `evening-${Date.now()}`,
       date: new Date().toISOString(),
       players,
       rounds: [],
-      matchesPerRound,
+      winsToComplete,
       completed: false
     };
 

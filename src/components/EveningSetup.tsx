@@ -9,13 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 
 interface EveningSetupProps {
   onBack: () => void;
-  onStartEvening: (players: Player[], matchesPerRound: number) => void;
+  onStartEvening: (players: Player[], winsToComplete: number) => void;
 }
 
 export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
   const { toast } = useToast();
   const [playerNames, setPlayerNames] = useState(['', '', '', '']);
-  const [matchesPerRound, setMatchesPerRound] = useState(4);
+  const [winsToComplete, setWinsToComplete] = useState(4);
 
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
@@ -54,10 +54,10 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
 
     toast({
       title: "Tournament Starting!",
-      description: `3 rounds • ${matchesPerRound} matches per round`,
+      description: `3 rounds • First to ${winsToComplete} wins per round`,
     });
 
-    onStartEvening(players, matchesPerRound);
+    onStartEvening(players, winsToComplete);
   };
 
   return (
@@ -99,39 +99,39 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
             </div>
           </Card>
 
-          {/* Matches Per Round */}
+          {/* Wins to Complete Round */}
           <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
             <div className="flex items-center gap-2 mb-4">
               <Trophy className="h-5 w-5 text-neon-green" />
-              <h2 className="text-lg font-semibold text-foreground">Matches Per Round</h2>
+              <h2 className="text-lg font-semibold text-foreground">Wins to Complete Round</h2>
             </div>
             <div className="space-y-3">
-              <Label htmlFor="matches-per-round" className="text-sm text-muted-foreground">
-                How many matches should each pair play per round?
+              <Label htmlFor="wins-to-complete" className="text-sm text-muted-foreground">
+                First pair to reach this many wins takes the round
               </Label>
               <div className="flex items-center gap-4">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setMatchesPerRound(Math.max(1, matchesPerRound - 1))}
-                  disabled={matchesPerRound <= 1}
+                  onClick={() => setWinsToComplete(Math.max(1, winsToComplete - 1))}
+                  disabled={winsToComplete <= 1}
                 >
                   -
                 </Button>
                 <span className="text-2xl font-bold text-neon-green min-w-[3ch] text-center">
-                  {matchesPerRound}
+                  {winsToComplete}
                 </span>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setMatchesPerRound(Math.min(10, matchesPerRound + 1))}
-                  disabled={matchesPerRound >= 10}
+                  onClick={() => setWinsToComplete(Math.min(10, winsToComplete + 1))}
+                  disabled={winsToComplete >= 10}
                 >
                   +
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Each pair will get {matchesPerRound} different teams to choose from
+                Max {winsToComplete * 2 - 1} matches per round. If tied at {winsToComplete}-{winsToComplete}, sudden death match decides winner.
               </p>
             </div>
           </Card>
@@ -146,7 +146,7 @@ export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
                 Round 1: P1+P2 vs P3+P4 • Round 2: P1+P3 vs P2+P4 • Round 3: P1+P4 vs P2+P3
               </p>
               <p className="text-xs text-muted-foreground">
-                Each round = {matchesPerRound} matches • Winner gets 1 point per match • Most points wins tournament
+                First to {winsToComplete} wins takes the round • Random team selection for all matches including tiebreakers
               </p>
             </div>
           </Card>

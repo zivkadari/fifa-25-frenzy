@@ -31,6 +31,8 @@ export interface Round {
   matches: Match[];
   completed: boolean;
   currentMatchIndex: number;
+  pairScores: { [pairId: string]: number }; // Track wins for each pair in this round
+  isDeciderMatch?: boolean; // Flag for tiebreaker match
 }
 
 export interface Evening {
@@ -38,7 +40,7 @@ export interface Evening {
   date: string;
   players: Player[];
   rounds: Round[];
-  matchesPerRound: number;
+  winsToComplete: number; // First to X wins per round
   completed: boolean;
   rankings?: {
     alpha: Player[];

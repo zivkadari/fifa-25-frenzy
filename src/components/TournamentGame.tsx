@@ -32,10 +32,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);
-  const [currentMatchInRound, setCurrentMatchInRound] = useState(0);
+  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
-  const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set()); // Track used clubs for current round
+  const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set());
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -76,45 +76,76 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       return;
     }
 
-    const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.matchesPerRound);
+    const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.winsToComplete);
     
     const updatedEvening = {
       ...currentEvening,
       rounds: [...currentEvening.rounds, newRound]
     };
     setCurrentEvening(updatedEvening);
-    setCurrentMatchInRound(0);
-    setUsedClubIds(new Set()); // Reset used clubs for new round
-    loadTeamsForCurrentMatch(updatedEvening, currentRound, 0);
+    setUsedClubIds(new Set());
+    
+    // Create and start first match
+    createNextMatch(updatedEvening, currentRound, roundPairs);
+  };
+
+  const createNextMatch = (evening: Evening, roundIndex: number, pairs: Pair[]) => {
+    const round = evening.rounds[roundIndex];
+    
+    // Check if round is complete or tied
+    if (TournamentEngine.isRoundComplete(round, evening.winsToComplete)) {
+      if (TournamentEngine.isRoundTied(round, evening.winsToComplete)) {
+        // Create decider match
+        const deciderMatch = TournamentEngine.createDeciderMatch(round, pairs);
+        setCurrentMatch(deciderMatch);
+        
+        // Generate random clubs for decider match
+        const teamSelector = new TeamSelector();
+        const randomClubs = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), 1);
+        setTeamPools([randomClubs[0], randomClubs[1]]);
+        
+        toast({
+          title: "Sudden Death!",
+          description: `Tied at ${evening.winsToComplete}-${evening.winsToComplete}! Random teams selected for decider match.`,
+        });
+        
+        // Mark round as decider
+        const updatedRound = { ...round, isDeciderMatch: true };
+        const updatedEvening = {
+          ...evening,
+          rounds: [
+            ...evening.rounds.slice(0, roundIndex),
+            updatedRound,
+            ...evening.rounds.slice(roundIndex + 1)
+          ]
+        };
+        setCurrentEvening(updatedEvening);
+      } else {
+        // Round complete, move to next round
+        handleRoundComplete();
+      }
+    } else {
+      // Create next regular match
+      const nextMatch = TournamentEngine.createNextMatch(round, pairs);
+      setCurrentMatch(nextMatch);
+      
+      // Generate team pools for selection
+      const teamSelector = new TeamSelector();
+      const pools = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), Math.max(1, 7 - round.matches.length));
+      setTeamPools([pools[0], pools[1]]);
+    }
+    
+    setSelectedClubs([null, null]);
+    setGamePhase('team-selection');
   };
 
   const loadCurrentRound = () => {
-    loadTeamsForCurrentMatch(currentEvening, currentRound, currentMatchInRound);
-  };
-
-  const loadTeamsForCurrentMatch = (evening: Evening, roundIndex: number, matchIndex: number) => {
-    const round = evening.rounds[roundIndex];
-    if (round && round.matches[matchIndex]) {
-      if (matchIndex === 0) {
-        // First match - generate full pools
-        const teamSelector = new TeamSelector();
-        const pools = teamSelector.generateTeamPools(
-          [round.matches[matchIndex].pairs[0], round.matches[matchIndex].pairs[1]], 
-          [],
-          currentEvening.matchesPerRound
-        );
-        setTeamPools([pools[0], pools[1]]);
-        setUsedClubIds(new Set());
-      } else {
-        // Subsequent matches - remove used clubs from existing pools
-        const newPools: [Club[], Club[]] = [
-          teamPools[0].filter(club => !usedClubIds.has(club.id)),
-          teamPools[1].filter(club => !usedClubIds.has(club.id))
-        ];
-        setTeamPools(newPools);
-      }
-      setSelectedClubs([null, null]);
-      setGamePhase('team-selection');
+    const round = currentEvening.rounds[currentRound];
+    if (round && round.matches.length > 0) {
+      // Load last match or create next one
+      const allPairs = TournamentEngine.generatePairs(currentEvening.players);
+      const roundPairs = allPairs[currentRound];
+      createNextMatch(currentEvening, currentRound, roundPairs);
     }
   };
 
@@ -157,40 +188,42 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       return;
     }
 
+    if (!currentMatch) return;
+
     const [score1, score2] = scoreInput.split('-').map(Number);
-    const round = currentEvening.rounds[currentRound];
-    const match = round.matches[currentMatchInRound];
     
     let winner: string;
     if (score1 > score2) {
-      winner = match.pairs[0].id;
+      winner = currentMatch.pairs[0].id;
     } else if (score2 > score1) {
-      winner = match.pairs[1].id;
+      winner = currentMatch.pairs[1].id;
     } else {
       // Draw - no winner
       winner = '';
     }
 
-    const updatedMatch: Match = {
-      ...match,
+    const completedMatch: Match = {
+      ...currentMatch,
       clubs: [selectedClubs[0]!, selectedClubs[1]!],
       score: [score1, score2],
       winner,
       completed: true
     };
 
-    // Update the specific match in the round
-    const updatedMatches = [...round.matches];
-    updatedMatches[currentMatchInRound] = updatedMatch;
-
-    // Check if all matches in this round are completed
-    const allMatchesCompleted = updatedMatches.every(m => m.completed);
+    // Update round with completed match
+    const round = currentEvening.rounds[currentRound];
+    const updatedMatches = [...round.matches, completedMatch];
     
+    // Update pair scores if there's a winner
+    const updatedPairScores = { ...round.pairScores };
+    if (winner) {
+      updatedPairScores[winner] = (updatedPairScores[winner] || 0) + 1;
+    }
+
     const updatedRound = {
       ...round,
       matches: updatedMatches,
-      completed: allMatchesCompleted,
-      currentMatchIndex: currentMatchInRound + 1
+      pairScores: updatedPairScores
     };
 
     const updatedEvening = {
@@ -204,47 +237,58 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     setCurrentEvening(updatedEvening);
 
-    // Add selected clubs to used clubs list
-    if (selectedClubs[0] && selectedClubs[1]) {
-      const newUsedIds = new Set([...usedClubIds, selectedClubs[0]!.id, selectedClubs[1]!.id]);
-      setUsedClubIds(newUsedIds);
-    }
-
     // Calculate winner names for notification
     const winnerNames = winner ? 
-      (winner === match.pairs[0].id ? 
-        match.pairs[0].players.map(p => p.name).join(' + ') :
-        match.pairs[1].players.map(p => p.name).join(' + ')
+      (winner === currentMatch.pairs[0].id ? 
+        currentMatch.pairs[0].players.map(p => p.name).join(' + ') :
+        currentMatch.pairs[1].players.map(p => p.name).join(' + ')
       ) : 'Draw';
 
     toast({
-      title: `Match ${currentMatchInRound + 1} Complete!`,
+      title: `Match Complete!`,
       description: winner ? `${winnerNames} wins ${score1}-${score2}!` : `Draw ${score1}-${score2}`,
     });
 
     setScoreInput('');
 
-    // Check if this was the last match of the round
-    if (currentMatchInRound === currentEvening.matchesPerRound - 1) {
-      // Round complete
-      if (currentRound === 2) { 
-        // Tournament complete
+    // Check if round is complete after this match
+    const newPairScores = updatedPairScores;
+    const maxScore = Math.max(...Object.values(newPairScores));
+    
+    if (maxScore >= currentEvening.winsToComplete) {
+      // Check for tie
+      const scores = Object.values(newPairScores);
+      if (scores.filter(s => s === currentEvening.winsToComplete).length === 2) {
+        // Tie! Need decider match
         setTimeout(() => {
-          completeEvening();
+          const allPairs = TournamentEngine.generatePairs(currentEvening.players);
+          const roundPairs = allPairs[currentRound];
+          createNextMatch(updatedEvening, currentRound, roundPairs);
         }, 2000);
       } else {
-        // Move to next round
+        // Round winner determined
         setTimeout(() => {
-          setCurrentRound(prev => prev + 1);
-          startNextRound();
+          handleRoundComplete();
         }, 2000);
       }
     } else {
-      // Move to next match in same round
+      // Continue with next match
       setTimeout(() => {
-        setCurrentMatchInRound(prev => prev + 1);
-        loadTeamsForCurrentMatch(updatedEvening, currentRound, currentMatchInRound + 1);
+        const allPairs = TournamentEngine.generatePairs(currentEvening.players);
+        const roundPairs = allPairs[currentRound];
+        createNextMatch(updatedEvening, currentRound, roundPairs);
       }, 2000);
+    }
+  };
+
+  const handleRoundComplete = () => {
+    if (currentRound === 2) { 
+      // Tournament complete
+      completeEvening();
+    } else {
+      // Move to next round
+      setCurrentRound(prev => prev + 1);
+      startNextRound();
     }
   };
 
@@ -262,7 +306,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   };
 
   const currentRoundData = currentEvening.rounds[currentRound];
-  const currentMatch = currentRoundData?.matches[currentMatchInRound];
+  const currentRoundScore = currentRoundData ? Object.values(currentRoundData.pairScores) : [0, 0];
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4">
@@ -274,11 +318,16 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           </Button>
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground">
-              Round {currentRoundData?.number || 1} - Match {currentMatchInRound + 1}
+              Round {currentRoundData?.number || 1}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {currentMatchInRound + 1}/{currentEvening.matchesPerRound} matches this round
+              First to {currentEvening.winsToComplete} wins
             </p>
+            {currentRoundData && (
+              <p className="text-lg font-bold text-neon-green">
+                {currentRoundScore[0]} - {currentRoundScore[1]}
+              </p>
+            )}
           </div>
           <Button 
             variant="ghost" 
@@ -293,11 +342,15 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
             <span>Round Progress</span>
-            <span>{currentMatchInRound + 1}/{currentEvening.matchesPerRound} matches</span>
+            <span>Match {(currentRoundData?.matches.length || 0) + 1}</span>
           </div>
-          <Progress value={((currentMatchInRound + 1) / currentEvening.matchesPerRound) * 100} className="h-2" />
+          <Progress 
+            value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
+            className="h-2" 
+          />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>Tournament: Round {currentRound + 1}/3</span>
+            <span>Max {currentEvening.winsToComplete * 2 - 1} matches</span>
           </div>
         </div>
 
@@ -310,6 +363,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
                 </p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
               </div>
               <div className="text-neon-green font-bold text-xl">VS</div>
               <div className="text-center">
@@ -317,15 +371,25 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
                 </p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[1]}</p>
               </div>
             </div>
+            {currentRoundData?.isDeciderMatch && (
+              <div className="text-center mt-2">
+                <Badge variant="destructive" className="animate-pulse">
+                  SUDDEN DEATH
+                </Badge>
+              </div>
+            )}
           </Card>
         )}
 
         {/* Game Phases */}
         {gamePhase === 'team-selection' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-center text-foreground">Select Your Teams</h2>
+            <h2 className="text-lg font-semibold text-center text-foreground">
+              {currentRoundData?.isDeciderMatch ? "Sudden Death - Random Teams" : "Select Your Teams"}
+            </h2>
             {teamPools.map((pool, pairIndex) => (
               <Card key={pairIndex} className="bg-gaming-surface border-border p-4">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">
@@ -460,7 +524,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                 round.matches.filter(match => match.completed).map((match, matchIndex) => (
                   <div key={`${roundIndex}-${matchIndex}`} className="border-b border-border/30 pb-3 last:border-b-0">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-muted-foreground text-xs">Round {round.number}</span>
+                      <span className="text-muted-foreground text-xs">
+                        Round {round.number} - Match {matchIndex + 1}
+                        {round.isDeciderMatch && matchIndex === round.matches.length - 1 && " (Decider)"}
+                      </span>
                       <span className="font-bold text-neon-green text-lg">
                         {match.score?.[0]}-{match.score?.[1]}
                       </span>
@@ -469,30 +536,14 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                     {/* Teams and players */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="text-left">
-                        <p className="font-medium text-foreground">
-                          {match.pairs[0].players.map(p => p.name).join(' + ')}
-                        </p>
-                        <p className="text-muted-foreground">{match.clubs[0]?.name}</p>
+                        <p className="text-muted-foreground">{match.pairs[0].players.map(p => p.name).join(' + ')}</p>
+                        <p className="text-foreground">{match.clubs[0].name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-foreground">
-                          {match.pairs[1].players.map(p => p.name).join(' + ')}
-                        </p>
-                        <p className="text-muted-foreground">{match.clubs[1]?.name}</p>
+                        <p className="text-muted-foreground">{match.pairs[1].players.map(p => p.name).join(' + ')}</p>
+                        <p className="text-foreground">{match.clubs[1].name}</p>
                       </div>
                     </div>
-                    
-                    {/* Winner highlight */}
-                    {match.winner && (
-                      <div className="mt-2 text-center">
-                        <Badge variant="secondary" className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
-                          🏆 {match.winner === match.pairs[0].id ? 
-                            match.pairs[0].players.map(p => p.name).join(' + ') :
-                            match.pairs[1].players.map(p => p.name).join(' + ')
-                          } Won!
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 ))
               )}
