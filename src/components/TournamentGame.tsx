@@ -33,6 +33,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [originalTeamPools, setOriginalTeamPools] = useState<[Club[], Club[]]>([[], []]); // Keep original pools for the round
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [usedClubIds, setUsedClubIds] = useState<Set<string>>(new Set());
@@ -85,6 +86,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     setCurrentEvening(updatedEvening);
     setUsedClubIds(new Set());
     
+    // Generate team pools for the entire round
+    const teamSelector = new TeamSelector();
+    const maxMatches = currentEvening.winsToComplete * 2 - 1;
+    const pools = teamSelector.generateTeamPools(roundPairs, [], maxMatches);
+    setOriginalTeamPools([pools[0], pools[1]]);
+    setTeamPools([pools[0], pools[1]]);
+    
     // Create and start first match
     createNextMatch(updatedEvening, currentRound, roundPairs);
   };
@@ -99,7 +107,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         const deciderMatch = TournamentEngine.createDeciderMatch(round, pairs);
         setCurrentMatch(deciderMatch);
         
-        // Generate random clubs for decider match
+        // Generate random clubs for decider match (1 club each)
         const teamSelector = new TeamSelector();
         const randomClubs = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), 1);
         setTeamPools([randomClubs[0], randomClubs[1]]);
@@ -129,11 +137,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       const nextMatch = TournamentEngine.createNextMatch(round, pairs);
       setCurrentMatch(nextMatch);
       
-      // Generate team pools for selection
-      const teamSelector = new TeamSelector();
-      const maxMatches = currentEvening.winsToComplete * 2 - 1;
-      const pools = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), Math.max(1, maxMatches - round.matches.length));
-      setTeamPools([pools[0], pools[1]]);
+      // Filter original pools to remove used clubs
+      const filteredPools: [Club[], Club[]] = [
+        originalTeamPools[0].filter(club => !usedClubIds.has(club.id)),
+        originalTeamPools[1].filter(club => !usedClubIds.has(club.id))
+      ];
+      setTeamPools(filteredPools);
     }
     
     setSelectedClubs([null, null]);
@@ -143,9 +152,20 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const loadCurrentRound = () => {
     const round = currentEvening.rounds[currentRound];
     if (round && round.matches.length > 0) {
-      // Load last match or create next one
+      // Load existing round - restore original pools and used clubs
       const allPairs = TournamentEngine.generatePairs(currentEvening.players);
       const roundPairs = allPairs[currentRound];
+      
+      // Restore used clubs from completed matches
+      const usedIds = new Set<string>();
+      round.matches.forEach(match => {
+        if (match.completed) {
+          usedIds.add(match.clubs[0].id);
+          usedIds.add(match.clubs[1].id);
+        }
+      });
+      setUsedClubIds(usedIds);
+      
       createNextMatch(currentEvening, currentRound, roundPairs);
     }
   };
