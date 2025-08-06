@@ -156,6 +156,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       const allPairs = TournamentEngine.generatePairs(currentEvening.players);
       const roundPairs = allPairs[currentRound];
       
+      // Restore original team pools for this round
+      const teamSelector = new TeamSelector();
+      const maxMatches = currentEvening.winsToComplete * 2 - 1;
+      const pools = teamSelector.generateTeamPools(roundPairs, [], maxMatches);
+      setOriginalTeamPools([pools[0], pools[1]]);
+      
       // Restore used clubs from completed matches
       const usedIds = new Set<string>();
       round.matches.forEach(match => {
