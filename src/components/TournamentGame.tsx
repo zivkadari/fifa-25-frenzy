@@ -425,7 +425,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                   {currentMatch?.pairs[pairIndex].players.map(p => p.name).join(' + ')}
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
-                  {pool.map((club) => (
+                  {pool && pool.length > 0 ? pool.map((club) => (
                     <Button
                       key={club.id}
                       variant={selectedClubs[pairIndex]?.id === club.id ? "gaming" : "hero"}
@@ -444,7 +444,11 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                         )}
                       </div>
                     </Button>
-                  ))}
+                  )) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      No clubs available
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
