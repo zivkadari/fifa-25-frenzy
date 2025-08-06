@@ -89,7 +89,9 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     // Generate team pools for the entire round
     const teamSelector = new TeamSelector();
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
+    console.log('Generating pools for round with maxMatches:', maxMatches);
     const pools = teamSelector.generateTeamPools(roundPairs, [], maxMatches);
+    console.log('Generated pools:', pools);
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
     
