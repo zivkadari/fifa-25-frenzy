@@ -95,8 +95,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
     
-    // Create and start first match
-    createNextMatch(updatedEvening, currentRound, roundPairs);
+    // Create and start first match - this will set team pools
+    setTimeout(() => {
+      createNextMatch(updatedEvening, currentRound, roundPairs);
+    }, 100);
   };
 
   const createNextMatch = (evening: Evening, roundIndex: number, pairs: Pair[]) => {
