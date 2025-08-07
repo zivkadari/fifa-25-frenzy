@@ -32,7 +32,12 @@ const Index = () => {
 
   const handleBackToHome = () => {
     setAppState('home');
-    setCurrentEvening(null);
+    // Don't clear currentEvening here so we can preserve players if going back to setup
+  };
+
+  const handleBackToSetup = () => {
+    setAppState('setup');
+    // Keep currentEvening to preserve player data
   };
 
   const handleStartEvening = (players: Player[], winsToComplete: number) => {
@@ -81,6 +86,8 @@ const Index = () => {
           <EveningSetup
             onBack={handleBackToHome}
             onStartEvening={handleStartEvening}
+            savedPlayers={currentEvening?.players}
+            savedWinsToComplete={currentEvening?.winsToComplete}
           />
         );
       
@@ -88,7 +95,7 @@ const Index = () => {
         return currentEvening ? (
           <TournamentGame
             evening={currentEvening}
-            onBack={handleBackToHome}
+            onBack={handleBackToSetup}
             onComplete={handleCompleteEvening}
           />
         ) : null;

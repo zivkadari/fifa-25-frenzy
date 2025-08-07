@@ -165,13 +165,20 @@ export class TournamentEngine {
   }
 
   static isRoundComplete(round: Round, winsToComplete: number): boolean {
-    // Check if any pair has reached the required wins and is ahead by at least 1
+    // Check if any pair has reached the required wins
     const scores = Object.values(round.pairScores);
     const maxScore = Math.max(...scores);
-    const minScore = Math.min(...scores);
     
-    // Round is complete if someone reached winsToComplete AND has a lead of at least 1
-    return maxScore >= winsToComplete && (maxScore - minScore) >= 1;
+    console.log('isRoundComplete check:', {
+      scores,
+      maxScore,
+      winsToComplete,
+      hasRequiredWins: maxScore >= winsToComplete,
+      isComplete: maxScore >= winsToComplete
+    });
+    
+    // Round is complete if someone reached winsToComplete (first to X wins)
+    return maxScore >= winsToComplete;
   }
 
   static isRoundTied(round: Round, winsToComplete: number): boolean {

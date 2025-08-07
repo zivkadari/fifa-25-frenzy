@@ -301,6 +301,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     setScoreInput('');
 
     // Check if round is complete after this match using TournamentEngine
+    console.log('Checking round completion:', {
+      roundPairScores: updatedRound.pairScores,
+      winsToComplete: currentEvening.winsToComplete,
+      isComplete: TournamentEngine.isRoundComplete(updatedRound, currentEvening.winsToComplete),
+      isTied: TournamentEngine.isRoundTied(updatedRound, currentEvening.winsToComplete)
+    });
     if (TournamentEngine.isRoundComplete(updatedRound, currentEvening.winsToComplete)) {
       if (TournamentEngine.isRoundTied(updatedRound, currentEvening.winsToComplete)) {
         // Tie! Need decider match

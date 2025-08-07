@@ -10,12 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 interface EveningSetupProps {
   onBack: () => void;
   onStartEvening: (players: Player[], winsToComplete: number) => void;
+  savedPlayers?: Player[];
+  savedWinsToComplete?: number;
 }
 
-export const EveningSetup = ({ onBack, onStartEvening }: EveningSetupProps) => {
+export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsToComplete }: EveningSetupProps) => {
   const { toast } = useToast();
-  const [playerNames, setPlayerNames] = useState(['', '', '', '']);
-  const [winsToComplete, setWinsToComplete] = useState(4);
+  const [playerNames, setPlayerNames] = useState(
+    savedPlayers ? savedPlayers.map(p => p.name) : ['', '', '', '']
+  );
+  const [winsToComplete, setWinsToComplete] = useState(savedWinsToComplete || 4);
 
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
