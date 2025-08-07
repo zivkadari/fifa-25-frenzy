@@ -33,6 +33,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [currentRoundPairs, setCurrentRoundPairs] = useState<Pair[]>([]); // Store pairs for current round
   const [originalTeamPools, setOriginalTeamPools] = useState<[Club[], Club[]]>([[], []]); // Keep original pools for the round
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
@@ -77,6 +78,9 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       return;
     }
 
+    // Store the pairs for this round
+    setCurrentRoundPairs(roundPairs);
+
     const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.winsToComplete);
     
     const updatedEvening = {
@@ -101,19 +105,21 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     }, 100);
   };
 
-  const createNextMatch = (evening: Evening, roundIndex: number, pairs: Pair[]) => {
+  const createNextMatch = (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
+    // Use stored round pairs if pairs not provided
+    const roundPairs = pairs || currentRoundPairs;
     const round = evening.rounds[roundIndex];
     
     // Check if round is complete or tied
     if (TournamentEngine.isRoundComplete(round, evening.winsToComplete)) {
       if (TournamentEngine.isRoundTied(round, evening.winsToComplete)) {
         // Create decider match
-        const deciderMatch = TournamentEngine.createDeciderMatch(round, pairs);
+        const deciderMatch = TournamentEngine.createDeciderMatch(round, roundPairs);
         setCurrentMatch(deciderMatch);
         
         // Generate random clubs for decider match (1 club each)
         const teamSelector = new TeamSelector();
-        const randomClubs = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), 1);
+        const randomClubs = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds), 1);
         setTeamPools([randomClubs[0], randomClubs[1]]);
         
         toast({
@@ -138,14 +144,14 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       }
     } else {
       // Create next regular match
-      const nextMatch = TournamentEngine.createNextMatch(round, pairs);
+      const nextMatch = TournamentEngine.createNextMatch(round, roundPairs);
       setCurrentMatch(nextMatch);
       
       // Generate team pools if we don't have them yet or filter existing ones
       if (originalTeamPools[0].length === 0) {
         const teamSelector = new TeamSelector();
         const maxMatches = currentEvening.winsToComplete * 2 - 1;
-        const pools = teamSelector.generateTeamPools(pairs, Array.from(usedClubIds), maxMatches);
+        const pools = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds), maxMatches);
         setOriginalTeamPools([pools[0], pools[1]]);
         setTeamPools([pools[0], pools[1]]);
       } else {
@@ -169,6 +175,9 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       const allPairs = TournamentEngine.generatePairs(currentEvening.players);
       const roundPairs = allPairs[currentRound];
       
+      // Store the pairs for this round
+      setCurrentRoundPairs(roundPairs);
+      
       // Restore original team pools for this round
       const teamSelector = new TeamSelector();
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
@@ -185,7 +194,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       });
       setUsedClubIds(usedIds);
       
-      createNextMatch(currentEvening, currentRound, roundPairs);
+      createNextMatch(currentEvening, currentRound);
     }
   };
 
@@ -301,9 +310,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       if (scores.filter(s => s === currentEvening.winsToComplete).length === 2) {
         // Tie! Need decider match
         setTimeout(() => {
-          const allPairs = TournamentEngine.generatePairs(currentEvening.players);
-          const roundPairs = allPairs[currentRound];
-          createNextMatch(updatedEvening, currentRound, roundPairs);
+          createNextMatch(updatedEvening, currentRound);
         }, 2000);
       } else {
         // Round winner determined
@@ -314,9 +321,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     } else {
       // Continue with next match
       setTimeout(() => {
-        const allPairs = TournamentEngine.generatePairs(currentEvening.players);
-        const roundPairs = allPairs[currentRound];
-        createNextMatch(updatedEvening, currentRound, roundPairs);
+        createNextMatch(updatedEvening, currentRound);
       }, 2000);
     }
   };
