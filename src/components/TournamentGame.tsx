@@ -358,7 +358,9 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   };
 
   const currentRoundData = currentEvening.rounds[currentRound];
-  const currentRoundScore = currentRoundData ? Object.values(currentRoundData.pairScores) : [0, 0];
+  const currentRoundScore = currentRoundData && currentMatch ? 
+    [currentRoundData.pairScores[currentMatch.pairs[0].id] || 0, currentRoundData.pairScores[currentMatch.pairs[1].id] || 0] : 
+    [0, 0];
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4">
