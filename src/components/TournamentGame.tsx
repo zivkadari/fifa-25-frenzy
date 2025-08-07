@@ -300,20 +300,27 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
     setScoreInput('');
 
-    // Check if round is complete after this match
-    const newPairScores = updatedPairScores;
-    const maxScore = Math.max(...Object.values(newPairScores));
-    
-    if (maxScore >= currentEvening.winsToComplete) {
-      // Check for tie
-      const scores = Object.values(newPairScores);
-      if (scores.filter(s => s === currentEvening.winsToComplete).length === 2) {
+    // Check if round is complete after this match using TournamentEngine
+    if (TournamentEngine.isRoundComplete(updatedRound, currentEvening.winsToComplete)) {
+      if (TournamentEngine.isRoundTied(updatedRound, currentEvening.winsToComplete)) {
         // Tie! Need decider match
         setTimeout(() => {
           createNextMatch(updatedEvening, currentRound);
         }, 2000);
       } else {
-        // Round winner determined
+        // Round winner determined - announce winner
+        const roundWinner = TournamentEngine.getRoundWinner(updatedRound);
+        if (roundWinner) {
+          const winnerPair = currentRoundPairs.find(pair => pair.id === roundWinner);
+          if (winnerPair) {
+            const winnerNames = winnerPair.players.map(p => p.name).join(' + ');
+            toast({
+              title: `Round ${currentRound + 1} Complete!`,
+              description: `${winnerNames} wins the round!`,
+            });
+          }
+        }
+        
         setTimeout(() => {
           handleRoundComplete();
         }, 2000);
