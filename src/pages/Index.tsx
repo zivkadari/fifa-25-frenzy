@@ -4,6 +4,7 @@ import { EveningSetup } from "@/components/EveningSetup";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory } from "@/components/TournamentHistory";
+import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { Evening, Player } from "@/types/tournament";
 
 import { StorageService } from "@/services/storageService";
@@ -126,6 +127,9 @@ const Index = () => {
   return (
     <div className="font-sans antialiased">
       {renderCurrentState()}
+      {(appState === 'game' || appState === 'summary') && (
+        <FloatingScoreTable evening={currentEvening} />
+      )}
     </div>
   );
 };
