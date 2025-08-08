@@ -373,7 +373,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     [0, 0];
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4">
+    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized" dir="rtl">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -382,13 +382,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           </Button>
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground">
-              Round {currentRoundData?.number || 1}
+              סיבוב <span className="ltr-numbers">{currentRoundData?.number || 1}</span>
             </h1>
             <p className="text-sm text-muted-foreground">
-              First to {currentEvening.winsToComplete} wins
+              הראשון ל-<span className="ltr-numbers">{currentEvening.winsToComplete}</span> ניצחונות
             </p>
             {currentRoundData && (
-              <p className="text-lg font-bold text-neon-green">
+              <p className="text-lg font-bold text-neon-green ltr-numbers">
                 {currentRoundScore[0]} - {currentRoundScore[1]}
               </p>
             )}
@@ -399,16 +399,16 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {/* Progress */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Round Progress</span>
-            <span>Match {(currentRoundData?.matches.length || 0) + 1}</span>
+            <span>התקדמות הסיבוב</span>
+            <span>משחק <span className="ltr-numbers">{(currentRoundData?.matches.length || 0) + 1}</span></span>
           </div>
           <Progress 
             value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
             className="h-2" 
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Tournament: Round {currentRound + 1}/3</span>
-            <span>Max {currentEvening.winsToComplete * 2 - 1} matches</span>
+            <span>טורניר: סיבוב <span className="ltr-numbers">{currentRound + 1}/3</span></span>
+            <span>מקסימום <span className="ltr-numbers">{currentEvening.winsToComplete * 2 - 1}</span> משחקים</span>
           </div>
         </div>
 
@@ -417,25 +417,25 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           <Card className="bg-gradient-card border-neon-green/20 p-4 mb-6 shadow-card">
             <div className="flex items-center justify-between">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">Pair 1</p>
+                <p className="text-sm text-muted-foreground">זוג 1</p>
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
+                <p className="text-lg font-bold text-neon-green ltr-numbers">{currentRoundScore[0]}</p>
               </div>
-              <div className="text-neon-green font-bold text-xl">VS</div>
+              <div className="text-neon-green font-bold text-xl">נגד</div>
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">Pair 2</p>
+                <p className="text-sm text-muted-foreground">זוג 2</p>
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green">{currentRoundScore[1]}</p>
+                <p className="text-lg font-bold text-neon-green ltr-numbers">{currentRoundScore[1]}</p>
               </div>
             </div>
             {currentRoundData?.isDeciderMatch && (
               <div className="text-center mt-2">
                 <Badge variant="destructive" className="animate-pulse">
-                  SUDDEN DEATH
+                  משחק החלטה
                 </Badge>
               </div>
             )}
@@ -446,12 +446,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {gamePhase === 'team-selection' && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-center text-foreground">
-              {currentRoundData?.isDeciderMatch ? "Sudden Death - Random Teams" : "Select Your Teams"}
+              {currentRoundData?.isDeciderMatch ? "משחק החלטה - קבוצות אקראיות" : "בחר את הקבוצות שלך"}
             </h2>
             
             {/* Debug info */}
             <div className="text-xs text-muted-foreground text-center">
-              Pools length: {teamPools[0]?.length || 0} / {teamPools[1]?.length || 0}
+              מאגר קבוצות: <span className="ltr-numbers">{teamPools[0]?.length || 0}</span> / <span className="ltr-numbers">{teamPools[1]?.length || 0}</span>
             </div>
             
             {currentMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 ? (
@@ -470,12 +470,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                       >
                         <span className="font-medium">{club.name}</span>
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs ltr-numbers">
                             {club.stars}★
                           </Badge>
                           {club.isNational && (
                             <Badge variant="outline" className="text-xs">
-                              National
+                              נבחרת
                             </Badge>
                           )}
                         </div>
@@ -486,8 +486,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               ))
             ) : (
               <div className="text-center text-muted-foreground py-8">
-                <p>Loading teams...</p>
-                <p className="text-xs mt-2">Pools: {JSON.stringify(teamPools.map(p => p?.length || 0))}</p>
+                <p>טוען קבוצות...</p>
+                <p className="text-xs mt-2 ltr-numbers">מאגרים: {JSON.stringify(teamPools.map(p => p?.length || 0))}</p>
               </div>
             )}
           </div>
@@ -495,7 +495,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
         {gamePhase === 'countdown' && (
           <div className="text-center space-y-6">
-            <h2 className="text-lg font-semibold text-foreground">Get Ready to Play!</h2>
+            <h2 className="text-lg font-semibold text-foreground">התכונן למשחק!</h2>
             
             {/* Selected Teams */}
             <div className="grid grid-cols-2 gap-4">

@@ -117,7 +117,32 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    direction: rtl;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+  }
+
+  /* RTL support for numbers - keep them LTR */
+  .ltr-numbers {
+    direction: ltr;
+    unicode-bidi: embed;
+    display: inline-block;
+  }
+
+  /* Mobile optimization for iPhone */
+  @media (max-width: 480px) {
+    body {
+      font-size: 16px; /* Prevent zoom on iOS */
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    .mobile-optimized {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
   }
 }

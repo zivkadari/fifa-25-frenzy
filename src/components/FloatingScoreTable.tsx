@@ -26,7 +26,9 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
   const floatingRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target === floatingRef.current || (e.target as HTMLElement).closest('.drag-handle')) {
+    const target = e.target as HTMLElement;
+    if (target === floatingRef.current || target.closest('.drag-handle') || target.closest('.floating-button')) {
+      e.preventDefault();
       setIsDragging(true);
       const rect = floatingRef.current!.getBoundingClientRect();
       setDragOffset({
@@ -37,7 +39,8 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
+    if (isDragging && floatingRef.current) {
+      e.preventDefault();
       const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.x));
       const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.y));
       setPosition({ x: newX, y: newY });
@@ -127,18 +130,21 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
       {/* Floating Button */}
       <div
         ref={floatingRef}
-        className="fixed z-50 cursor-pointer select-none"
+        className="fixed z-50 select-none floating-button"
         style={{ left: position.x, top: position.y }}
         onMouseDown={handleMouseDown}
       >
         <Card 
-          className="w-16 h-16 bg-primary hover:bg-primary/90 transition-colors shadow-lg border-2 border-primary-foreground/20"
-          onClick={() => !isDragging && setIsOpen(true)}
+          className="w-16 h-16 bg-primary hover:bg-primary/90 transition-colors shadow-lg border-2 border-primary-foreground/20 cursor-move"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isDragging) setIsOpen(true);
+          }}
         >
           <div className="flex flex-col items-center justify-center h-full text-primary-foreground">
             <Trophy className="w-5 h-5 mb-1" />
             <div className="text-xs font-bold">
-              R{currentRound.number}
+              ס{currentRound.number}
             </div>
             <Grip className="w-3 h-3 absolute top-1 right-1 drag-handle opacity-60" />
           </div>
@@ -147,11 +153,11 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
 
       {/* Score Table Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5" />
-              טבלת תוצאות - סיבוב {currentRound.number}
+              טבלת תוצאות - סיבוב <span className="ltr-numbers">{currentRound.number}</span>
             </DialogTitle>
           </DialogHeader>
           
@@ -165,11 +171,11 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="text-sm font-medium">
-                          משחק {index + 1}:
+                          משחק <span className="ltr-numbers">{index + 1}</span>:
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
-                            {match.pairs[0].players.map(p => p.name).join(' & ')}
+                            {match.pairs[0].players.map(p => p.name).join(' ו-')}
                           </span>
                           {match.completed && match.score ? (
                             <>
