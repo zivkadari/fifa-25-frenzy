@@ -127,9 +127,6 @@ const Index = () => {
   return (
     <div className="font-sans antialiased">
       {renderCurrentState()}
-      {(appState === 'game' || appState === 'summary') && (
-        <FloatingScoreTable evening={currentEvening} />
-      )}
     </div>
   );
 };

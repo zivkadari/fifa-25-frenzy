@@ -13,11 +13,12 @@ import {
   Play, 
   Pause, 
   RotateCcw,
-  ChevronUp,
-  ChevronDown,
   Crown
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
+import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +43,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [scoreInput, setScoreInput] = useState('');
-  const [showScoreboard, setShowScoreboard] = useState(false);
+  const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
+  const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
 
   // Initialize first round
   useEffect(() => {
@@ -323,16 +325,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           const winnerPair = currentRoundPairs.find(pair => pair.id === roundWinner);
           if (winnerPair) {
             const winnerNames = winnerPair.players.map(p => p.name).join(' + ');
-            toast({
-              title: `Round ${currentRound + 1} Complete!`,
-              description: `${winnerNames} wins the round!`,
-            });
+            setRoundWinnerMessage(`${winnerNames} זוכה בסיבוב ${currentRound + 1}!`);
+            setShowRoundWinnerDialog(true);
           }
         }
-        
-        setTimeout(() => {
-          handleRoundComplete();
-        }, 2000);
       }
     } else {
       // Continue with next match
@@ -340,6 +336,11 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         createNextMatch(updatedEvening, currentRound);
       }, 2000);
     }
+  };
+
+  const handleRoundWinnerConfirm = () => {
+    setShowRoundWinnerDialog(false);
+    handleRoundComplete();
   };
 
   const handleRoundComplete = () => {
@@ -392,13 +393,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               </p>
             )}
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setShowScoreboard(!showScoreboard)}
-          >
-            {showScoreboard ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
+          <div className="flex-1" />
         </div>
 
         {/* Progress */}
@@ -588,44 +583,28 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           </div>
         )}
 
-        {/* Collapsible Scoreboard */}
-        {showScoreboard && (
-          <Card className="mt-6 bg-gaming-surface border-border p-4">
-            <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Crown className="h-4 w-4 text-neon-green" />
-              Live Scoreboard
-            </h3>
-            <div className="space-y-3 text-sm">
-              {currentEvening.rounds.map((round, roundIndex) => 
-                round.matches.filter(match => match.completed).map((match, matchIndex) => (
-                  <div key={`${roundIndex}-${matchIndex}`} className="border-b border-border/30 pb-3 last:border-b-0">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-muted-foreground text-xs">
-                        Round {round.number} - Match {matchIndex + 1}
-                        {round.isDeciderMatch && matchIndex === round.matches.length - 1 && " (Decider)"}
-                      </span>
-                      <span className="font-bold text-neon-green text-lg">
-                        {match.score?.[0]}-{match.score?.[1]}
-                      </span>
-                    </div>
-                    
-                    {/* Teams and players */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="text-left">
-                        <p className="text-muted-foreground">{match.pairs[0].players.map(p => p.name).join(' + ')}</p>
-                        <p className="text-foreground">{match.clubs[0].name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-muted-foreground">{match.pairs[1].players.map(p => p.name).join(' + ')}</p>
-                        <p className="text-foreground">{match.clubs[1].name}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+        {/* Round Winner Dialog */}
+        <Dialog open={showRoundWinnerDialog} onOpenChange={setShowRoundWinnerDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 justify-center">
+                <Crown className="w-6 h-6 text-yellow-500" />
+                סיבוב הושלם!
+              </DialogTitle>
+            </DialogHeader>
+            <div className="text-center py-6">
+              <div className="text-lg font-bold text-primary mb-4">
+                {roundWinnerMessage}
+              </div>
+              <Button onClick={handleRoundWinnerConfirm} className="w-full">
+                המשך לסיבוב הבא
+              </Button>
             </div>
-          </Card>
-        )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Score Table Component */}
+        <FloatingScoreTable evening={currentEvening} />
       </div>
     </div>
   );
