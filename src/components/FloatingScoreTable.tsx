@@ -25,6 +25,40 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const floatingRef = useRef<HTMLDivElement>(null);
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.target === floatingRef.current || (e.target as HTMLElement).closest('.drag-handle')) {
+      setIsDragging(true);
+      const rect = floatingRef.current!.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.y));
+      setPosition({ x: newX, y: newY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset]);
+
   // Only show if we have an evening with rounds
   if (!evening || evening.rounds.length === 0) {
     return null;
@@ -85,39 +119,6 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
     return Array.from(statsMap.values()).sort((a, b) => b.totalWins - a.totalWins);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.target === floatingRef.current || (e.target as HTMLElement).closest('.drag-handle')) {
-      setIsDragging(true);
-      const rect = floatingRef.current!.getBoundingClientRect();
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.y));
-      setPosition({ x: newX, y: newY });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset]);
 
   const playerStats = calculatePlayerStats();
 
