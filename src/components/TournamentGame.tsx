@@ -99,10 +99,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
     
-    // Create and start first match - this will set team pools
-    setTimeout(() => {
-      createNextMatch(updatedEvening, currentRound, roundPairs);
-    }, 100);
+    // Reset game state for new round
+    setSelectedClubs([null, null]);
+    setGamePhase('team-selection');
+    
+    // Create and start first match
+    const firstMatch = TournamentEngine.createNextMatch(newRound, roundPairs);
+    setCurrentMatch(firstMatch);
   };
 
   const createNextMatch = (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
