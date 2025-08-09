@@ -144,7 +144,7 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
           <div className="flex flex-col items-center justify-center h-full text-primary-foreground">
             <Trophy className="w-5 h-5 mb-1" />
             <div className="text-xs font-bold">
-              ס{currentRound.number}
+              R{currentRound.number}
             </div>
             <Grip className="w-3 h-3 absolute top-1 right-1 drag-handle opacity-60" />
           </div>
@@ -153,29 +153,29 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
 
       {/* Score Table Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" dir="rtl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5" />
-              טבלת תוצאות - סיבוב <span className="ltr-numbers">{currentRound.number}</span>
+              Score Table - Round {currentRound.number}
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6">
             {/* Current Round Matches */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">תוצאות סיבוב נוכחי</h3>
+              <h3 className="text-lg font-semibold mb-3">Current Round Results</h3>
               <div className="grid gap-2">
                 {currentRound.matches.map((match, index) => (
                   <Card key={match.id} className="p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="text-sm font-medium">
-                          משחק <span className="ltr-numbers">{index + 1}</span>:
+                          Match {index + 1}:
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm">
-                            {match.pairs[0].players.map(p => p.name).join(' ו-')}
+                            {match.pairs[0].players.map(p => p.name).join(' & ')}
                           </span>
                           {match.completed && match.score ? (
                             <>
@@ -197,7 +197,7 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {match.completed ? 'הושלם' : 'בתהליך'}
+                        {match.completed ? 'Completed' : 'In Progress'}
                       </div>
                     </div>
                   </Card>
@@ -207,40 +207,40 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
 
             {/* Overall Statistics Table */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">סטטיסטיקות כוללות</h3>
+              <h3 className="text-lg font-semibold mb-3">Overall Statistics</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">שחקן</TableHead>
-                    <TableHead className="text-right">ניצחונות כולל</TableHead>
-                    <TableHead className="text-right">ניצחונות סיבוב נוכחי</TableHead>
-                    <TableHead className="text-right">שערים בעד</TableHead>
-                    <TableHead className="text-right">שערים נגד</TableHead>
-                    <TableHead className="text-right">יחס שערים</TableHead>
+                    <TableHead className="text-left">Player</TableHead>
+                    <TableHead className="text-left">Total Wins</TableHead>
+                    <TableHead className="text-left">Current Round Wins</TableHead>
+                    <TableHead className="text-left">Goals For</TableHead>
+                    <TableHead className="text-left">Goals Against</TableHead>
+                    <TableHead className="text-left">Goal Ratio</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {playerStats.map((stats, index) => (
                     <TableRow key={stats.player.id}>
-                      <TableCell className="font-medium text-right">
+                      <TableCell className="font-medium text-left">
                         {index === 0 && stats.totalWins > 0 && (
-                          <Trophy className="w-4 h-4 inline ml-2 text-yellow-500" />
+                          <Trophy className="w-4 h-4 inline mr-2 text-yellow-500" />
                         )}
                         {stats.player.name}
                       </TableCell>
-                      <TableCell className="text-right font-bold">
+                      <TableCell className="text-left font-bold">
                         {stats.totalWins}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-left">
                         {stats.currentRoundWins}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-left">
                         {stats.totalGoalsFor}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-left">
                         {stats.totalGoalsAgainst}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-left">
                         {stats.totalGoalsAgainst > 0 
                           ? (stats.totalGoalsFor / stats.totalGoalsAgainst).toFixed(2)
                           : stats.totalGoalsFor > 0 ? '∞' : '0'
@@ -255,15 +255,15 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
             {/* Round Summary */}
             {evening.rounds.length > 1 && (
               <div>
-                <h3 className="text-lg font-semibold mb-3">סיכום סיבובים קודמים</h3>
+                <h3 className="text-lg font-semibold mb-3">Previous Rounds Summary</h3>
                 <div className="grid gap-2">
                   {evening.rounds.slice(0, -1).map((round) => (
                     <Card key={round.id} className="p-3">
                       <div className="text-sm font-medium mb-2">
-                        סיבוב {round.number} - {round.completed ? 'הושלם' : 'בתהליך'}
+                        Round {round.number} - {round.completed ? 'Completed' : 'In Progress'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {round.matches.length} משחקים, {round.matches.filter(m => m.completed).length} הושלמו
+                        {round.matches.length} matches, {round.matches.filter(m => m.completed).length} completed
                       </div>
                     </Card>
                   ))}
@@ -274,7 +274,7 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
           
           <div className="flex justify-end mt-4">
             <Button onClick={() => setIsOpen(false)}>
-              סגור
+              Close
             </Button>
           </div>
         </DialogContent>

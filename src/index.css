@@ -117,20 +117,9 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html {
-    direction: rtl;
-  }
-
   body {
     @apply bg-background text-foreground;
     font-family: 'Segoe UI', 'Arial', sans-serif;
-  }
-
-  /* RTL support for numbers - keep them LTR */
-  .ltr-numbers {
-    direction: ltr;
-    unicode-bidi: embed;
-    display: inline-block;
   }
 
   /* Mobile optimization for iPhone */

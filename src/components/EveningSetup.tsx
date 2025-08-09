@@ -32,8 +32,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     const trimmedNames = playerNames.map(name => name.trim());
     if (trimmedNames.some(name => name === '')) {
       toast({
-        title: "שמות שחקנים לא תקינים",
-        description: "יש למלא את כל שמות השחקנים",
+        title: "Invalid Player Names",
+        description: "Please fill in all player names",
         variant: "destructive",
       });
       return;
@@ -43,8 +43,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     const uniqueNames = new Set(trimmedNames);
     if (uniqueNames.size !== 4) {
       toast({
-        title: "שמות שחקנים כפולים", 
-        description: "כל שמות השחקנים חייבים להיות ייחודיים",
+        title: "Duplicate Player Names", 
+        description: "All player names must be unique",
         variant: "destructive",
       });
       return;
@@ -57,15 +57,15 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     }));
 
     toast({
-      title: "הטורניר מתחיל!",
-      description: `3 סיבובים • הראשון ל-${winsToComplete} ניצחונות בכל סיבוב`,
+      title: "Tournament Starting!",
+      description: `3 rounds • First to ${winsToComplete} wins each round`,
     });
 
     onStartEvening(players, winsToComplete);
   };
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized" dir="rtl">
+    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
@@ -73,8 +73,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">הגדרת הערב</h1>
-            <p className="text-muted-foreground text-sm">הגדר את הטורניר עבור <span className="ltr-numbers">4</span> שחקנים</p>
+            <h1 className="text-2xl font-bold text-foreground">Evening Setup</h1>
+            <p className="text-muted-foreground text-sm">Setup tournament for 4 players</p>
           </div>
         </div>
 
@@ -83,19 +83,19 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
           <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
             <div className="flex items-center gap-2 mb-4">
               <Users className="h-5 w-5 text-neon-green" />
-              <h2 className="text-lg font-semibold text-foreground">שמות השחקנים</h2>
+              <h2 className="text-lg font-semibold text-foreground">Player Names</h2>
             </div>
             <div className="space-y-3">
               {playerNames.map((name, index) => (
                 <div key={index}>
                   <Label htmlFor={`player-${index}`} className="text-sm text-muted-foreground">
-                    שחקן <span className="ltr-numbers">{index + 1}</span>
+                    Player {index + 1}
                   </Label>
                   <Input
                     id={`player-${index}`}
                     value={name}
                     onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                    placeholder={`הזן שם שחקן ${index + 1}`}
+                    placeholder={`Enter player ${index + 1} name`}
                     className="bg-gaming-surface border-border focus:border-neon-green"
                   />
                 </div>
@@ -107,11 +107,11 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
           <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
             <div className="flex items-center gap-2 mb-4">
               <Trophy className="h-5 w-5 text-neon-green" />
-              <h2 className="text-lg font-semibold text-foreground">ניצחונות לסיום סיבוב</h2>
+              <h2 className="text-lg font-semibold text-foreground">Wins to Complete Round</h2>
             </div>
             <div className="space-y-3">
               <Label htmlFor="wins-to-complete" className="text-sm text-muted-foreground">
-                הזוג הראשון שיגיע למספר הניצחונות הזה יזכה בסיבוב
+                First pair to reach this number of wins will win the round
               </Label>
               <div className="flex items-center gap-4">
                 <Button 
@@ -122,7 +122,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
                 >
                   -
                 </Button>
-                <span className="text-2xl font-bold text-neon-green min-w-[3ch] text-center ltr-numbers">
+                <span className="text-2xl font-bold text-neon-green min-w-[3ch] text-center">
                   {winsToComplete}
                 </span>
                 <Button 
@@ -135,7 +135,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                מקסימום <span className="ltr-numbers">{winsToComplete * 2 - 1}</span> משחקים בסיבוב. אם תיקו ב-<span className="ltr-numbers">{winsToComplete}-{winsToComplete}</span>, משחק החלטה קובע את הזוכה.
+                Maximum {winsToComplete * 2 - 1} matches per round. If tied at {winsToComplete}-{winsToComplete}, a decider match determines the winner.
               </p>
             </div>
           </Card>
@@ -144,13 +144,13 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
           <Card className="bg-gaming-surface/50 border-border/50 p-4">
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                <strong className="text-neon-green"><span className="ltr-numbers">3</span> סיבובים</strong> • פורמט כולם נגד כולם
+                <strong className="text-neon-green">3 Rounds</strong> • Round Robin Format
               </p>
               <p className="text-xs text-muted-foreground">
-                סיבוב <span className="ltr-numbers">1</span>: ש<span className="ltr-numbers">1</span>+ש<span className="ltr-numbers">2</span> נגד ש<span className="ltr-numbers">3</span>+ש<span className="ltr-numbers">4</span> • סיבוב <span className="ltr-numbers">2</span>: ש<span className="ltr-numbers">1</span>+ש<span className="ltr-numbers">3</span> נגד ש<span className="ltr-numbers">2</span>+ש<span className="ltr-numbers">4</span> • סיבוב <span className="ltr-numbers">3</span>: ש<span className="ltr-numbers">1</span>+ש<span className="ltr-numbers">4</span> נגד ש<span className="ltr-numbers">2</span>+ש<span className="ltr-numbers">3</span>
+                Round 1: P1+P2 vs P3+P4 • Round 2: P1+P3 vs P2+P4 • Round 3: P1+P4 vs P2+P3
               </p>
               <p className="text-xs text-muted-foreground">
-                הראשון ל-<span className="ltr-numbers">{winsToComplete}</span> ניצחונות זוכה בסיבוב • בחירת קבוצות אקראית לכל המשחקים כולל שוברי שוויון
+                First to {winsToComplete} wins each round • Random team selection for all matches including tiebreakers
               </p>
             </div>
           </Card>
@@ -161,7 +161,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
             onClick={validateAndStart}
             className="w-full"
           >
-            התחל טורניר
+            Start Tournament
           </Button>
         </div>
       </div>

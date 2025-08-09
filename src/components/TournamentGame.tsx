@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -19,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
 import { FloatingScoreTable } from "@/components/FloatingScoreTable";
+import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +41,6 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
-  const [scoreInput, setScoreInput] = useState('');
   const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
 
@@ -232,19 +230,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     setIsCountdownActive(false);
   };
 
-  const submitResult = () => {
-    if (!scoreInput.match(/^\d+-\d+$/)) {
-      toast({
-        title: "Invalid Score",
-        description: "Please enter score in format: 3-1",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const submitResult = (score1: number, score2: number) => {
     if (!currentMatch) return;
-
-    const [score1, score2] = scoreInput.split('-').map(Number);
     
     let winner: string;
     if (score1 > score2) {
@@ -303,7 +290,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       description: winner ? `${winnerNames} wins ${score1}-${score2}!` : `Draw ${score1}-${score2}`,
     });
 
-    setScoreInput('');
+    
 
     // Check if round is complete after this match using TournamentEngine
     console.log('Checking round completion:', {
@@ -325,7 +312,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           const winnerPair = currentRoundPairs.find(pair => pair.id === roundWinner);
           if (winnerPair) {
             const winnerNames = winnerPair.players.map(p => p.name).join(' + ');
-            setRoundWinnerMessage(`${winnerNames} זוכה בסיבוב ${currentRound + 1}!`);
+            setRoundWinnerMessage(`${winnerNames} wins Round ${currentRound + 1}!`);
             setShowRoundWinnerDialog(true);
           }
         }
@@ -373,7 +360,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     [0, 0];
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized" dir="rtl">
+    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -382,13 +369,13 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           </Button>
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground">
-              סיבוב <span className="ltr-numbers">{currentRoundData?.number || 1}</span>
+              Round {currentRoundData?.number || 1}
             </h1>
             <p className="text-sm text-muted-foreground">
-              הראשון ל-<span className="ltr-numbers">{currentEvening.winsToComplete}</span> ניצחונות
+              First to {currentEvening.winsToComplete} wins
             </p>
             {currentRoundData && (
-              <p className="text-lg font-bold text-neon-green ltr-numbers">
+              <p className="text-lg font-bold text-neon-green">
                 {currentRoundScore[0]} - {currentRoundScore[1]}
               </p>
             )}
@@ -399,16 +386,16 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {/* Progress */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>התקדמות הסיבוב</span>
-            <span>משחק <span className="ltr-numbers">{(currentRoundData?.matches.length || 0) + 1}</span></span>
+            <span>Round Progress</span>
+            <span>Match {(currentRoundData?.matches.length || 0) + 1}</span>
           </div>
           <Progress 
             value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
             className="h-2" 
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>טורניר: סיבוב <span className="ltr-numbers">{currentRound + 1}/3</span></span>
-            <span>מקסימום <span className="ltr-numbers">{currentEvening.winsToComplete * 2 - 1}</span> משחקים</span>
+            <span>Tournament: Round {currentRound + 1}/3</span>
+            <span>Maximum {currentEvening.winsToComplete * 2 - 1} matches</span>
           </div>
         </div>
 
@@ -417,25 +404,25 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           <Card className="bg-gradient-card border-neon-green/20 p-4 mb-6 shadow-card">
             <div className="flex items-center justify-between">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">זוג 1</p>
+                <p className="text-sm text-muted-foreground">Pair 1</p>
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green ltr-numbers">{currentRoundScore[0]}</p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
               </div>
-              <div className="text-neon-green font-bold text-xl">נגד</div>
+              <div className="text-neon-green font-bold text-xl">VS</div>
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">זוג 2</p>
+                <p className="text-sm text-muted-foreground">Pair 2</p>
                 <p className="font-semibold text-foreground">
                   {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green ltr-numbers">{currentRoundScore[1]}</p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[1]}</p>
               </div>
             </div>
             {currentRoundData?.isDeciderMatch && (
               <div className="text-center mt-2">
                 <Badge variant="destructive" className="animate-pulse">
-                  משחק החלטה
+                  Decider Match
                 </Badge>
               </div>
             )}
@@ -446,12 +433,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {gamePhase === 'team-selection' && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-center text-foreground">
-              {currentRoundData?.isDeciderMatch ? "משחק החלטה - קבוצות אקראיות" : "בחר את הקבוצות שלך"}
+              {currentRoundData?.isDeciderMatch ? "Decider Match - Random Teams" : "Select Your Teams"}
             </h2>
             
             {/* Debug info */}
             <div className="text-xs text-muted-foreground text-center">
-              מאגר קבוצות: <span className="ltr-numbers">{teamPools[0]?.length || 0}</span> / <span className="ltr-numbers">{teamPools[1]?.length || 0}</span>
+              Team pools: {teamPools[0]?.length || 0} / {teamPools[1]?.length || 0}
             </div>
             
             {currentMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 ? (
@@ -475,7 +462,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                           </Badge>
                           {club.isNational && (
                             <Badge variant="outline" className="text-xs">
-                              נבחרת
+                              National
                             </Badge>
                           )}
                         </div>
@@ -486,8 +473,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               ))
             ) : (
               <div className="text-center text-muted-foreground py-8">
-                <p>טוען קבוצות...</p>
-                <p className="text-xs mt-2 ltr-numbers">מאגרים: {JSON.stringify(teamPools.map(p => p?.length || 0))}</p>
+                <p>Loading teams...</p>
+                <p className="text-xs mt-2">Pools: {JSON.stringify(teamPools.map(p => p?.length || 0))}</p>
               </div>
             )}
           </div>
@@ -495,7 +482,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
 
         {gamePhase === 'countdown' && (
           <div className="text-center space-y-6">
-            <h2 className="text-lg font-semibold text-foreground">התכונן למשחק!</h2>
+            <h2 className="text-lg font-semibold text-foreground">Get Ready to Play!</h2>
             
             {/* Selected Teams */}
             <div className="grid grid-cols-2 gap-4">
@@ -559,27 +546,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               ))}
             </div>
 
-            {/* Score Input */}
-            <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
-              <div className="text-center space-y-4">
-                <Trophy className="h-8 w-8 text-neon-green mx-auto" />
-                <div>
-                  <Label className="text-sm text-muted-foreground">Final Score</Label>
-                  <Input
-                    value={scoreInput}
-                    onChange={(e) => setScoreInput(e.target.value)}
-                    placeholder="e.g., 3-1"
-                    className="text-center text-lg font-bold bg-gaming-surface border-border focus:border-neon-green mt-2"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Format: Team1-Team2 (e.g., 3-1)
-                  </p>
-                </div>
-                <Button variant="gaming" size="lg" onClick={submitResult} className="w-full">
-                  Submit Result
-                </Button>
-              </div>
-            </Card>
+            {/* Dice Score Input */}
+            <DiceScoreInput onSubmit={submitResult} />
           </div>
         )}
 
@@ -589,7 +557,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 justify-center">
                 <Crown className="w-6 h-6 text-yellow-500" />
-                סיבוב הושלם!
+                Round Complete!
               </DialogTitle>
             </DialogHeader>
             <div className="text-center py-6">
@@ -597,7 +565,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
                 {roundWinnerMessage}
               </div>
               <Button onClick={handleRoundWinnerConfirm} className="w-full">
-                המשך לסיבוב הבא
+                Continue to Next Round
               </Button>
             </div>
           </DialogContent>
