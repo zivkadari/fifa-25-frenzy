@@ -43,11 +43,12 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
+  const [pairSchedule] = useState<Pair[][]>(() => TournamentEngine.generatePairs(evening.players));
 
   // Initialize first round
   useEffect(() => {
     if (currentEvening.rounds.length === 0) {
-      startNextRound();
+      startNextRound(0);
     } else {
       loadCurrentRound();
     }
@@ -67,10 +68,10 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     return () => clearInterval(interval);
   }, [isCountdownActive, countdown]);
 
-  const startNextRound = () => {
-    const roundNumber = currentRound + 1;
-    const allPairs = TournamentEngine.generatePairs(currentEvening.players);
-    const roundPairs = allPairs[currentRound];
+  const startNextRound = (targetRoundIndex?: number) => {
+    const roundIndex = targetRoundIndex ?? currentRound;
+    const roundNumber = roundIndex + 1;
+    const roundPairs = pairSchedule[roundIndex];
     
     if (!roundPairs) {
       // Tournament complete
@@ -175,7 +176,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     const round = currentEvening.rounds[currentRound];
     if (round && round.matches.length > 0) {
       // Load existing round - restore original pools and used clubs
-      const allPairs = TournamentEngine.generatePairs(currentEvening.players);
+      const allPairs = pairSchedule;
       const roundPairs = allPairs[currentRound];
       
       // Store the pairs for this round
@@ -336,8 +337,11 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       completeEvening();
     } else {
       // Move to next round
-      setCurrentRound(prev => prev + 1);
-      startNextRound();
+      setCurrentRound(prev => {
+        const next = prev + 1;
+        startNextRound(next);
+        return next;
+      });
     }
   };
 
@@ -358,6 +362,8 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
   const currentRoundScore = currentRoundData && currentMatch ? 
     [currentRoundData.pairScores[currentMatch.pairs[0].id] || 0, currentRoundData.pairScores[currentMatch.pairs[1].id] || 0] : 
     [0, 0];
+  const maxMatchesInRound = currentEvening.winsToComplete * 2 - 1;
+  const completedMatches = currentRoundData ? currentRoundData.matches.filter(m => m.completed).length : 0;
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
@@ -387,7 +393,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         <div className="mb-6">
           <div className="flex justify-between text-sm text-muted-foreground mb-2">
             <span>Round Progress</span>
-            <span>Match {(currentRoundData?.matches.length || 0) + 1}</span>
+            <span>Matches {completedMatches} / {maxMatchesInRound}</span>
           </div>
           <Progress 
             value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
@@ -395,7 +401,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>Tournament: Round {currentRound + 1}/3</span>
-            <span>Maximum {currentEvening.winsToComplete * 2 - 1} matches</span>
+            <span>Matches {completedMatches} / {maxMatchesInRound}</span>
           </div>
         </div>
 

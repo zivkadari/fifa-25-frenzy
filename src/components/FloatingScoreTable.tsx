@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Trophy, Grip } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Evening, Player, Pair } from "@/types/tournament";
@@ -51,13 +52,47 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
     setIsDragging(false);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    const target = e.target as HTMLElement;
+    if (target === floatingRef.current || target.closest('.drag-handle') || target.closest('.floating-button')) {
+      e.preventDefault();
+      setIsDragging(true);
+      const rect = floatingRef.current!.getBoundingClientRect();
+      setDragOffset({
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      });
+    }
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (isDragging && floatingRef.current) {
+      const touch = e.touches[0];
+      if (!touch) return;
+      const newX = Math.max(0, Math.min(window.innerWidth - 80, touch.clientX - dragOffset.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 80, touch.clientY - dragOffset.y));
+      setPosition({ x: newX, y: newY });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      const opts: AddEventListenerOptions & EventListenerOptions = { passive: false };
+      document.addEventListener('mousemove', handleMouseMove, opts);
+      document.addEventListener('mouseup', handleMouseUp, opts);
+      document.addEventListener('touchmove', handleTouchMove as any, opts);
+      document.addEventListener('touchend', handleTouchEnd as any, opts);
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleMouseMove as any);
+        document.removeEventListener('mouseup', handleMouseUp as any);
+        document.removeEventListener('touchmove', handleTouchMove as any);
+        document.removeEventListener('touchend', handleTouchEnd as any);
       };
     }
   }, [isDragging, dragOffset]);
@@ -133,6 +168,7 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
         className="fixed z-50 select-none floating-button"
         style={{ left: position.x, top: position.y }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       >
         <Card 
           className="w-16 h-16 bg-primary hover:bg-primary/90 transition-colors shadow-lg border-2 border-primary-foreground/20 cursor-move"
@@ -253,21 +289,46 @@ export const FloatingScoreTable = ({ evening }: FloatingScoreTableProps) => {
             </div>
 
             {/* Round Summary */}
-            {evening.rounds.length > 1 && (
+            {evening.rounds.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-3">Previous Rounds Summary</h3>
-                <div className="grid gap-2">
-                  {evening.rounds.slice(0, -1).map((round) => (
-                    <Card key={round.id} className="p-3">
-                      <div className="text-sm font-medium mb-2">
-                        Round {round.number} - {round.completed ? 'Completed' : 'In Progress'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {round.matches.length} matches, {round.matches.filter(m => m.completed).length} completed
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                <h3 className="text-lg font-semibold mb-3">Rounds Summary</h3>
+                <Accordion type="single" collapsible className="w-full">
+                  {evening.rounds.map((round) => {
+                    const completedCount = round.matches.filter(m => m.completed).length;
+                    return (
+                      <AccordionItem key={round.id} value={round.id}>
+                        <AccordionTrigger className="text-sm">
+                          Round {round.number} - {round.completed ? 'Completed' : 'In Progress'} • {completedCount} / {round.matches.length} matches
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid gap-2">
+                            {round.matches.map((match, idx) => (
+                              <Card key={match.id} className="p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Match {idx + 1}:</span>
+                                    <span className="text-sm">
+                                      {match.pairs[0].players.map(p => p.name).join(' & ')}
+                                    </span>
+                                    <span className="font-bold">
+                                      {match.completed && match.score ? `${match.score[0]} - ${match.score[1]}` : 'vs'}
+                                    </span>
+                                    <span className="text-sm">
+                                      {match.pairs[1].players.map(p => p.name).join(' & ')}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {match.completed ? 'Completed' : 'In Progress'}
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
               </div>
             )}
           </div>
