@@ -12,7 +12,7 @@ export const FIFA_CLUBS: Club[] = [
   // 4.5-star clubs (82-84 rating)
   { id: 'arsenal', name: 'Arsenal', stars: 5, league: 'Premier League' },
   { id: 'psg', name: 'Paris Saint-Germain', stars: 5, league: 'Ligue 1' },
-  { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 4.5, league: 'Bundesliga' },
+  { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 5, league: 'Bundesliga' },
   { id: 'atletico-madrid', name: 'Atlético Madrid', stars: 4.5, league: 'La Liga' },
   { id: 'newcastle', name: 'Newcastle United', stars: 4.5, league: 'Premier League' },
   { id: 'ac-milan', name: 'AC Milan', stars: 4.5, league: 'Serie A' },
@@ -20,6 +20,9 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'tottenham', name: 'Tottenham Hotspur', stars: 4.5, league: 'Premier League' },
   { id: 'manchester-united', name: 'Manchester United', stars: 4.5, league: 'Premier League' },
   { id: 'chelsea', name: 'Chelsea', stars: 4.5, league: 'Premier League' },
+  { id: 'fenerbahce', name: 'Fenerbahçe', stars: 4.5, league: 'Süper Lig' },
+  { id: 'lazio', name: 'Lazio', stars: 4.5, league: 'Serie A' },
+  { id: 'athletic-bilbao', name: 'Athletic Bilbao', stars: 4.5, league: 'La Liga' },
   
   // National Teams (5-star)
   { id: 'france', name: 'France', stars: 5, league: 'National Teams', isNational: true },
@@ -29,7 +32,7 @@ export const FIFA_CLUBS: Club[] = [
   
   // National Teams (4.5-star)
   { id: 'portugal', name: 'Portugal', stars: 5, league: 'National Teams', isNational: true },
-  { id: 'netherlands', name: 'Netherlands', stars: 4.5, league: 'National Teams', isNational: true },
+  { id: 'netherlands', name: 'Netherlands', stars: 5, league: 'National Teams', isNational: true },
   { id: 'argentina', name: 'Argentina', stars: 5, league: 'National Teams', isNational: true },
   { id: 'italy', name: 'Italy', stars: 4.5, league: 'National Teams', isNational: true },
   
@@ -37,15 +40,23 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'morocco', name: 'Morocco', stars: 4, league: 'National Teams', isNational: true },
   { id: 'croatia', name: 'Croatia', stars: 4, league: 'National Teams', isNational: true },
   { id: 'denmark', name: 'Denmark', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'sweden', name: 'Sweden', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'norway', name: 'Norway', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'poland', name: 'Poland', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'ukraine', name: 'Ukraine', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'united-states', name: 'United States', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'czechia', name: 'Czechia', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'ghana', name: 'Ghana', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'mexico', name: 'Mexico', stars: 4, league: 'National Teams', isNational: true },
   
   // 4-star clubs (79-81 rating)
   { id: 'rb-leipzig', name: 'RB Leipzig', stars: 4.5, league: 'Bundesliga' },
   { id: 'atalanta', name: 'Atalanta', stars: 4.5, league: 'Serie A' },
-  { id: 'sporting-cp', name: 'Sporting CP', stars: 4, league: 'Primeira Liga' },
-  { id: 'galatasaray', name: 'Galatasaray SK', stars: 4, league: 'Süper Lig' },
-  { id: 'napoli', name: 'Napoli', stars: 4, league: 'Serie A' },
-  { id: 'roma', name: 'Roma', stars: 4, league: 'Serie A' },
-  { id: 'benfica', name: 'SL Benfica', stars: 4, league: 'Primeira Liga' },
+  { id: 'sporting-cp', name: 'Sporting CP', stars: 4.5, league: 'Primeira Liga' },
+  { id: 'galatasaray', name: 'Galatasaray SK', stars: 4.5, league: 'Süper Lig' },
+  { id: 'napoli', name: 'Napoli', stars: 4.5, league: 'Serie A' },
+  { id: 'roma', name: 'Roma', stars: 4.5, league: 'Serie A' },
+  { id: 'benfica', name: 'SL Benfica', stars: 4.5, league: 'Primeira Liga' },
   { id: 'juventus', name: 'Juventus', stars: 4.5, league: 'Serie A' },
   { id: 'marseille', name: 'Olympique de Marseille', stars: 4, league: 'Ligue 1' },
   { id: 'west-ham', name: 'West Ham United', stars: 4, league: 'Premier League' },
