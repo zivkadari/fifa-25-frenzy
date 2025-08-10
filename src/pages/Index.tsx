@@ -6,8 +6,8 @@ import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory } from "@/components/TournamentHistory";
 import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { Evening, Player } from "@/types/tournament";
-
 import { StorageService } from "@/services/storageService";
+import FitToScreen from "@/components/FitToScreen";
 
 type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history';
 
@@ -152,7 +152,9 @@ const Index = () => {
 
   return (
     <div className="font-sans antialiased">
-      {renderCurrentState()}
+      <FitToScreen>
+        {renderCurrentState()}
+      </FitToScreen>
     </div>
   );
 };
