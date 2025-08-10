@@ -89,13 +89,14 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       rounds: [...currentEvening.rounds, newRound]
     };
     setCurrentEvening(updatedEvening);
-    setUsedClubIds(new Set());
+    // Do NOT reset used clubs between rounds; we want uniqueness across the entire evening
+    // setUsedClubIds(new Set());
     
-    // Generate team pools for the entire round
+    // Generate team pools for the entire round, excluding clubs already used this evening
     const teamSelector = new TeamSelector();
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
     console.log('Generating pools for round with maxMatches:', maxMatches);
-    const pools = teamSelector.generateTeamPools(roundPairs, [], maxMatches);
+    const pools = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds), maxMatches);
     console.log('Generated pools:', pools);
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
@@ -180,21 +181,23 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       // Store the pairs for this round
       setCurrentRoundPairs(roundPairs);
       
-      // Restore original team pools for this round
-      const teamSelector = new TeamSelector();
-      const maxMatches = currentEvening.winsToComplete * 2 - 1;
-      const pools = teamSelector.generateTeamPools(roundPairs, [], maxMatches);
-      setOriginalTeamPools([pools[0], pools[1]]);
-      
-      // Restore used clubs from completed matches
+      // Restore used clubs from all completed matches across the evening up to this round
       const usedIds = new Set<string>();
-      round.matches.forEach(match => {
-        if (match.completed) {
-          usedIds.add(match.clubs[0].id);
-          usedIds.add(match.clubs[1].id);
-        }
+      currentEvening.rounds.forEach((r) => {
+        r.matches.forEach(match => {
+          if (match.completed) {
+            usedIds.add(match.clubs[0].id);
+            usedIds.add(match.clubs[1].id);
+          }
+        });
       });
       setUsedClubIds(usedIds);
+      
+      // Restore original team pools for this round, excluding already used clubs
+      const teamSelector = new TeamSelector();
+      const maxMatches = currentEvening.winsToComplete * 2 - 1;
+      const pools = teamSelector.generateTeamPools(roundPairs, Array.from(usedIds), maxMatches);
+      setOriginalTeamPools([pools[0], pools[1]]);
       
       createNextMatch(currentEvening, currentRound);
     }
