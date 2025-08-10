@@ -222,6 +222,20 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     }
   };
 
+  // Auto-draw balanced teams for decider matches (stars >= 4, diff <= 1)
+  const drawDeciderTeams = () => {
+    const teamSelector = new TeamSelector();
+    const [club1, club2] = teamSelector.generateBalancedDeciderTeams(Array.from(usedClubIds), 4, 1);
+    setSelectedClubs([club1, club2]);
+    setUsedClubIds(new Set([...Array.from(usedClubIds), club1.id, club2.id]));
+    setGamePhase('countdown');
+    setCountdown(60);
+    toast({
+      title: 'Balanced Teams Drawn',
+      description: `${club1.name} vs ${club2.name} (stars >= 4, diff <= 1)`,
+    });
+  };
+
   const toggleCountdown = () => {
     setIsCountdownActive(!isCountdownActive);
   };

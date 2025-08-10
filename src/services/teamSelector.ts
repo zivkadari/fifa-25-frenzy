@@ -1,5 +1,5 @@
 import { Club, Pair } from '@/types/tournament';
-import { getClubsByStars, getNationalTeams, getRandomClub } from '@/data/clubs';
+import { getClubsByStars, getNationalTeams, getRandomClub, FIFA_CLUBS } from '@/data/clubs';
 
 export class TeamSelector {
   generateTeamPools(pairs: Pair[], excludeClubIds: string[] = [], clubsPerPair: number = 5): Club[][] {
@@ -75,5 +75,38 @@ export class TeamSelector {
   generateClubsForMatch(pair1: Pair, pair2: Pair, excludeClubIds: string[] = [], clubsPerPair: number = 5): [Club[], Club[]] {
     const pools = this.generateTeamPools([pair1, pair2], excludeClubIds, clubsPerPair);
     return [pools[0], pools[1]];
+  }
+
+  // Generate two balanced teams for a decider: stars >= minStars and star difference <= maxStarDiff
+  generateBalancedDeciderTeams(
+    excludeClubIds: string[] = [],
+    minStars = 4,
+    maxStarDiff = 1
+  ): [Club, Club] {
+    const used = new Set<string>(excludeClubIds);
+    const available = FIFA_CLUBS.filter(c => !used.has(c.id) && c.stars >= minStars);
+
+    // Fallback if not enough clubs available
+    if (available.length < 2) {
+      const backup = FIFA_CLUBS.filter(c => c.stars >= minStars);
+      const first = backup[0];
+      const second = backup.find(c => c.id !== first.id) || backup[0];
+      return [first, second];
+    }
+
+    const first = available[Math.floor(Math.random() * available.length)];
+    const candidatesStrict = available.filter(c => c.id !== first.id && Math.abs(c.stars - first.stars) <= maxStarDiff);
+
+    let second: Club | undefined = candidatesStrict[Math.floor(Math.random() * Math.max(1, candidatesStrict.length))];
+
+    if (!second) {
+      // pick closest by stars as a soft fallback
+      const sortedByDiff = available
+        .filter(c => c.id !== first.id)
+        .sort((a, b) => Math.abs(a.stars - first.stars) - Math.abs(b.stars - first.stars));
+      second = sortedByDiff[0];
+    }
+
+    return [first, second!];
   }
 }
