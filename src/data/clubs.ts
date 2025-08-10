@@ -28,7 +28,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'spain', name: 'Spain', stars: 5, league: 'National Teams', isNational: true },
   
   // National Teams (4.5-star)
-  { id: 'portugal', name: 'Portugal', stars: 4.5, league: 'National Teams', isNational: true },
+  { id: 'portugal', name: 'Portugal', stars: 5, league: 'National Teams', isNational: true },
   { id: 'netherlands', name: 'Netherlands', stars: 4.5, league: 'National Teams', isNational: true },
   { id: 'argentina', name: 'Argentina', stars: 5, league: 'National Teams', isNational: true },
   { id: 'italy', name: 'Italy', stars: 4.5, league: 'National Teams', isNational: true },
