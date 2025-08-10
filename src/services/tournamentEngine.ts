@@ -138,27 +138,33 @@ export class TournamentEngine {
     });
   }
 
-  static calculateRankings(playerStats: PlayerStats[]): { alpha: Player[]; beta: Player[]; gamma: Player[] } {
-    const rankings = { alpha: [] as Player[], beta: [] as Player[], gamma: [] as Player[] };
+  static calculateRankings(playerStats: PlayerStats[]): { alpha: Player[]; beta: Player[]; gamma: Player[]; delta: Player[] } {
+    const rankings = { alpha: [] as Player[], beta: [] as Player[], gamma: [] as Player[], delta: [] as Player[] };
     
     if (playerStats.length === 0) return rankings;
 
-    let currentRank = 1;
-    let currentPoints = playerStats[0].points;
-    
-    playerStats.forEach((stats, index) => {
-      if (stats.points < currentPoints) {
-        currentRank = index + 1;
-        currentPoints = stats.points;
+    // Sort by points desc, then wins, then goal diff
+    const sorted = [...playerStats].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst);
+    });
+
+    // Assign distinct ranks (1st group -> alpha, 2nd -> beta, 3rd -> gamma, 4th -> delta)
+    let distinctRank = 1;
+    let prevPoints = sorted[0].points;
+
+    sorted.forEach((stats, index) => {
+      if (stats.points < prevPoints) {
+        distinctRank += 1;
+        prevPoints = stats.points;
       }
-      
-      if (currentRank === 1) {
-        rankings.alpha.push(stats.player);
-      } else if (currentRank === 2) {
-        rankings.beta.push(stats.player);
-      } else if (currentRank === 3) {
-        rankings.gamma.push(stats.player);
-      }
+
+      if (distinctRank === 1) rankings.alpha.push(stats.player);
+      else if (distinctRank === 2) rankings.beta.push(stats.player);
+      else if (distinctRank === 3) rankings.gamma.push(stats.player);
+      else if (distinctRank === 4) rankings.delta.push(stats.player);
+      // Ignore lower ranks for now
     });
 
     return rankings;

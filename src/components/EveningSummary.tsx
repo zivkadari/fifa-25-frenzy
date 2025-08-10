@@ -39,19 +39,21 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
     });
   };
 
-  const getRankIcon = (rank: 'alpha' | 'beta' | 'gamma') => {
+  const getRankIcon = (rank: 'alpha' | 'beta' | 'gamma' | 'delta') => {
     switch (rank) {
       case 'alpha': return <Trophy className="h-6 w-6 text-yellow-400" />;
       case 'beta': return <Medal className="h-6 w-6 text-gray-400" />;
       case 'gamma': return <Award className="h-6 w-6 text-amber-600" />;
+      case 'delta': return <Target className="h-6 w-6 text-sky-400" />;
     }
   };
 
-  const getRankColor = (rank: 'alpha' | 'beta' | 'gamma') => {
+  const getRankColor = (rank: 'alpha' | 'beta' | 'gamma' | 'delta') => {
     switch (rank) {
       case 'alpha': return 'border-yellow-400/50 bg-yellow-400/10';
       case 'beta': return 'border-gray-400/50 bg-gray-400/10';
       case 'gamma': return 'border-amber-600/50 bg-amber-600/10';
+      case 'delta': return 'border-sky-400/50 bg-sky-400/10';
     }
   };
 
@@ -145,6 +147,25 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
                   <div className="flex flex-wrap gap-2">
                     {rankings.gamma.map((player, index) => (
                       <Badge key={player.id} variant="secondary" className="bg-amber-600/20 text-amber-300 border-amber-600/30">
+                        {player.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Delta (4th Place) */}
+          {rankings.delta && rankings.delta.length > 0 && (
+            <Card className={`${getRankColor('delta')} border-2 p-4`}>
+              <div className="flex items-center gap-4">
+                {getRankIcon('delta')}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Delta</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {rankings.delta.map((player) => (
+                      <Badge key={player.id} variant="secondary" className="bg-sky-400/20 text-sky-300 border-sky-400/30">
                         {player.name}
                       </Badge>
                     ))}

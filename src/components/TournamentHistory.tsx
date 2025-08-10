@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target } from "lucide-react";
 import { Evening } from "@/types/tournament";
 
 interface TournamentHistoryProps {
@@ -15,11 +16,44 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const getRankIcon = (rank: 'alpha' | 'beta' | 'gamma') => {
+  const pointsByRank = { alpha: 4, beta: 3, gamma: 2, delta: 1 } as const;
+
+  // Build overall leaderboard across all evenings based on rankings
+  const leaderboardMap = new Map<string, { name: string; points: number }>();
+
+  sortedEvenings.forEach((evening) => {
+    if (!evening.rankings) return;
+    const allIds = new Set(evening.players.map(p => p.id));
+    const alpha = evening.rankings.alpha || [];
+    const beta = evening.rankings.beta || [];
+    const gamma = evening.rankings.gamma || [];
+    const knownIds = new Set<string>([...alpha, ...beta, ...gamma].map(p => p.id));
+    const delta = (evening.rankings.delta && evening.rankings.delta.length > 0)
+      ? evening.rankings.delta
+      : evening.players.filter(p => !knownIds.has(p.id));
+
+    const award = (players: typeof evening.players, pts: number) => {
+      players.forEach(p => {
+        const prev = leaderboardMap.get(p.id) || { name: p.name, points: 0 };
+        leaderboardMap.set(p.id, { name: p.name, points: prev.points + pts });
+      });
+    };
+
+    award(alpha, pointsByRank.alpha);
+    award(beta, pointsByRank.beta);
+    award(gamma, pointsByRank.gamma);
+    award(delta, pointsByRank.delta);
+  });
+
+  const leaderboard = Array.from(leaderboardMap.entries()).map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+
+  const getRankIcon = (rank: 'alpha' | 'beta' | 'gamma' | 'delta') => {
     switch (rank) {
       case 'alpha': return <Trophy className="h-4 w-4 text-yellow-400" />;
       case 'beta': return <Medal className="h-4 w-4 text-gray-400" />;
       case 'gamma': return <Award className="h-4 w-4 text-amber-600" />;
+      case 'delta': return <Target className="h-4 w-4 text-sky-400" />;
     }
   };
 
@@ -79,6 +113,29 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
             </p>
           </div>
         </div>
+
+        {/* Overall Leaderboard */}
+        {leaderboard.length > 0 && (
+          <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
+            <h2 className="text-lg font-semibold text-foreground mb-3">Overall Leaderboard</h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Player</TableHead>
+                  <TableHead className="text-left">Points (4/3/2/1)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaderboard.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="text-left font-medium">{row.name}</TableCell>
+                    <TableCell className="text-left font-bold">{row.points}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        )}
 
         {/* Tournament List */}
         <div className="space-y-4">

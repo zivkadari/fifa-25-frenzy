@@ -46,6 +46,7 @@ export interface Evening {
     alpha: Player[];
     beta: Player[];
     gamma: Player[];
+    delta?: Player[];
   };
 }
 
