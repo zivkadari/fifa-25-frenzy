@@ -56,7 +56,7 @@ export const FitToScreen: React.FC<FitToScreenProps> = ({ children, maxScale = 1
   }, [updateScale]);
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex items-start justify-center">
+    <div className="w-full min-h-[100dvh] overflow-auto flex items-start justify-center">
       <div
         ref={contentRef}
         style={{
