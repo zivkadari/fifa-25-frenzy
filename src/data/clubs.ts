@@ -97,9 +97,9 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'besiktas', name: 'Beşiktaş', stars: 4, league: 'Süper Lig' },
   
   // 3.5-star clubs (76-78 rating)
-  { id: 'wolves', name: 'Wolverhampton Wanderers', stars: 3.5, league: 'Premier League' },
+  { id: 'wolves', name: 'Wolverhampton Wanderers', stars: 4, league: 'Premier League' },
   { id: 'eintracht', name: 'Eintracht Frankfurt', stars: 4, league: 'Bundesliga' },
-  { id: 'gladbach', name: 'Borussia Mönchengladbach', stars: 3.5, league: 'Bundesliga' },
+  { id: 'gladbach', name: 'Borussia Mönchengladbach', stars: 4, league: 'Bundesliga' },
   { id: 'rennes', name: 'Stade Rennais FC', stars: 4, league: 'Ligue 1' },
   { id: 'porto', name: 'FC Porto', stars: 4, league: 'Primeira Liga' },
   { id: 'ajax', name: 'Ajax', stars: 4, league: 'Eredivisie' },
