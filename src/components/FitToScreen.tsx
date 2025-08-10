@@ -38,7 +38,7 @@ export const FitToScreen: React.FC<FitToScreenProps> = ({ children, maxScale = 1
     const scaleY = vh / contentHeight;
 
     const next = Math.min(maxScale, Math.max(minScale, Math.min(scaleX, scaleY)));
-    setScale(next);
+    setScale((prev) => (Math.abs(next - prev) > 0.02 ? next : prev));
   }, [maxScale, minScale]);
 
   useLayoutEffect(() => {
@@ -49,16 +49,9 @@ export const FitToScreen: React.FC<FitToScreenProps> = ({ children, maxScale = 1
     const handle = () => updateScale();
     window.addEventListener("resize", handle);
     window.addEventListener("orientationchange", handle);
-
-    let ro: ResizeObserver | null = null;
-    if (contentRef.current && "ResizeObserver" in window) {
-      ro = new ResizeObserver(() => updateScale());
-      ro.observe(contentRef.current);
-    }
     return () => {
       window.removeEventListener("resize", handle);
       window.removeEventListener("orientationchange", handle);
-      if (ro) ro.disconnect();
     };
   }, [updateScale]);
 
