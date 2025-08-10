@@ -136,6 +136,10 @@ All colors MUST be HSL.
     .mobile-optimized {
       min-height: 100vh;
       min-height: -webkit-fill-available;
-    }
   }
+
+  button, [role="button"], a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
 }
