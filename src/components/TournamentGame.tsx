@@ -120,17 +120,15 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         // Create decider match
         const deciderMatch = TournamentEngine.createDeciderMatch(round, roundPairs);
         setCurrentMatch(deciderMatch);
-        
-        // Generate random clubs for decider match (1 club each)
-        const teamSelector = new TeamSelector();
-        const randomClubs = teamSelector.generateTeamPools(roundPairs, Array.from(usedClubIds), 1);
-        setTeamPools([randomClubs[0], randomClubs[1]]);
-        
+
+        // For decider, don't pre-generate pools. We'll draw balanced teams via button.
+        setTeamPools([[], []]);
+
         toast({
           title: "Sudden Death!",
-          description: `Tied at ${evening.winsToComplete}-${evening.winsToComplete}! Random teams selected for decider match.`,
+          description: `Tied at ${evening.winsToComplete}-${evening.winsToComplete}. Tap \"Draw Balanced Teams\" to start the decider.`,
         });
-        
+
         // Mark round as decider
         const updatedRound = { ...round, isDeciderMatch: true };
         const updatedEvening = {
