@@ -16,19 +16,38 @@ const Index = () => {
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
   const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
 
+  // Navigation helper that also pushes into browser history so Back goes to previous screen
+  const navigateTo = (next: AppState) => {
+    if (window.history.state?.appState !== next) {
+      window.history.pushState({ appState: next }, '', '');
+    }
+    setAppState(next);
+  };
+
   useEffect(() => {
     // Load tournament history on app start
     const history = StorageService.loadEvenings();
     setTournamentHistory(history);
+
+    // Initialize history state and popstate handler
+    if (!window.history.state || !window.history.state.appState) {
+      window.history.replaceState({ appState: 'home' }, '', '');
+    }
+    const onPop = (e: PopStateEvent) => {
+      const state = (e.state?.appState as AppState) || 'home';
+      setAppState(state);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   const handleStartNewEvening = () => {
-    setAppState('setup');
+    navigateTo('setup');
     setCurrentEvening(null);
   };
 
   const handleViewHistory = () => {
-    setAppState('history');
+    navigateTo('history');
   };
 
   const handleBackToHome = () => {
@@ -52,12 +71,12 @@ const Index = () => {
     };
 
     setCurrentEvening(newEvening);
-    setAppState('game');
+    navigateTo('game');
   };
 
   const handleCompleteEvening = (evening: Evening) => {
     setCurrentEvening(evening);
-    setAppState('summary');
+    navigateTo('summary');
   };
 
   const handleSaveToHistory = (evening: Evening) => {
@@ -85,7 +104,7 @@ const Index = () => {
       case 'setup':
         return (
           <EveningSetup
-            onBack={handleBackToHome}
+            onBack={() => window.history.back()}
             onStartEvening={handleStartEvening}
             savedPlayers={currentEvening?.players}
             savedWinsToComplete={currentEvening?.winsToComplete}
@@ -96,7 +115,7 @@ const Index = () => {
         return currentEvening ? (
           <TournamentGame
             evening={currentEvening}
-            onBack={handleBackToSetup}
+            onBack={() => window.history.back()}
             onComplete={handleCompleteEvening}
           />
         ) : null;
@@ -106,7 +125,7 @@ const Index = () => {
           <EveningSummary
             evening={currentEvening}
             onSaveToHistory={handleSaveToHistory}
-            onBackToHome={handleBackToHome}
+            onBackToHome={() => window.history.back()}
           />
         ) : null;
       
@@ -114,7 +133,7 @@ const Index = () => {
         return (
           <TournamentHistory
             evenings={tournamentHistory}
-            onBack={handleBackToHome}
+            onBack={() => window.history.back()}
             onDeleteEvening={handleDeleteEvening}
           />
         );
