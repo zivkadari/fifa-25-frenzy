@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Users, Trophy } from "lucide-react";
 import { Player } from "@/types/tournament";
+import { StorageService } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 
 interface EveningSetupProps {
@@ -20,6 +21,21 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     savedPlayers ? savedPlayers.map(p => p.name) : ['', '', '', '']
   );
   const [winsToComplete, setWinsToComplete] = useState(savedWinsToComplete || 4);
+  const [allPlayers, setAllPlayers] = useState<string[]>([]);
+  const [newPlayer, setNewPlayer] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const history = StorageService.loadEvenings();
+    const names = new Set<string>();
+    history.forEach((e) => e.players.forEach((p) => names.add(p.name.trim())));
+    (savedPlayers || []).forEach((p) => names.add(p.name.trim()));
+    setAllPlayers(Array.from(names).sort((a, b) => a.localeCompare(b)));
+
+    if (savedPlayers && savedPlayers.length > 0) {
+      setPlayerNames(savedPlayers.map((p) => p.name));
+    }
+  }, []);
 
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
@@ -27,10 +43,49 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     setPlayerNames(newNames);
   };
 
+  const slugify = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\u0590-\u05FF]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const selectFromList = (name: string) => {
+    if (playerNames.includes(name)) {
+      toast({ title: "Already selected", description: `${name} is already selected`, variant: "destructive" });
+      return;
+    }
+    const emptyIndex = playerNames.findIndex((n) => n.trim() === "");
+    if (emptyIndex === -1) {
+      toast({ title: "All slots filled", description: "Remove a player to select another", variant: "destructive" });
+      return;
+    }
+    const newNames = [...playerNames];
+    newNames[emptyIndex] = name;
+    setPlayerNames(newNames);
+  };
+
+  const clearSlot = (index: number) => {
+    const newNames = [...playerNames];
+    newNames[index] = "";
+    setPlayerNames(newNames);
+  };
+
+  const addNewPlayerToList = () => {
+    const name = newPlayer.trim();
+    if (!name) return;
+    if (allPlayers.includes(name)) {
+      toast({ title: "Name exists", description: "This player is already in the list", variant: "destructive" });
+      return;
+    }
+    setAllPlayers((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
+    setNewPlayer("");
+  };
+
   const validateAndStart = () => {
     // Validate non-empty names
-    const trimmedNames = playerNames.map(name => name.trim());
-    if (trimmedNames.some(name => name === '')) {
+    const trimmedNames = playerNames.map((name) => name.trim());
+    if (trimmedNames.some((name) => name === "")) {
       toast({
         title: "Invalid Player Names",
         description: "Please fill in all player names",
@@ -43,24 +98,17 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     const uniqueNames = new Set(trimmedNames);
     if (uniqueNames.size !== 4) {
       toast({
-        title: "Duplicate Player Names", 
+        title: "Duplicate Player Names",
         description: "All player names must be unique",
         variant: "destructive",
       });
       return;
     }
 
-    // Create players
-    const players: Player[] = trimmedNames.map((name, index) => ({
-      id: `player-${index + 1}`,
-      name
-    }));
+    // Create players with stable ids based on name
+    const players: Player[] = trimmedNames.map((name) => ({ id: `player-${slugify(name)}`, name }));
 
-    toast({
-      title: "Tournament Starting!",
-      description: `3 rounds • First to ${winsToComplete} wins each round`,
-    });
-
+    toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
     onStartEvening(players, winsToComplete);
   };
 
@@ -85,21 +133,78 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
               <Users className="h-5 w-5 text-neon-green" />
               <h2 className="text-lg font-semibold text-foreground">Player Names</h2>
             </div>
-            <div className="space-y-3">
-              {playerNames.map((name, index) => (
-                <div key={index}>
-                  <Label htmlFor={`player-${index}`} className="text-sm text-muted-foreground">
-                    Player {index + 1}
-                  </Label>
-                  <Input
-                    id={`player-${index}`}
-                    value={name}
-                    onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                    placeholder={`Enter player ${index + 1} name`}
-                    className="bg-gaming-surface border-border focus:border-neon-green"
-                  />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {playerNames.map((name, index) => (
+                  <div key={index}>
+                    <Label htmlFor={`slot-${index}`} className="text-sm text-muted-foreground">
+                      Player {index + 1}
+                    </Label>
+                    <div className="relative h-16 rounded-md border border-border bg-gaming-surface flex items-center justify-center">
+                      {name ? (
+                        <>
+                          <span className="text-foreground font-medium">{name}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1 right-1"
+                            onClick={() => clearSlot(index)}
+                            aria-label="Clear player"
+                          >
+                            ×
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Empty</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search players..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-gaming-surface border-border"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Add new player"
+                  value={newPlayer}
+                  onChange={(e) => setNewPlayer(e.target.value)}
+                  className="bg-gaming-surface border-border"
+                />
+                <Button variant="outline" size="sm" onClick={addNewPlayerToList}>
+                  Add
+                </Button>
+              </div>
+
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-2">Tap a name to assign it to the next empty slot</p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                  {allPlayers
+                    .filter((n) => n.toLowerCase().includes(search.toLowerCase()))
+                    .map((n) => {
+                      const isSelected = playerNames.includes(n);
+                      return (
+                        <Button
+                          key={n}
+                          variant={isSelected ? "secondary" : "outline"}
+                          size="sm"
+                          className="justify-start"
+                          onClick={() => selectFromList(n)}
+                          disabled={isSelected}
+                        >
+                          {n}
+                        </Button>
+                      );
+                    })}
                 </div>
-              ))}
+              </div>
             </div>
           </Card>
 
