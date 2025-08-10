@@ -451,13 +451,22 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
         {gamePhase === 'team-selection' && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-center text-foreground">
-              {currentRoundData?.isDeciderMatch ? "Decider Match - Random Teams" : "Select Your Teams"}
+              {currentRoundData?.isDeciderMatch ? "Decider Match - Balanced Teams" : "Select Your Teams"}
             </h2>
-            
-            {/* Debug info */}
-            <div className="text-xs text-muted-foreground text-center">
-              Team pools: {teamPools[0]?.length || 0} / {teamPools[1]?.length || 0}
-            </div>
+
+            {currentRoundData?.isDeciderMatch && (
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
+                <Button variant="gaming" onClick={drawDeciderTeams}>Draw Balanced Teams</Button>
+              </div>
+            )}
+            {/* Debug info (hidden in decider) */}
+            {!currentRoundData?.isDeciderMatch && (
+              <div className="text-xs text-muted-foreground text-center">
+                Team pools: {teamPools[0]?.length || 0} / {teamPools[1]?.length || 0}
+              </div>
+            )}
+
             
             {currentMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 ? (
               teamPools.map((pool, pairIndex) => (
