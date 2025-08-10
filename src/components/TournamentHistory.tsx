@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 
 interface TournamentHistoryProps {
@@ -16,14 +17,27 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const pointsByRank = { alpha: 4, beta: 3, gamma: 2, delta: 1 } as const;
+  // Build overall leaderboard with counts per rank and tournaments played
+  type Counts = { name: string; alpha: number; beta: number; gamma: number; delta: number; tournaments: number };
+  const countsMap = new Map<string, Counts>();
 
-  // Build overall leaderboard across all evenings based on rankings
-  const leaderboardMap = new Map<string, { name: string; points: number }>();
+  // Helper to ensure a player exists in the map
+  const ensure = (id: string, name: string) => {
+    if (!countsMap.has(id)) {
+      countsMap.set(id, { name, alpha: 0, beta: 0, gamma: 0, delta: 0, tournaments: 0 });
+    }
+  };
 
   sortedEvenings.forEach((evening) => {
+    // Count tournament participation
+    evening.players.forEach((p) => {
+      ensure(p.id, p.name);
+      const prev = countsMap.get(p.id)!;
+      prev.tournaments += 1;
+    });
+
     if (!evening.rankings) return;
-    const allIds = new Set(evening.players.map(p => p.id));
+
     const alpha = evening.rankings.alpha || [];
     const beta = evening.rankings.beta || [];
     const gamma = evening.rankings.gamma || [];
@@ -32,21 +46,22 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
       ? evening.rankings.delta
       : evening.players.filter(p => !knownIds.has(p.id));
 
-    const award = (players: typeof evening.players, pts: number) => {
-      players.forEach(p => {
-        const prev = leaderboardMap.get(p.id) || { name: p.name, points: 0 };
-        leaderboardMap.set(p.id, { name: p.name, points: prev.points + pts });
+    const inc = (players: typeof evening.players, key: keyof Omit<Counts, 'name' | 'tournaments'>) => {
+      players.forEach((p) => {
+        ensure(p.id, p.name);
+        const prev = countsMap.get(p.id)!;
+        prev[key] += 1;
       });
     };
 
-    award(alpha, pointsByRank.alpha);
-    award(beta, pointsByRank.beta);
-    award(gamma, pointsByRank.gamma);
-    award(delta, pointsByRank.delta);
+    inc(alpha, 'alpha');
+    inc(beta, 'beta');
+    inc(gamma, 'gamma');
+    inc(delta, 'delta');
   });
 
-  const leaderboard = Array.from(leaderboardMap.entries()).map(([id, v]) => ({ id, ...v }))
-    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+  const overallCounts = Array.from(countsMap.entries()).map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.alpha - a.alpha || b.beta - a.beta || b.gamma - a.gamma || b.delta - a.delta || a.name.localeCompare(b.name));
 
   const getRankIcon = (rank: 'alpha' | 'beta' | 'gamma' | 'delta') => {
     switch (rank) {
@@ -115,27 +130,68 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
         </div>
 
         {/* Overall Leaderboard */}
-        {leaderboard.length > 0 && (
-          <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
-            <h2 className="text-lg font-semibold text-foreground mb-3">Overall Leaderboard</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Player</TableHead>
-                  <TableHead className="text-left">Points (4/3/2/1)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leaderboard.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="text-left font-medium">{row.name}</TableCell>
-                    <TableCell className="text-left font-bold">{row.points}</TableCell>
+        {overallCounts.length > 0 && (
+          <>
+            <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
+              <h2 className="text-lg font-semibold text-foreground mb-3">טבלת על</h2>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left">שחקן</TableHead>
+                    <TableHead className="text-left">אלפא</TableHead>
+                    <TableHead className="text-left">בטא</TableHead>
+                    <TableHead className="text-left">גמא</TableHead>
+                    <TableHead className="text-left">גרוע מאוד</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+                </TableHeader>
+                <TableBody>
+                  {overallCounts.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-left font-medium">{row.name}</TableCell>
+                      <TableCell className="text-left font-bold">{row.alpha}</TableCell>
+                      <TableCell className="text-left font-bold">{row.beta}</TableCell>
+                      <TableCell className="text-left font-bold">{row.gamma}</TableCell>
+                      <TableCell className="text-left font-bold">{row.delta}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+
+            {/* Collapsible: tournaments per player */}
+            <Collapsible defaultOpen={false}>
+              <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-foreground">מספר טורנירים לשחקן</h3>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm">פתח/סגור</Button>
+                  </CollapsibleTrigger>
+                </div>
+                <CollapsibleContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-left">שחקן</TableHead>
+                        <TableHead className="text-left">טורנירים</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...overallCounts]
+                        .sort((a, b) => b.tournaments - a.tournaments || a.name.localeCompare(b.name))
+                        .map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell className="text-left font-medium">{row.name}</TableCell>
+                            <TableCell className="text-left font-bold">{row.tournaments}</TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          </>
         )}
+
 
         {/* Tournament List */}
         <div className="space-y-4">
