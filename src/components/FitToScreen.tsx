@@ -46,17 +46,24 @@ export const FitToScreen: React.FC<FitToScreenProps> = ({ children, maxScale = 1
   }, [updateScale]);
 
   useEffect(() => {
-    const handle = () => updateScale();
-    window.addEventListener("resize", handle);
-    window.addEventListener("orientationchange", handle);
+    let lastWidth = window.innerWidth;
+    const onResize = () => {
+      const w = window.innerWidth;
+      if (Math.abs(w - lastWidth) > 2) {
+        lastWidth = w;
+        updateScale();
+      }
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", updateScale);
     return () => {
-      window.removeEventListener("resize", handle);
-      window.removeEventListener("orientationchange", handle);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", updateScale);
     };
   }, [updateScale]);
 
   return (
-    <div className="w-full min-h-[100dvh] overflow-auto flex items-start justify-center">
+    <div className="w-full min-h-[100svh] overflow-auto flex items-start justify-center">
       <div
         ref={contentRef}
         style={{
