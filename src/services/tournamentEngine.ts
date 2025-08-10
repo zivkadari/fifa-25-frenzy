@@ -165,26 +165,37 @@ export class TournamentEngine {
   }
 
   static isRoundComplete(round: Round, winsToComplete: number): boolean {
-    // Check if any pair has reached the required wins
+    // Round completes either when someone reaches winsToComplete OR when max scheduled matches are played
     const scores = Object.values(round.pairScores);
     const maxScore = Math.max(...scores);
+    const completedMatches = round.matches.filter(m => m.completed).length;
+    const maxMatches = winsToComplete * 2 - 1;
+
+    const hasRequiredWins = maxScore >= winsToComplete;
+    const reachedMaxMatches = completedMatches >= maxMatches;
     
     console.log('isRoundComplete check:', {
       scores,
       maxScore,
       winsToComplete,
-      hasRequiredWins: maxScore >= winsToComplete,
-      isComplete: maxScore >= winsToComplete
+      completedMatches,
+      maxMatches,
+      hasRequiredWins,
+      reachedMaxMatches,
+      isComplete: hasRequiredWins || reachedMaxMatches
     });
     
-    // Round is complete if someone reached winsToComplete (first to X wins)
-    return maxScore >= winsToComplete;
+    // Complete if either condition is met
+    return hasRequiredWins || reachedMaxMatches;
   }
 
   static isRoundTied(round: Round, winsToComplete: number): boolean {
-    // Check if both pairs have the same score and it's equal to winsToComplete
     const scores = Object.values(round.pairScores);
-    return scores.length === 2 && scores[0] === winsToComplete && scores[1] === winsToComplete;
+    const completedMatches = round.matches.filter(m => m.completed).length;
+    const maxMatches = winsToComplete * 2 - 1;
+    const isEqual = scores.length === 2 && scores[0] === scores[1];
+    // Tie if both hit winsToComplete simultaneously OR if max scheduled matches ended in equal score
+    return isEqual && (scores[0] === winsToComplete || completedMatches >= maxMatches);
   }
 
   static getRoundWinner(round: Round): string | null {
