@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Crown
 } from "lucide-react";
+import { Home } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
@@ -26,9 +27,11 @@ interface TournamentGameProps {
   evening: Evening;
   onBack: () => void;
   onComplete: (evening: Evening) => void;
+  onGoHome: () => void;
+  onUpdateEvening: (evening: Evening) => void;
 }
 
-export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGameProps) => {
+export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening }: TournamentGameProps) => {
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);
@@ -89,6 +92,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
       rounds: [...currentEvening.rounds, newRound]
     };
     setCurrentEvening(updatedEvening);
+    onUpdateEvening(updatedEvening);
     // Do NOT reset used clubs between rounds; we want uniqueness across the entire evening
     // setUsedClubIds(new Set());
     
@@ -141,6 +145,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
           ]
         };
         setCurrentEvening(updatedEvening);
+        onUpdateEvening(updatedEvening);
       } else {
         // Round complete, move to next round
         handleRoundComplete();
@@ -293,6 +298,7 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
     };
 
     setCurrentEvening(updatedEvening);
+    onUpdateEvening(updatedEvening);
 
     // Calculate winner names for notification
     const winnerNames = winner ? 
@@ -401,7 +407,11 @@ export const TournamentGame = ({ evening, onBack, onComplete }: TournamentGamePr
               </p>
             )}
           </div>
-          <div className="flex-1" />
+          <div>
+            <Button variant="ghost" size="icon" onClick={onGoHome} aria-label="Home">
+              <Home className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Progress */}

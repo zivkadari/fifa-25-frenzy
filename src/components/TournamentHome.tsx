@@ -5,9 +5,10 @@ import { Trophy, History, Gamepad2 } from "lucide-react";
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
+  onResume?: () => void;
 }
 
-export const TournamentHome = ({ onStartNew, onViewHistory }: TournamentHomeProps) => {
+export const TournamentHome = ({ onStartNew, onViewHistory, onResume }: TournamentHomeProps) => {
   return (
     <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-4 mobile-optimized">
       <div className="w-full max-w-md animate-scale-in">
@@ -32,8 +33,20 @@ export const TournamentHome = ({ onStartNew, onViewHistory }: TournamentHomeProp
 
         {/* Action Buttons */}
         <div className="space-y-4">
+          {onResume && (
+            <Button
+              variant="gaming"
+              size="xl"
+              onClick={onResume}
+              className="w-full"
+            >
+              <Gamepad2 className="h-5 w-5" />
+              Resume Evening
+            </Button>
+          )}
+
           <Button
-            variant="gaming"
+            variant="hero"
             size="xl"
             onClick={onStartNew}
             className="w-full"
@@ -43,7 +56,7 @@ export const TournamentHome = ({ onStartNew, onViewHistory }: TournamentHomeProp
           </Button>
           
           <Button
-            variant="hero"
+            variant="secondary"
             size="lg"
             onClick={onViewHistory}
             className="w-full"

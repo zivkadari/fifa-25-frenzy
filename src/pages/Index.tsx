@@ -91,6 +91,10 @@ const Index = () => {
     setTournamentHistory(updatedHistory);
   };
 
+  const handleGoHome = () => {
+    navigateTo('home');
+  };
+
   const renderCurrentState = () => {
     switch (appState) {
       case 'home':
@@ -98,6 +102,7 @@ const Index = () => {
           <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
+            onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
           />
         );
       
@@ -117,6 +122,8 @@ const Index = () => {
             evening={currentEvening}
             onBack={() => window.history.back()}
             onComplete={handleCompleteEvening}
+            onGoHome={handleGoHome}
+            onUpdateEvening={setCurrentEvening}
           />
         ) : null;
       
