@@ -126,17 +126,21 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'confetti': 'confetti 3s ease-in-out infinite',
 			},
-			backgroundImage: {
-				'gradient-gaming': 'var(--gradient-primary)',
-				'gradient-card': 'var(--gradient-card)',
-				'gradient-glow': 'var(--gradient-glow)',
-			},
-			boxShadow: {
-				'glow': 'var(--shadow-glow)',
-				'card': 'var(--shadow-card)',
-				'intense': 'var(--shadow-intense)',
+				backgroundImage: {
+					'gradient-gaming': 'var(--gradient-primary)',
+					'gradient-card': 'var(--gradient-card)',
+					'gradient-glow': 'var(--gradient-glow)',
+				},
+				boxShadow: {
+					'glow': 'var(--shadow-glow)',
+					'card': 'var(--shadow-card)',
+					'intense': 'var(--shadow-intense)',
+				},
+				fontFamily: {
+					sans: ['Poppins', 'Segoe UI', 'Arial', 'sans-serif'],
+					display: ['Teko', 'Poppins', 'sans-serif']
+				}
 			}
-		}
-	},
+		},
 	plugins: [require("tailwindcss-animate")],
 } satisfies Config;

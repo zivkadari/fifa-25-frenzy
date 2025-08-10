@@ -9,8 +9,8 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Gaming Dark Theme */
-    --background: 220 15% 8%;
-    --foreground: 120 15% 95%;
+    --background: 222 22% 6%;
+    --foreground: 210 40% 98%;
 
     --card: 220 15% 12%;
     --card-foreground: 120 15% 95%;
@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover: 220 15% 10%;
     --popover-foreground: 120 15% 95%;
 
-    --primary: 120 65% 45%;
+    --primary: 125 95% 55%;
     --primary-foreground: 220 15% 8%;
 
     --secondary: 220 15% 18%;
@@ -27,7 +27,7 @@ All colors MUST be HSL.
     --muted: 220 15% 15%;
     --muted-foreground: 120 10% 65%;
 
-    --accent: 120 100% 55%;
+    --accent: 200 90% 55%;
     --accent-foreground: 220 15% 8%;
 
     --destructive: 0 75% 55%;
@@ -38,14 +38,14 @@ All colors MUST be HSL.
     --ring: 120 65% 45%;
     
     /* Gaming specific colors */
-    --neon-green: 120 100% 55%;
-    --neon-glow: 120 100% 45%;
-    --gaming-bg: 220 15% 8%;
+    --neon-green: 125 95% 55%;
+    --neon-glow: 125 95% 45%;
+    --gaming-bg: 222 22% 6%;
     --gaming-surface: 220 15% 12%;
-    --gaming-accent: 120 65% 45%;
+    --gaming-accent: 200 90% 55%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--neon-green)));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--neon-green)));
     --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(220 15% 14%));
     --gradient-glow: linear-gradient(135deg, hsl(var(--neon-green) / 0.3), hsl(var(--neon-glow) / 0.1));
     
@@ -123,7 +123,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-family: 'Poppins', 'Segoe UI', 'Arial', sans-serif;
   }
 
   /* Mobile optimization for iPhone */
