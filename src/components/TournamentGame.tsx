@@ -433,7 +433,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         {/* Current Matchup */}
         {currentMatch && (
           <Card className="bg-gradient-card border-neon-green/20 p-4 mb-6 shadow-card">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-6 md:gap-10">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Pair 1</p>
                 <p className="font-semibold text-foreground">
@@ -441,7 +441,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                 </p>
                 <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
               </div>
-              <div className="text-neon-green font-bold text-xl">VS</div>
+              <div className="text-neon-green font-bold text-xl mx-6 md:mx-10">VS</div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Pair 2</p>
                 <p className="font-semibold text-foreground">
