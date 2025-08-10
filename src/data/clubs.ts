@@ -10,7 +10,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'inter', name: 'Inter', stars: 5, league: 'Serie A' },
   
   // 4.5-star clubs (82-84 rating)
-  { id: 'arsenal', name: 'Arsenal', stars: 4.5, league: 'Premier League' },
+  { id: 'arsenal', name: 'Arsenal', stars: 5, league: 'Premier League' },
   { id: 'psg', name: 'Paris Saint-Germain', stars: 5, league: 'Ligue 1' },
   { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 4.5, league: 'Bundesliga' },
   { id: 'atletico-madrid', name: 'Atlético Madrid', stars: 4.5, league: 'La Liga' },
