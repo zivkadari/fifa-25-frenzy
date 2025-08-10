@@ -137,15 +137,29 @@ export const getNationalTeams = (): Club[] => {
 };
 
 export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxStars?: number): Club => {
-  let availableClubs = FIFA_CLUBS.filter(club => !excludeIds.includes(club.id) && !club.isNational);
-  
-  if (minStars !== undefined || maxStars !== undefined) {
-    availableClubs = availableClubs.filter(club => {
+  const baseClubs = FIFA_CLUBS.filter(club => !excludeIds.includes(club.id) && !club.isNational);
+
+  const applyRange = (clubs: Club[]) =>
+    clubs.filter(club => {
       if (minStars !== undefined && club.stars < minStars) return false;
       if (maxStars !== undefined && club.stars > maxStars) return false;
       return true;
     });
+
+  // Start with range-constrained pool if provided, otherwise base
+  let pool = (minStars !== undefined || maxStars !== undefined) ? applyRange(baseClubs) : baseClubs;
+
+  // Priority: prefer clubs with 4+ stars when available
+  const prioritized = pool.filter(c => c.stars >= 4);
+  if (prioritized.length > 0) {
+    pool = prioritized;
   }
-  
-  return availableClubs[Math.floor(Math.random() * availableClubs.length)];
+
+  // If constraints emptied the pool, fall back to base with the same priority rule
+  if (pool.length === 0) {
+    const basePrioritized = baseClubs.filter(c => c.stars >= 4);
+    pool = basePrioritized.length > 0 ? basePrioritized : baseClubs;
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)];
 };
