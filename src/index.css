@@ -117,6 +117,10 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-size: clamp(16px, 1.1vw + 12px, 18px);
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Segoe UI', 'Arial', sans-serif;
@@ -125,7 +129,7 @@ All colors MUST be HSL.
   /* Mobile optimization for iPhone */
   @media (max-width: 480px) {
     body {
-      font-size: 16px; /* Prevent zoom on iOS */
+      font-size: 18px; /* Prevent zoom on iOS and improve readability */
       -webkit-text-size-adjust: 100%;
     }
     
