@@ -245,6 +245,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_team_member: {
+        Args: { uid: string; tid: string }
+        Returns: boolean
+      }
+      is_team_owner: {
+        Args: { uid: string; tid: string }
+        Returns: boolean
+      }
       join_evening_by_code: {
         Args: { _code: string }
         Returns: {
