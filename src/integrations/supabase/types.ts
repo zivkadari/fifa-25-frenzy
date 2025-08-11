@@ -14,12 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      evening_members: {
+        Row: {
+          created_at: string
+          evening_id: string
+          role: Database["public"]["Enums"]["membership_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evening_id: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evening_id?: string
+          role?: Database["public"]["Enums"]["membership_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evening_members_evening_id_fkey"
+            columns: ["evening_id"]
+            isOneToOne: false
+            referencedRelation: "evenings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evenings: {
         Row: {
           created_at: string
           data: Json
           id: string
           owner_id: string
+          share_code: string
           updated_at: string
         }
         Insert: {
@@ -27,6 +57,7 @@ export type Database = {
           data: Json
           id: string
           owner_id: string
+          share_code?: string
           updated_at?: string
         }
         Update: {
@@ -34,6 +65,31 @@ export type Database = {
           data?: Json
           id?: string
           owner_id?: string
+          share_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
           updated_at?: string
         }
         Relationships: []
@@ -68,9 +124,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      join_evening_by_code: {
+        Args: { _code: string }
+        Returns: {
+          evening_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      membership_role: "owner" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -199,6 +262,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      membership_role: ["owner", "member"],
     },
   },
 } as const

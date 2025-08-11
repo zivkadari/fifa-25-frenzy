@@ -33,7 +33,9 @@ export class RemoteStorageService {
   }
 
   static async loadEvenings(): Promise<Evening[]> {
-    if (!this.isEnabled() || !supabase) return [];
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
     const { data, error } = await supabase
       .from(TABLE)
       .select("data")
@@ -77,5 +79,28 @@ export class RemoteStorageService {
     return () => {
       try { supabase.removeChannel(channel); } catch {}
     };
+  }
+
+  static async getShareCode(eveningId: string): Promise<string | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("share_code")
+      .eq("id", eveningId)
+      .maybeSingle();
+    if (error) return null;
+    return data?.share_code || null;
+  }
+
+  static async joinEveningByCode(code: string): Promise<string | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("join_evening_by_code", { _code: code });
+    if (error) {
+      console.error("joinEveningByCode error:", error.message);
+      return null;
+    }
+    // data could be an array of rows returned
+    const eid = Array.isArray(data) && data.length > 0 ? (data[0] as any).evening_id : null;
+    return eid || null;
   }
 }

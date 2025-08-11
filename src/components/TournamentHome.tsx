@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, History, Gamepad2, User } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users } from "lucide-react";
 
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
   onResume?: () => void;
+  onJoinShared?: () => void;
 }
 
-export const TournamentHome = ({ onStartNew, onViewHistory, onResume }: TournamentHomeProps) => {
+export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShared }: TournamentHomeProps) => {
   return (
     <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-4 mobile-optimized">
       <div className="w-full max-w-md animate-scale-in">
@@ -64,6 +65,17 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume }: Tourname
             <History className="h-5 w-5" />
             History
           </Button>
+          {onJoinShared && (
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={onJoinShared}
+              className="w-full"
+            >
+              <Users className="h-5 w-5" />
+              Join Shared Evening
+            </Button>
+          )}
 
           <Button
             variant="secondary"

@@ -89,7 +89,7 @@ useEffect(() => {
     // Keep currentEvening to preserve player data
   };
 
-const handleStartEvening = (players: Player[], winsToComplete: number) => {
+  const handleStartEvening = async (players: Player[], winsToComplete: number) => {
     const newEvening: Evening = {
       id: `evening-${Date.now()}`,
       date: new Date().toISOString(),
@@ -102,6 +102,13 @@ const handleStartEvening = (players: Player[], winsToComplete: number) => {
     setCurrentEvening(newEvening);
     // Push an initial copy to Supabase for realtime collaboration (no-op if disabled)
     RemoteStorageService.upsertEveningLive(newEvening).catch(() => {});
+    // Show share code if available
+    try {
+      const code = await RemoteStorageService.getShareCode(newEvening.id);
+      if (code) {
+        toast({ title: "קוד שיתוף נוצר", description: `העבר לחברים: ${code}` });
+      }
+    } catch {}
     navigateTo('game');
   };
 
@@ -150,6 +157,19 @@ const handleGoHome = () => {
     RemoteStorageService.upsertEveningLive(evening).catch(() => {});
   };
 
+  const handleJoinShared = async () => {
+    const code = window.prompt("הזן קוד שיתוף להצטרפות לערב משותף:")?.trim();
+    if (!code) return;
+    const eid = await RemoteStorageService.joinEveningByCode(code);
+    if (eid) {
+      toast({ title: "הצטרפת בהצלחה", description: "נטען את ההיסטוריה המשותפת" });
+      const updatedHistory = await RemoteStorageService.loadEvenings();
+      setTournamentHistory(updatedHistory);
+      navigateTo('history');
+    } else {
+      toast({ title: "קוד לא תקין או לא מחובר", description: "וודא התחברות וקוד נכון", variant: "destructive" });
+    }
+  };
   const renderCurrentState = () => {
     switch (appState) {
       case 'home':
@@ -158,6 +178,7 @@ const handleGoHome = () => {
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
+            onJoinShared={handleJoinShared}
           />
         );
       
