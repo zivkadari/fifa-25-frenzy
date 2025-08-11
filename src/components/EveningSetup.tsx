@@ -3,19 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ArrowLeft, Users, Trophy } from "lucide-react";
 import { Player } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
+import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useToast } from "@/hooks/use-toast";
 
 interface EveningSetupProps {
   onBack: () => void;
-  onStartEvening: (players: Player[], winsToComplete: number) => void;
+  onStartEvening: (players: Player[], winsToComplete: number, teamId?: string) => void;
   savedPlayers?: Player[];
   savedWinsToComplete?: number;
+  savedTeamId?: string | null;
 }
 
-export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsToComplete }: EveningSetupProps) => {
+export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsToComplete, savedTeamId }: EveningSetupProps) => {
   const { toast } = useToast();
   const [playerNames, setPlayerNames] = useState(
     savedPlayers ? savedPlayers.map(p => p.name) : ['', '', '', '']
@@ -24,6 +27,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
   const [allPlayers, setAllPlayers] = useState<string[]>([]);
   const [newPlayer, setNewPlayer] = useState("");
   const [search, setSearch] = useState("");
+  const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(savedTeamId ?? undefined);
 
   useEffect(() => {
     const history = StorageService.loadEvenings();
@@ -35,7 +40,16 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     if (savedPlayers && savedPlayers.length > 0) {
       setPlayerNames(savedPlayers.map((p) => p.name));
     }
-  }, []);
+
+    (async () => {
+      try {
+        const t = await RemoteStorageService.listTeams();
+        setTeams(t);
+        if (savedTeamId && t.find((x) => x.id === savedTeamId)) {
+          setSelectedTeamId(savedTeamId);
+        }
+      } catch {}
+    })();
 
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
@@ -109,7 +123,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     const players: Player[] = trimmedNames.map((name) => ({ id: `player-${slugify(name)}`, name }));
 
     toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
-    onStartEvening(players, winsToComplete);
+    onStartEvening(players, winsToComplete, selectedTeamId);
   };
 
   return (
@@ -127,6 +141,27 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
         </div>
 
         <div className="space-y-6">
+          {/* Team selection (optional) */}
+          <Card className="bg-gaming-surface/50 border-border/50 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="h-5 w-5 text-neon-green" />
+              <h2 className="text-lg font-semibold text-foreground">בחר קבוצה (אופציונלי)</h2>
+            </div>
+            {teams.length ? (
+              <Select value={selectedTeamId} onValueChange={(v) => setSelectedTeamId(v)}>
+                <SelectTrigger className="bg-gaming-surface border-border">
+                  <SelectValue placeholder="בחר קבוצה" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-sm text-muted-foreground">אין קבוצות. צור ונהל בקבוצות במסך הבית.</p>
+            )}
+          </Card>
           {/* Player Names */}
           <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
             <div className="flex items-center gap-2 mb-4">

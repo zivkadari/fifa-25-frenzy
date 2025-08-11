@@ -14,8 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { TeamsManager } from "@/components/TeamsManager";
 
-type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history';
+type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history' | 'teams';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
@@ -27,6 +28,7 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
+  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -111,7 +113,7 @@ useEffect(() => {
     // Keep currentEvening to preserve player data
   };
 
-  const handleStartEvening = async (players: Player[], winsToComplete: number) => {
+  const handleStartEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
     const newEvening: Evening = {
       id: `evening-${Date.now()}`,
       date: new Date().toISOString(),
@@ -122,8 +124,10 @@ useEffect(() => {
     };
 
     setCurrentEvening(newEvening);
-    // Push an initial copy to Supabase for realtime collaboration (no-op if disabled)
-    RemoteStorageService.upsertEveningLive(newEvening).catch(() => {});
+    const effectiveTeamId = teamId ?? currentTeamId ?? null;
+    setCurrentTeamId(effectiveTeamId);
+    // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
+    RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
     // Show share code if available
     try {
       const code = await RemoteStorageService.getShareCode(newEvening.id);
@@ -142,7 +146,7 @@ useEffect(() => {
 const handleSaveToHistory = async (evening: Evening) => {
     try {
       if (RemoteStorageService.isEnabled()) {
-        await RemoteStorageService.saveEvening(evening);
+        await RemoteStorageService.saveEveningWithTeam(evening, currentTeamId ?? null);
       }
       StorageService.saveEvening(evening);
     } finally {
@@ -233,6 +237,7 @@ const handleGoHome = () => {
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
             onJoinShared={handleJoinShared}
+            onManageTeams={() => navigateTo('teams')}
           />
         );
       
@@ -243,6 +248,7 @@ const handleGoHome = () => {
             onStartEvening={handleStartEvening}
             savedPlayers={currentEvening?.players}
             savedWinsToComplete={currentEvening?.winsToComplete}
+            savedTeamId={currentTeamId ?? undefined}
           />
         );
       
@@ -274,9 +280,19 @@ const handleGoHome = () => {
             onDeleteEvening={handleDeleteEvening}
           />
         );
-      
-      default:
-        return null;
+        case 'teams':
+          return (
+            <TeamsManager
+              onBack={() => window.history.back()}
+              onStartEveningForTeam={(teamId) => {
+                setCurrentTeamId(teamId);
+                navigateTo('setup');
+              }}
+            />
+          );
+        
+        default:
+          return null;
     }
   };
 
