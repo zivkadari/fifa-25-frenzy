@@ -50,7 +50,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
         }
       } catch {}
     })();
-
+  }, []);
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
     newNames[index] = name;
