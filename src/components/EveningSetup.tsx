@@ -29,6 +29,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
   const [search, setSearch] = useState("");
   const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(savedTeamId ?? undefined);
+  const [teamPlayers, setTeamPlayers] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingTeam, setLoadingTeam] = useState(false);
 
   useEffect(() => {
     const history = StorageService.loadEvenings();
@@ -51,6 +53,40 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
       } catch {}
     })();
   }, []);
+
+  // Load players when a team is selected and auto-fill names
+  useEffect(() => {
+    let mounted = true;
+    if (!selectedTeamId) {
+      setTeamPlayers([]);
+      return;
+    }
+    setLoadingTeam(true);
+    (async () => {
+      try {
+        const players = await RemoteStorageService.listTeamPlayers(selectedTeamId);
+        if (!mounted) return;
+        setTeamPlayers(players);
+        if (players.length > 0) {
+          const names = players.slice(0, 4).map((p) => p.name);
+          setPlayerNames([...names, "", "", ""].slice(0, 4));
+          if (players.length !== 4) {
+            toast({
+              title: "שימו לב",
+              description: `בקבוצה הנבחרת יש ${players.length} שחקנים. נמלא את הראשונים ללוח הערב (צריך 4).`,
+            });
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (mounted) setLoadingTeam(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedTeamId]);
   const handlePlayerNameChange = (index: number, name: string) => {
     const newNames = [...playerNames];
     newNames[index] = name;
@@ -94,6 +130,19 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     }
     setAllPlayers((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
     setNewPlayer("");
+  };
+
+  const createTeamInline = async () => {
+    const name = window.prompt("הזן שם קבוצה חדש");
+    if (!name || !name.trim()) return;
+    const created = await RemoteStorageService.createTeam(name.trim());
+    if (created) {
+      setTeams((prev) => [created, ...prev]);
+      setSelectedTeamId(created.id);
+      toast({ title: "קבוצה נוצרה", description: created.name });
+    } else {
+      toast({ title: "שגיאה", description: "יצירת קבוצה נכשלה", variant: "destructive" });
+    }
   };
 
   const validateAndStart = () => {
@@ -148,18 +197,45 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
               <h2 className="text-lg font-semibold text-foreground">בחר קבוצה (אופציונלי)</h2>
             </div>
             {teams.length ? (
-              <Select value={selectedTeamId} onValueChange={(v) => setSelectedTeamId(v)}>
-                <SelectTrigger className="bg-gaming-surface border-border">
-                  <SelectValue placeholder="בחר קבוצה" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Select value={selectedTeamId} onValueChange={(v) => setSelectedTeamId(v)}>
+                  <SelectTrigger className="bg-gaming-surface border-border">
+                    <SelectValue placeholder="בחר קבוצה" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gaming-surface z-[60]">
+                    {teams.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-between items-center mt-3">
+                  <Button variant="outline" size="sm" onClick={createTeamInline}>צור קבוצה חדשה</Button>
+                </div>
+                {selectedTeamId && (
+                  <div className="mt-3">
+                    <p className="text-sm text-muted-foreground mb-2">שחקני הקבוצה ({teamPlayers.length})</p>
+                    {loadingTeam ? (
+                      <p className="text-xs text-muted-foreground">טוען...</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {teamPlayers.map((p) => (
+                          <span key={p.id} className="px-2 py-1 rounded-md bg-gaming-surface text-foreground border border-border text-xs">
+                            {p.name}
+                          </span>
+                        ))}
+                        {teamPlayers.length === 0 && (
+                          <p className="text-xs text-muted-foreground">אין שחקנים בקבוצה זו עדיין.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground">אין קבוצות. צור ונהל בקבוצות במסך הבית.</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">אין קבוצות. צור אחת כדי למלא שחקנים אוטומטית.</p>
+                <Button variant="outline" size="sm" onClick={createTeamInline}>צור קבוצה</Button>
+              </div>
             )}
           </Card>
           {/* Player Names */}
