@@ -10,6 +10,8 @@ import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useToast } from "@/hooks/use-toast";
 import FitToScreen from "@/components/FitToScreen";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history';
 
@@ -18,8 +20,10 @@ const Index = () => {
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
   const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
   const { toast } = useToast();
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Navigation helper that also pushes into browser history so Back goes to previous screen
+   // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
     if (window.history.state?.appState !== next) {
       window.history.pushState({ appState: next }, '', '');
@@ -59,6 +63,19 @@ useEffect(() => {
       mounted = false;
       window.removeEventListener('popstate', onPop);
     };
+  }, []);
+
+  // Auth state listener for header logout/login
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session?.user);
+      setUserEmail(session?.user?.email ?? null);
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      setIsAuthed(!!data.session?.user);
+      setUserEmail(data.session?.user?.email ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   // Realtime sync: subscribe to current evening when in game state
@@ -157,6 +174,27 @@ const handleGoHome = () => {
     RemoteStorageService.upsertEveningLive(evening).catch(() => {});
   };
 
+  // Auth helpers available globally from home page
+  const cleanupAuthState = () => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("supabase.auth") || key.includes("sb-")) localStorage.removeItem(key);
+      });
+      Object.keys(sessionStorage || {}).forEach((key) => {
+        if (key.startsWith("supabase.auth") || key.includes("sb-")) sessionStorage.removeItem(key);
+      });
+    } catch {}
+  };
+
+  const handleSignOut = async () => {
+    try {
+      cleanupAuthState();
+      try { await supabase.auth.signOut({ scope: "global" }); } catch {}
+    } finally {
+      window.location.href = "/auth";
+    }
+  };
+
   const handleJoinShared = async () => {
     const code = window.prompt("הזן קוד שיתוף להצטרפות לערב משותף:")?.trim();
     if (!code) return;
@@ -228,6 +266,17 @@ const handleGoHome = () => {
 
   return (
     <div className="font-sans antialiased">
+      <header className="w-full flex items-center justify-end p-3">
+        {isAuthed ? (
+          <div className="flex items-center gap-2 text-sm">
+            {userEmail && <span className="text-muted-foreground hidden sm:inline">{userEmail}</span>}
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>Logout</Button>
+            <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/auth")}>Account</Button>
+          </div>
+        ) : (
+          <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/auth")}>Log in / Sign up</Button>
+        )}
+      </header>
       <FitToScreen>
         {renderCurrentState()}
       </FitToScreen>

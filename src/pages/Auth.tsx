@@ -57,10 +57,10 @@ const Auth = () => {
           options: { emailRedirectTo: redirectUrl },
         });
         if (error) throw error;
-        toast({ title: "נרשמת בהצלחה", description: "בדוק את האימייל לאישור, ואז התחבר." });
+        toast({ title: "Signed up", description: "Check your email to confirm, then sign in." });
       }
     } catch (err: any) {
-      toast({ title: "שגיאת התחברות", description: err?.message || "נסה שוב", variant: "destructive" });
+      toast({ title: "Authentication error", description: err?.message || "Please try again", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -78,30 +78,30 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Card className="bg-gradient-card border-neon-green/20 p-8 shadow-card">
-          <h1 className="text-2xl font-bold text-foreground mb-6 text-center">חשבון</h1>
+        <Card className={`bg-gradient-card border-neon-green/20 p-8 shadow-card ${mode === "signup" ? "ring-2 ring-primary/40" : ""}`}>
+          <h1 className="text-2xl font-bold text-foreground mb-2 text-center">{mode === "signin" ? "Sign in" : "Create account"}</h1>
 
           {isAuthed ? (
-            <div className="space-y-4 text-center">
-              <p className="text-muted-foreground">את/ה מחובר/ת. אפשר להתחיל ולשמור היסטוריה בענן.</p>
-              <Button variant="secondary" onClick={() => (window.location.href = "/")}>חזרה לדף הראשי</Button>
-              <Button variant="destructive" onClick={handleSignOut}>התנתקות</Button>
+            <div className="space-y-4 text-center"> 
+              <p className="text-muted-foreground">You are signed in. You can start and save history to the cloud.</p>
+              <Button variant="secondary" onClick={() => (window.location.href = "/")}>Back to Home</Button>
+              <Button variant="destructive" onClick={handleSignOut}>Sign out</Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">אימייל</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">סיסמה</Label>
+                <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
-                {mode === "signin" ? "התחברות" : "הרשמה"}
+                {mode === "signin" ? "Sign in" : "Sign up"}
               </Button>
               <Button type="button" variant="secondary" className="w-full" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              >{mode === "signin" ? "אין חשבון? להרשמה" : "כבר יש חשבון? להתחברות"}</Button>
+              >{mode === "signin" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}</Button>
             </form>
           )}
         </Card>
