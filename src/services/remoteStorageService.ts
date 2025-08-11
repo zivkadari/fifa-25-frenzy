@@ -1,33 +1,35 @@
 import { Evening } from "@/types/tournament";
-import { isSupabaseEnabled, supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
-// Admin email allowed to delete. Others will be restricted by RLS on the server.
-const ADMIN_EMAIL = "zivkad12@gmail.com";
 const TABLE = "evenings";
 
 type EveningRow = {
   id: string;
-  owner_email: string | null;
+  owner_id: string;
   data: Evening;
   updated_at?: string;
+  created_at?: string;
 };
 
 export class RemoteStorageService {
   static isEnabled() {
-    return isSupabaseEnabled();
+    return Boolean(supabase);
   }
 
-  static async saveEvening(evening: Evening, ownerEmail: string = ADMIN_EMAIL): Promise<void> {
-    if (!this.isEnabled() || !supabase) return;
-    const row: EveningRow = { id: evening.id, owner_email: ownerEmail, data: evening };
+  static async saveEvening(evening: Evening): Promise<void> {
+    if (!supabase) return;
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) return; // Not authenticated; skip remote save
+
+    const row = { id: evening.id, owner_id: user.id, data: evening } as any;
     const { error } = await supabase
       .from(TABLE)
       .upsert(row, { onConflict: "id" });
     if (error) console.error("Supabase saveEvening error:", error.message);
   }
 
-  static async upsertEveningLive(evening: Evening, ownerEmail: string = ADMIN_EMAIL): Promise<void> {
-    return this.saveEvening(evening, ownerEmail);
+  static async upsertEveningLive(evening: Evening): Promise<void> {
+    return this.saveEvening(evening);
   }
 
   static async loadEvenings(): Promise<Evening[]> {

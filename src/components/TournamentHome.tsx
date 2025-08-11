@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, History, Gamepad2 } from "lucide-react";
+import { Trophy, History, Gamepad2, User } from "lucide-react";
 
 interface TournamentHomeProps {
   onStartNew: () => void;
@@ -63,6 +63,16 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume }: Tourname
           >
             <History className="h-5 w-5" />
             History
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => (window.location.href = "/auth")}
+            className="w-full"
+          >
+            <User className="h-5 w-5" />
+            Account
           </Button>
         </div>
 
