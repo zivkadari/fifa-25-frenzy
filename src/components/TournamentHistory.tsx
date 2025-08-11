@@ -1,11 +1,13 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
-
+import { RemoteStorageService } from "@/services/remoteStorageService";
 interface TournamentHistoryProps {
   evenings: Evening[];
   onBack: () => void;
@@ -16,6 +18,42 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
   const sortedEvenings = [...evenings].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  // Teams filter and per-team evenings
+  const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>('all');
+  const [teamEvenings, setTeamEvenings] = useState<Evening[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const list = await RemoteStorageService.listTeams();
+        if (mounted) setTeams(list);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (selectedTeamId === 'all') {
+      setTeamEvenings([]);
+      return () => { mounted = false; };
+    }
+    setLoading(true);
+    (async () => {
+      const evs = await RemoteStorageService.loadEveningsByTeam(selectedTeamId);
+      if (mounted) setTeamEvenings(evs);
+      if (mounted) setLoading(false);
+    })();
+    return () => { mounted = false; };
+  }, [selectedTeamId]);
+
+  const activeEvenings = selectedTeamId === 'all'
+    ? sortedEvenings
+    : [...teamEvenings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Build overall leaderboard with counts per rank and tournaments played
   type Counts = { name: string; alpha: number; beta: number; gamma: number; delta: number; tournaments: number };
@@ -28,7 +66,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
     }
   };
 
-  sortedEvenings.forEach((evening) => {
+  activeEvenings.forEach((evening) => {
     // Count tournament participation
     evening.players.forEach((p) => {
       ensure(p.id, p.name);
@@ -124,12 +162,29 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
           <div>
             <h1 className="text-2xl font-bold text-foreground">Tournament History</h1>
             <p className="text-muted-foreground text-sm">
-              {sortedEvenings.length} tournament{sortedEvenings.length !== 1 ? 's' : ''} played
+              {activeEvenings.length} טורנירים מוצגים
             </p>
           </div>
-        </div>
+          </div>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-4 w-4 text-neon-green" />
+              <span className="text-sm text-muted-foreground">צפה לפי קבוצה</span>
+            </div>
+            <Select value={selectedTeamId} onValueChange={(v) => setSelectedTeamId(v as any)}>
+              <SelectTrigger className="w-full bg-gaming-surface border-border">
+                <SelectValue placeholder="בחר קבוצה" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הקבוצות</SelectItem>
+                {teams.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Overall Leaderboard */}
+          {/* Overall Leaderboard */}
         {overallCounts.length > 0 && (
           <>
             <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
@@ -195,7 +250,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
 
         {/* Tournament List */}
         <div className="space-y-4">
-          {sortedEvenings.map((evening) => (
+          {activeEvenings.map((evening) => (
             <Card 
               key={evening.id} 
               className="bg-gradient-card border-neon-green/20 p-4 shadow-card hover:shadow-glow transition-all duration-200"
