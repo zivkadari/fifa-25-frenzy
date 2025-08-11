@@ -1,10 +1,14 @@
-import { Evening } from "@/types/tournament";
+import { Evening, Player } from "@/types/tournament";
 import { supabase } from "@/integrations/supabase/client";
 
 const EVENINGS_TABLE = "evenings";
 const TEAMS_TABLE = "teams";
 const TEAM_PLAYERS_TABLE = "team_players";
 const PLAYERS_TABLE = "players";
+
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9\u0590-\u05FF]+/g, "-").replace(/^-+|-+$/g, "");
+}
 
 type EveningRow = {
   id: string;
@@ -98,11 +102,7 @@ export class RemoteStorageService {
           if (newRow?.data) onChange(newRow.data);
         }
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          // Optionally: console.log('Subscribed to evening:', eveningId)
-        }
-      });
+      .subscribe();
 
     return () => {
       try { supabase.removeChannel(channel); } catch {}
@@ -154,7 +154,7 @@ export class RemoteStorageService {
       .from(TEAMS_TABLE)
       .insert({ name, owner_id: user.id })
       .select("id, name")
-      .single();
+      .maybeSingle();
     if (error) {
       console.error("createTeam error:", error.message);
       return null;
@@ -191,13 +191,12 @@ export class RemoteStorageService {
   // ========== Team Players ==========
   static async listTeamPlayers(teamId: string): Promise<Array<{ id: string; name: string }>> {
     if (!supabase) return [];
-    // First, get player ids from team_players
-    const { data: links, error: linkErr } = await supabase
+    const { data, error } = await supabase
       .from(TEAM_PLAYERS_TABLE)
       .select("player_id")
       .eq("team_id", teamId);
-    if (linkErr || !links?.length) return [];
-    const ids = links.map((l: any) => l.player_id);
+    if (error || !data?.length) return [];
+    const ids = data.map((l: any) => l.player_id);
     const { data: players, error: pErr } = await supabase
       .from(PLAYERS_TABLE)
       .select("id, display_name")
@@ -211,24 +210,14 @@ export class RemoteStorageService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
-    // Try to find existing player created by this user with same name
-    const { data: existing } = await supabase
+    const playerId = `player-${slugify(name)}`;
+    // Upsert player row
+    const { error: upErr } = await supabase
       .from(PLAYERS_TABLE)
-      .select("id")
-      .eq("display_name", name)
-      .eq("created_by", user.id)
-      .maybeSingle();
-
-    let playerId = existing?.id as string | undefined;
-    if (!playerId) {
-      playerId = `player_${Math.random().toString(36).slice(2, 10)}`;
-      const { error: insErr } = await supabase
-        .from(PLAYERS_TABLE)
-        .insert({ id: playerId, display_name: name, created_by: user.id });
-      if (insErr) {
-        console.error("addPlayerToTeamByName/insert player error:", insErr.message);
-        return false;
-      }
+      .upsert({ id: playerId, display_name: name, created_by: user.id }, { onConflict: "id" });
+    if (upErr) {
+      console.error("addPlayerToTeamByName/insert player error:", upErr.message);
+      return false;
     }
 
     const { error: linkInsertErr } = await supabase
@@ -253,6 +242,72 @@ export class RemoteStorageService {
       return false;
     }
     return true;
+  }
+
+  // Ensure a reusable team exists for the given 4 players; return team_id
+  static async ensureTeamForPlayers(players: Player[]): Promise<string | null> {
+    if (!supabase || players.length !== 4) return null;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Upsert players by deterministic id based on name
+    const playerIds: string[] = [];
+    for (const p of players) {
+      const pid = `player-${slugify(p.name)}`;
+      playerIds.push(pid);
+      const { error: upErr } = await supabase
+        .from(PLAYERS_TABLE)
+        .upsert({ id: pid, display_name: p.name, created_by: user.id }, { onConflict: "id" });
+      if (upErr) {
+        console.error("ensureTeamForPlayers upsert player error:", upErr.message);
+      }
+    }
+
+    // Try to find existing team owned by user with exactly these 4 players
+    // 1) fetch teams of user
+    const { data: teams, error: tErr } = await supabase
+      .from(TEAMS_TABLE)
+      .select("id, name")
+      .eq("owner_id", user.id);
+    if (tErr) {
+      console.error("ensureTeamForPlayers teams fetch error:", tErr.message);
+      return null;
+    }
+    if (teams && teams.length) {
+      for (const t of teams as any[]) {
+        const { data: links } = await supabase
+          .from(TEAM_PLAYERS_TABLE)
+          .select("player_id")
+          .eq("team_id", t.id);
+        const set = new Set((links || []).map((l: any) => l.player_id));
+        const allMatch = playerIds.every((id) => set.has(id)) && set.size === 4;
+        if (allMatch) return t.id as string;
+      }
+    }
+
+    // Create new team with next number
+    const nextNumber = (teams?.length || 0) + 1;
+    const teamName = `קבוצה ${nextNumber}`;
+    const { data: created, error: cErr } = await supabase
+      .from(TEAMS_TABLE)
+      .insert({ name: teamName, owner_id: user.id })
+      .select("id")
+      .maybeSingle();
+    if (cErr || !created?.id) {
+      console.error("ensureTeamForPlayers create team error:", cErr?.message);
+      return null;
+    }
+    const teamId = created.id as string;
+
+    const inserts = playerIds.map((pid) => ({ team_id: teamId, player_id: pid }));
+    const { error: linkErr } = await supabase
+      .from(TEAM_PLAYERS_TABLE)
+      .insert(inserts);
+    if (linkErr) {
+      console.error("ensureTeamForPlayers link insert error:", linkErr.message);
+    }
+
+    return teamId;
   }
 }
 

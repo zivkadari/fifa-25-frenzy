@@ -123,8 +123,15 @@ useEffect(() => {
       completed: false
     };
 
+    // Determine team automatically if not provided
+    let effectiveTeamId = teamId ?? currentTeamId ?? null;
+    if (!effectiveTeamId && RemoteStorageService.isEnabled()) {
+      try {
+        effectiveTeamId = await RemoteStorageService.ensureTeamForPlayers(players);
+      } catch {}
+    }
+
     setCurrentEvening(newEvening);
-    const effectiveTeamId = teamId ?? currentTeamId ?? null;
     setCurrentTeamId(effectiveTeamId);
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
     RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
@@ -237,7 +244,6 @@ const handleGoHome = () => {
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
             onJoinShared={handleJoinShared}
-            onManageTeams={() => navigateTo('teams')}
           />
         );
       
