@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import FitToScreen from "@/components/FitToScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history';
 
@@ -21,7 +23,10 @@ const Index = () => {
   const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
   const { toast } = useToast();
   const [isAuthed, setIsAuthed] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -195,17 +200,28 @@ const handleGoHome = () => {
     }
   };
 
-  const handleJoinShared = async () => {
-    const code = window.prompt("הזן קוד שיתוף להצטרפות לערב משותף:")?.trim();
+  const handleJoinShared = () => {
+    setJoinOpen(true);
+  };
+
+  const handleConfirmJoin = async () => {
+    const code = joinCode.trim();
     if (!code) return;
-    const eid = await RemoteStorageService.joinEveningByCode(code);
-    if (eid) {
-      toast({ title: "הצטרפת בהצלחה", description: "נטען את ההיסטוריה המשותפת" });
-      const updatedHistory = await RemoteStorageService.loadEvenings();
-      setTournamentHistory(updatedHistory);
-      navigateTo('history');
-    } else {
-      toast({ title: "קוד לא תקין או לא מחובר", description: "וודא התחברות וקוד נכון", variant: "destructive" });
+    setJoinLoading(true);
+    try {
+      const eid = await RemoteStorageService.joinEveningByCode(code);
+      if (eid) {
+        toast({ title: "הצטרפת בהצלחה", description: "נטען את ההיסטוריה המשותפת" });
+        const updatedHistory = await RemoteStorageService.loadEvenings();
+        setTournamentHistory(updatedHistory);
+        setJoinOpen(false);
+        setJoinCode("");
+        navigateTo('history');
+      } else {
+        toast({ title: "קוד לא תקין או לא מחובר", description: "וודא התחברות וקוד נכון", variant: "destructive" });
+      }
+    } finally {
+      setJoinLoading(false);
     }
   };
   const renderCurrentState = () => {
@@ -280,6 +296,31 @@ const handleGoHome = () => {
       <FitToScreen>
         {renderCurrentState()}
       </FitToScreen>
+
+      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הצטרפות לערב משותף</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="text-sm text-muted-foreground">הזן קוד שיתוף</label>
+            <Input
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="ABCDE12345"
+              className="bg-gaming-surface border-border"
+              inputMode="text"
+              autoComplete="one-time-code"
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="secondary" onClick={() => setJoinOpen(false)} disabled={joinLoading}>בטל</Button>
+            <Button variant="gaming" onClick={handleConfirmJoin} disabled={joinLoading || !joinCode.trim()}>
+              {joinLoading ? "מצטרף..." : "הצטרף"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
