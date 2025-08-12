@@ -89,7 +89,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'union-berlin', name: 'Union Berlin', stars: 4, league: 'Bundesliga' },
   { id: 'las-palmas', name: 'UD Las Palmas', stars: 4, league: 'La Liga' },
   { id: 'trabzonspor', name: 'Trabzonspor', stars: 4, league: 'Süper Lig' },
-  { id: 'hertha-berlin', name: 'Hertha BSC', stars: 4, league: '2. Bundesliga' },
+  { id: 'hertha-berlin', name: 'Hertha BSC', stars: 3, league: '2. Bundesliga' },
   { id: 'freiburg', name: 'SC Freiburg', stars: 4, league: 'Bundesliga' },
   { id: 'celta-vigo', name: 'Celta Vigo', stars: 4, league: 'La Liga' },
   { id: 'mallorca', name: 'RCD Mallorca', stars: 4, league: 'La Liga' },

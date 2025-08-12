@@ -271,8 +271,7 @@ static async upsertEveningLive(evening: Evening): Promise<void> {
     // 1) fetch teams of user
     const { data: teams, error: tErr } = await supabase
       .from(TEAMS_TABLE)
-      .select("id, name")
-      .eq("owner_id", user.id);
+      .select("id, name");
     if (tErr) {
       console.error("ensureTeamForPlayers teams fetch error:", tErr.message);
       return null;
