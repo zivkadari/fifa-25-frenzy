@@ -22,6 +22,7 @@ import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
+import { RemoteStorageService } from "@/services/remoteStorageService";
 
 interface TournamentGameProps {
   evening: Evening;
@@ -48,6 +49,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
   const [pairSchedule] = useState<Pair[][]>(() => TournamentEngine.generatePairs(evening.players));
+  const [shareCode, setShareCode] = useState<string | null>(null);
+
+  // Fetch share code for this evening
+  useEffect(() => {
+    (async () => {
+      try {
+        const code = await RemoteStorageService.getShareCode(currentEvening.id);
+        setShareCode(code);
+      } catch {}
+    })();
+  }, [currentEvening.id]);
 
   // Initialize first round
   useEffect(() => {
@@ -431,7 +443,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </p>
             )}
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            {shareCode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { navigator.clipboard.writeText(shareCode!); toast({ title: "העתקנו את הקוד", description: shareCode! }); }}
+                aria-label="Share code"
+              >
+                קוד: {shareCode}
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={onGoHome} aria-label="Home">
               <Home className="h-5 w-5" />
             </Button>

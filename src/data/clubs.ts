@@ -149,16 +149,20 @@ export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxS
   // Start with range-constrained pool if provided, otherwise base
   let pool = (minStars !== undefined || maxStars !== undefined) ? applyRange(baseClubs) : baseClubs;
 
-  // Priority: prefer clubs with 4+ stars when available
-  const prioritized = pool.filter(c => c.stars >= 4);
-  if (prioritized.length > 0) {
-    pool = prioritized;
+  // Strong preference: 4.5+ stars when possible, otherwise 4+, otherwise any
+  const top = pool.filter(c => c.stars >= 4.5);
+  const high = pool.filter(c => c.stars >= 4);
+  if (top.length > 0) {
+    pool = top;
+  } else if (high.length > 0) {
+    pool = high;
   }
 
-  // If constraints emptied the pool, fall back to base with the same priority rule
+  // If constraints emptied the pool, fall back with the same preference
   if (pool.length === 0) {
-    const basePrioritized = baseClubs.filter(c => c.stars >= 4);
-    pool = basePrioritized.length > 0 ? basePrioritized : baseClubs;
+    const baseTop = baseClubs.filter(c => c.stars >= 4.5);
+    const baseHigh = baseClubs.filter(c => c.stars >= 4);
+    pool = baseTop.length ? baseTop : (baseHigh.length ? baseHigh : baseClubs);
   }
 
   return pool[Math.floor(Math.random() * pool.length)];

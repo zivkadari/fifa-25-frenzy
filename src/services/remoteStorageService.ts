@@ -42,8 +42,12 @@ export class RemoteStorageService {
     if (error) console.error("Supabase saveEvening error:", error.message);
   }
 
-  static async upsertEveningLive(evening: Evening): Promise<void> {
-    return this.saveEveningWithTeam(evening, null);
+static async upsertEveningLive(evening: Evening): Promise<void> {
+    if (!supabase) return;
+    await supabase
+      .from(EVENINGS_TABLE)
+      .update({ data: evening as any, updated_at: new Date().toISOString() } as any)
+      .eq("id", evening.id);
   }
 
   static async upsertEveningLiveWithTeam(evening: Evening, teamId: string | null): Promise<void> {

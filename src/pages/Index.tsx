@@ -134,15 +134,15 @@ useEffect(() => {
     setCurrentEvening(newEvening);
     setCurrentTeamId(effectiveTeamId);
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
-    RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
-    // Show share code if available
-    try {
-      const code = await RemoteStorageService.getShareCode(newEvening.id);
-      if (code) {
-        toast({ title: "קוד שיתוף נוצר", description: `העבר לחברים: ${code}` });
-      }
-    } catch {}
-    navigateTo('game');
+await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
+// Try to fetch the share code right after insert
+try {
+  const code = await RemoteStorageService.getShareCode(newEvening.id);
+  if (code) {
+    toast({ title: "קוד שיתוף", description: `העבר לחברים: ${code}` });
+  }
+} catch {}
+navigateTo('game');
   };
 
   const handleCompleteEvening = (evening: Evening) => {
@@ -239,11 +239,12 @@ const handleGoHome = () => {
     switch (appState) {
       case 'home':
         return (
-          <TournamentHome
+<TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
             onJoinShared={handleJoinShared}
+            onManageTeams={() => navigateTo('teams')}
           />
         );
       
