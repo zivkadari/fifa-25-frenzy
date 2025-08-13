@@ -48,47 +48,59 @@ export class TeamSelector {
       pools.push(pool);
     });
 
-    // Step 2: Fill remaining slots while keeping total stars balanced (diff <= 1)
+    // Step 2: Fill remaining slots by drawing pairs of random clubs and assigning the higher-star one
+    // to the currently lower-total pair to keep totals balanced (diff <= 1). 4-star clubs are allowed.
     while (pools[0].length < clubsPerPair || pools[1].length < clubsPerPair) {
-      for (let pairIndex = 0; pairIndex < pairs.length; pairIndex++) {
-        if (pools[pairIndex].length >= clubsPerPair) continue;
+      // If one pool is already full, just fill the other
+      if (pools[0].length >= clubsPerPair && pools[1].length >= clubsPerPair) break;
+      const available = FIFA_CLUBS.filter(c => !banned.has(c.id));
+      if (available.length === 0) break;
 
-        // Determine desired star range to improve/maintain balance
-        const diff = poolsSums[0] - poolsSums[1]; // positive => pool0 heavier
-        let minStars: number | undefined;
-        let maxStars: number | undefined;
+      // Draw first random club
+      const idx1 = Math.floor(Math.random() * available.length);
+      const first = available.splice(idx1, 1)[0];
 
-        if (diff > 1) {
-          // pool0 heavier -> give lower stars to pool0, higher to pool1
-          if (pairIndex === 0) { maxStars = 4; } else { minStars = 4; }
-        } else if (diff < -1) {
-          // pool1 heavier -> give higher stars to pool0, lower to pool1
-          if (pairIndex === 0) { minStars = 4; } else { maxStars = 4; }
-        } else {
-          // Balanced enough -> choose broadly, prefer 4-5 stars
-          minStars = 3.5; maxStars = 5;
-        }
-
-        try {
-          const chosen = getRandomClub(Array.from(banned), minStars, maxStars);
-          pools[pairIndex].push(chosen);
-          poolsSums[pairIndex] += chosen.stars;
-          banned.add(chosen.id);
-        } catch {
-          // Fallback: any available club
-          try {
-            const fallback = getRandomClub(Array.from(banned));
-            pools[pairIndex].push(fallback);
-            poolsSums[pairIndex] += fallback.stars;
-            banned.add(fallback.id);
-          } catch {
-            // No clubs left that satisfy constraints; break to avoid infinite loop
-            break;
-          }
-        }
+      // If one pool is full, assign directly to the other
+      if (pools[0].length >= clubsPerPair) {
+        pools[1].push(first);
+        poolsSums[1] += first.stars;
+        banned.add(first.id);
+        continue;
       }
-      // Safety: stop if we can't add more
-      if ((pools[0].length >= clubsPerPair) && (pools[1].length >= clubsPerPair)) break;
+      if (pools[1].length >= clubsPerPair) {
+        pools[0].push(first);
+        poolsSums[0] += first.stars;
+        banned.add(first.id);
+        continue;
+      }
+
+      // Try to draw a second random club
+      let second: Club | null = null;
+      if (available.length > 0) {
+        const idx2 = Math.floor(Math.random() * available.length);
+        second = available.splice(idx2, 1)[0];
+      }
+
+      const lowerIdx = poolsSums[0] <= poolsSums[1] ? 0 : 1;
+      const higherIdx = lowerIdx === 0 ? 1 : 0;
+
+      if (second) {
+        const higherClub = first.stars >= second.stars ? first : second;
+        const lowerClub = first.stars >= second.stars ? second : first;
+
+        pools[lowerIdx].push(higherClub);
+        poolsSums[lowerIdx] += higherClub.stars;
+        banned.add(higherClub.id);
+
+        pools[higherIdx].push(lowerClub);
+        poolsSums[higherIdx] += lowerClub!.stars;
+        banned.add(lowerClub!.id);
+      } else {
+        // Only one club drawn; give it to the lower-total pool
+        pools[lowerIdx].push(first);
+        poolsSums[lowerIdx] += first.stars;
+        banned.add(first.id);
+      }
     }
 
     return pools;

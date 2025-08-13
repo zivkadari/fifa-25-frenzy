@@ -310,7 +310,7 @@ const handleGoHome = () => {
           <div className="flex items-center gap-2 text-sm">
             {userEmail && <span className="text-muted-foreground hidden sm:inline">{userEmail}</span>}
             <Button variant="ghost" size="sm" onClick={handleSignOut}>Logout</Button>
-            <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/auth")}>Account</Button>
+            <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/profile")}>Profile</Button>
           </div>
         ) : (
           <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/auth")}>Log in / Sign up</Button>

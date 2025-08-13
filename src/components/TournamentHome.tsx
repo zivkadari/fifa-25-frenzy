@@ -93,11 +93,11 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShar
           <Button
             variant="secondary"
             size="lg"
-            onClick={() => (window.location.href = "/auth")}
+            onClick={() => (window.location.href = "/profile")}
             className="w-full"
           >
             <User className="h-5 w-5" />
-            Account
+            Profile
           </Button>
         </div>
 

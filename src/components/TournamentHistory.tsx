@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users } from
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 import { RemoteStorageService } from "@/services/remoteStorageService";
+import { supabase } from "@/integrations/supabase/client";
 interface TournamentHistoryProps {
   evenings: Evening[];
   onBack: () => void;
@@ -24,6 +25,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>('all');
   const [teamEvenings, setTeamEvenings] = useState<Evening[]>([]);
   const [loading, setLoading] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -34,6 +36,22 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
       } catch {}
     })();
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    // Load current user's claimed player to highlight in tables
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('player_accounts')
+          .select('player_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.player_id) setHighlightId(data.player_id);
+      } catch {}
+    })();
   }, []);
 
   useEffect(() => {
@@ -201,8 +219,10 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                 </TableHeader>
                 <TableBody>
                   {overallCounts.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="text-left font-medium">{row.name}</TableCell>
+                    <TableRow key={row.id} className={row.id === highlightId ? "bg-neon-green/10" : undefined}>
+                      <TableCell className="text-left font-medium">
+                        <span className={row.id === highlightId ? "text-neon-green font-bold" : undefined}>{row.name}</span>
+                      </TableCell>
                       <TableCell className="text-left font-bold">{row.alpha}</TableCell>
                       <TableCell className="text-left font-bold">{row.beta}</TableCell>
                       <TableCell className="text-left font-bold">{row.gamma}</TableCell>
@@ -292,7 +312,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                           <Badge 
                             key={player.id} 
                             variant="secondary" 
-                            className="text-xs bg-yellow-400/20 text-yellow-300 border-yellow-400/30"
+                            className={`text-xs ${player.id === highlightId ? 'bg-neon-green/20 text-neon-green border-neon-green/30' : 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30'}`}
                           >
                             {player.name}
                           </Badge>
@@ -311,7 +331,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                           <Badge 
                             key={player.id} 
                             variant="secondary" 
-                            className="text-xs bg-gray-400/20 text-gray-300 border-gray-400/30"
+                            className={`text-xs ${player.id === highlightId ? 'bg-neon-green/20 text-neon-green border-neon-green/30' : 'bg-gray-400/20 text-gray-300 border-gray-400/30'}`}
                           >
                             {player.name}
                           </Badge>
@@ -330,7 +350,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                           <Badge 
                             key={player.id} 
                             variant="secondary" 
-                            className="text-xs bg-amber-600/20 text-amber-300 border-amber-600/30"
+                            className={`text-xs ${player.id === highlightId ? 'bg-neon-green/20 text-neon-green border-neon-green/30' : 'bg-amber-600/20 text-amber-300 border-amber-600/30'}`}
                           >
                             {player.name}
                           </Badge>

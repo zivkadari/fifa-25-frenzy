@@ -287,6 +287,35 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setIsCountdownActive(false);
   };
 
+  // Allow undoing a wrong team selection: revert counts, unmark used, and return to selection phase
+  const undoTeamSelection = () => {
+    const [c1, c2] = selectedClubs;
+    if (!c1 && !c2) return;
+
+    const newUsedSet = new Set(usedClubIdsThisRound);
+    if (c1) newUsedSet.delete(c1.id);
+    if (c2) newUsedSet.delete(c2.id);
+    setUsedClubIdsThisRound(newUsedSet);
+
+    setUsedClubCounts((prev) => {
+      const next = { ...prev } as Record<string, number>;
+      if (c1) next[c1.id] = Math.max(0, (next[c1.id] ?? 1) - 1);
+      if (c2) next[c2.id] = Math.max(0, (next[c2.id] ?? 1) - 1);
+
+      // Rebuild available pools for this round based on original pools
+      const rebuilt: [Club[], Club[]] = [
+        originalTeamPools[0].filter((club) => (next[club.id] ?? 0) < 2 && !newUsedSet.has(club.id)),
+        originalTeamPools[1].filter((club) => (next[club.id] ?? 0) < 2 && !newUsedSet.has(club.id)),
+      ];
+      setTeamPools(rebuilt);
+      return next;
+    });
+
+    setSelectedClubs([null, null]);
+    setIsCountdownActive(false);
+    setGamePhase('team-selection');
+    toast({ title: 'בוטלה הבחירה', description: 'בחרו מחדש את הקבוצות' });
+  };
   const submitResult = (score1: number, score2: number) => {
     if (!currentMatch) return;
     
@@ -600,6 +629,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     <RotateCcw className="h-4 w-4" />
                     Reset
                   </Button>
+                  <Button variant="outline" onClick={undoTeamSelection}>
+                    <RotateCcw className="h-4 w-4" />
+                    בטל בחירה
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -630,6 +663,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   </Card>
                 )
               ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={undoTeamSelection}>בטל בחירה</Button>
             </div>
 
             {/* Dice Score Input */}
