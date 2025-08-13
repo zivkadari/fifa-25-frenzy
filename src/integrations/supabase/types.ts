@@ -81,6 +81,32 @@ export type Database = {
           },
         ]
       }
+      player_accounts: {
+        Row: {
+          claimed_at: string
+          player_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          player_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          player_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_accounts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string
