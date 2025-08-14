@@ -49,11 +49,16 @@ export class TeamSelector {
     });
 
     // Step 2: Fill remaining slots by drawing pairs of random clubs and assigning the higher-star one
-    // to the currently lower-total pair to keep totals balanced (diff <= 1). 4-star clubs are allowed.
+    // to the currently lower-total pair to keep totals balanced (diff <= 1). Prefer 4+ star clubs.
     while (pools[0].length < clubsPerPair || pools[1].length < clubsPerPair) {
       // If one pool is already full, just fill the other
       if (pools[0].length >= clubsPerPair && pools[1].length >= clubsPerPair) break;
-      const available = FIFA_CLUBS.filter(c => !banned.has(c.id));
+      
+      // First try to get clubs with 4+ stars, then fallback to all available
+      let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= 4);
+      if (available.length === 0) {
+        available = FIFA_CLUBS.filter(c => !banned.has(c.id));
+      }
       if (available.length === 0) break;
 
       // Draw first random club

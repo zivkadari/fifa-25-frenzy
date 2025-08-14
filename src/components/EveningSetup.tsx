@@ -8,6 +8,7 @@ import { ArrowLeft, Users, Trophy } from "lucide-react";
 import { Player } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface EveningSetupProps {
@@ -31,6 +32,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(savedTeamId ?? undefined);
   const [teamPlayers, setTeamPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
     const history = StorageService.loadEvenings();
@@ -145,7 +148,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     }
   };
 
-  const validateAndStart = () => {
+  const validateAndStart = async () => {
     // Validate non-empty names
     const trimmedNames = playerNames.map((name) => name.trim());
     if (trimmedNames.some((name) => name === "")) {
@@ -171,8 +174,13 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     // Create players with stable ids based on name
     const players: Player[] = trimmedNames.map((name) => ({ id: `player-${slugify(name)}`, name }));
 
-    toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
+    // Start evening first to get the evening object
     onStartEvening(players, winsToComplete, selectedTeamId);
+    
+    // Show share code dialog with instructions
+    setShowShareDialog(true);
+
+    toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
   };
 
   return (
@@ -380,6 +388,26 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
             Start Tournament
           </Button>
         </div>
+
+        {/* Share Code Dialog */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="bg-gaming-surface border-border">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">קוד שיתוף ערב</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                הערב נוצר! לאחר שהטורניר יתחיל, תוכל לקבל קוד שיתוף לשחקנים האחרים.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                הקוד יופיע במסך הטורניר ויאפשר לשחקנים אחרים להצטרף ולצפות בזמן אמת
+              </p>
+              <Button onClick={() => setShowShareDialog(false)} className="w-full">
+                הבנתי, בואו נתחיל!
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

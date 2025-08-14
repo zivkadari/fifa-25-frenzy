@@ -42,7 +42,7 @@ export class RemoteStorageService {
     if (error) console.error("Supabase saveEvening error:", error.message);
   }
 
-static async upsertEveningLive(evening: Evening): Promise<void> {
+  static async upsertEveningLive(evening: Evening): Promise<void> {
     if (!supabase) return;
     await supabase
       .from(EVENINGS_TABLE)
@@ -51,7 +51,21 @@ static async upsertEveningLive(evening: Evening): Promise<void> {
   }
 
   static async upsertEveningLiveWithTeam(evening: Evening, teamId: string | null): Promise<void> {
-    return this.saveEveningWithTeam(evening, teamId);
+    if (!supabase) return;
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) return;
+
+    const row = { 
+      id: evening.id, 
+      owner_id: user.id, 
+      data: evening, 
+      team_id: teamId,
+      updated_at: new Date().toISOString()
+    } as any;
+    
+    await supabase
+      .from(EVENINGS_TABLE)
+      .upsert(row, { onConflict: "id" });
   }
 
   static async loadEvenings(): Promise<Evening[]> {

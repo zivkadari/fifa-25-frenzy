@@ -118,6 +118,21 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     }
   };
 
+  const deleteTeam = async (teamId: string) => {
+    if (!window.confirm("אתה בטוח שברצונך למחוק את הקבוצה? הפעולה לא ניתנת לביטול.")) return;
+    const ok = await RemoteStorageService.deleteTeam(teamId);
+    if (ok) {
+      setTeams((prev) => prev.filter((t) => t.id !== teamId));
+      if (selectedTeamId === teamId) {
+        setSelectedTeamId(null);
+        setTeamPlayers([]);
+      }
+      toast({ title: "קבוצה נמחקה", description: "הקבוצה נמחקה בהצלחה" });
+    } else {
+      toast({ title: "שגיאה במחיקת קבוצה", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
@@ -150,18 +165,29 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
               צור
             </Button>
           </div>
-          <div className="flex gap-2 overflow-x-auto">
-            {teams.map((t) => (
-              <Button
-                key={t.id}
-                variant={t.id === selectedTeamId ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTeamId(t.id)}
-                className="shrink-0"
-              >
-                {t.name}
-              </Button>
-            ))}
+          <div className="space-y-2">
+            {teams
+              .filter((t) => teamPlayers.length > 0 || selectedTeamId !== t.id) // Hide empty teams unless selected
+              .map((t) => (
+                <div key={t.id} className="flex items-center gap-2">
+                  <Button
+                    variant={t.id === selectedTeamId ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTeamId(t.id)}
+                    className="flex-1"
+                  >
+                    {t.name}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => deleteTeam(t.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             {!teams.length && (
               <p className="text-sm text-muted-foreground">אין קבוצות עדיין</p>
             )}

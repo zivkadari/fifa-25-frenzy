@@ -51,6 +51,16 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [pairSchedule] = useState<Pair[][]>(() => TournamentEngine.generatePairs(evening.players));
   const [shareCode, setShareCode] = useState<string | null>(null);
 
+  // Persist evening state to avoid losing teams when navigating
+  useEffect(() => {
+    const saveCurrentState = () => {
+      if (currentEvening && !currentEvening.completed) {
+        onUpdateEvening(currentEvening);
+      }
+    };
+    saveCurrentState();
+  }, [currentEvening, onUpdateEvening]);
+
   // Fetch share code for this evening
   useEffect(() => {
     (async () => {
