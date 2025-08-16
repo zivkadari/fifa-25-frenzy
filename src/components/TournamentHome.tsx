@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trophy, History, Gamepad2, User, Users } from "lucide-react";
-
+import { Link } from "react-router-dom";
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
@@ -91,13 +91,15 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShar
           )}
 
           <Button
+            asChild
             variant="secondary"
             size="lg"
-            onClick={() => (window.location.href = "/profile")}
             className="w-full"
           >
-            <User className="h-5 w-5" />
-            Profile
+            <Link to="/profile">
+              <User className="h-5 w-5" />
+              Profile
+            </Link>
           </Button>
         </div>
 

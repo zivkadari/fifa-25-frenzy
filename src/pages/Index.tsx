@@ -11,6 +11,7 @@ import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useToast } from "@/hooks/use-toast";
 import FitToScreen from "@/components/FitToScreen";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -310,10 +311,10 @@ const handleGoHome = () => {
           <div className="flex items-center gap-2 text-sm">
             {userEmail && <span className="text-muted-foreground hidden sm:inline">{userEmail}</span>}
             <Button variant="ghost" size="sm" onClick={handleSignOut}>Logout</Button>
-            <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/profile")}>Profile</Button>
+            <Button asChild variant="secondary" size="sm"><Link to="/profile">Profile</Link></Button>
           </div>
         ) : (
-          <Button variant="secondary" size="sm" onClick={() => (window.location.href = "/auth")}>Log in / Sign up</Button>
+          <Button asChild variant="secondary" size="sm"><Link to="/auth">Log in / Sign up</Link></Button>
         )}
       </header>
       <FitToScreen>

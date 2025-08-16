@@ -167,7 +167,6 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
           </div>
           <div className="space-y-2">
             {teams
-              .filter((t) => teamPlayers.length > 0 || selectedTeamId !== t.id) // Hide empty teams unless selected
               .map((t) => (
                 <div key={t.id} className="flex items-center gap-2">
                   <Button
