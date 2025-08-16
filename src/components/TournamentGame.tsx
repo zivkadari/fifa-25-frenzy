@@ -205,47 +205,51 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
   const loadCurrentRound = () => {
     const round = currentEvening.rounds[currentRound];
-    if (round && round.matches.length > 0) {
-      // Load existing round - restore original pools and used clubs
-      const allPairs = pairSchedule;
-      const roundPairs = allPairs[currentRound];
-      
-      // Store the pairs for this round
-      setCurrentRoundPairs(roundPairs);
-      
-      // Restore used clubs from all completed matches across the evening up to this round
-      const counts: Record<string, number> = {};
-      currentEvening.rounds.forEach((r) => {
-        r.matches.forEach(match => {
-          if (match.completed) {
-            counts[match.clubs[0].id] = (counts[match.clubs[0].id] ?? 0) + 1;
-            counts[match.clubs[1].id] = (counts[match.clubs[1].id] ?? 0) + 1;
-          }
-        });
-      });
-      setUsedClubCounts(counts);
-      
-      // Restore original team pools for this round, excluding clubs used twice (evening) and those already used this round
-      const teamSelector = new TeamSelector();
-      const maxMatches = currentEvening.winsToComplete * 2 - 1;
-      // Build per-round usage so far
-      const usedThisRound = new Set<string>();
-      round.matches.forEach(match => {
+    if (!round) return;
+
+    // Restore pairs for this round
+    const allPairs = pairSchedule;
+    const roundPairs = allPairs[currentRound];
+    setCurrentRoundPairs(roundPairs);
+
+    // Restore used clubs from all completed matches across the evening up to this round
+    const counts: Record<string, number> = {};
+    currentEvening.rounds.forEach((r) => {
+      r.matches.forEach((match) => {
         if (match.completed) {
-          usedThisRound.add(match.clubs[0].id);
-          usedThisRound.add(match.clubs[1].id);
+          counts[match.clubs[0].id] = (counts[match.clubs[0].id] ?? 0) + 1;
+          counts[match.clubs[1].id] = (counts[match.clubs[1].id] ?? 0) + 1;
         }
       });
-      setUsedClubIdsThisRound(usedThisRound);
-      const eveningMaxed = Object.keys(counts).filter(id => (counts[id] ?? 0) >= 2);
-      const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-      const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
-      setOriginalTeamPools([pools[0], pools[1]]);
-      
-      createNextMatch(currentEvening, currentRound);
-    }
-  };
+    });
+    setUsedClubCounts(counts);
 
+    // Build per-round usage so far (completed matches only)
+    const usedThisRound = new Set<string>();
+    round.matches.forEach((match) => {
+      if (match.completed) {
+        usedThisRound.add(match.clubs[0].id);
+        usedThisRound.add(match.clubs[1].id);
+      }
+    });
+    setUsedClubIdsThisRound(usedThisRound);
+
+    // Generate/restore team pools for this round
+    const teamSelector = new TeamSelector();
+    const maxMatches = currentEvening.winsToComplete * 2 - 1;
+    const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 2);
+    const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
+    const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+    setOriginalTeamPools([pools[0], pools[1]]);
+    setTeamPools([pools[0], pools[1]]);
+
+    // If no match is currently in progress, create the next one now
+    createNextMatch(currentEvening, currentRound, roundPairs);
+
+    // Ensure UI is at team selection phase until teams are chosen
+    setSelectedClubs([null, null]);
+    setGamePhase('team-selection');
+  };
   const selectClub = (pairIndex: 0 | 1, club: Club) => {
     const newSelected = [...selectedClubs] as [Club | null, Club | null];
     newSelected[pairIndex] = club;

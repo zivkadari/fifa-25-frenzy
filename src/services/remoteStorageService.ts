@@ -90,11 +90,24 @@ export class RemoteStorageService {
       .select("data")
       .eq("team_id", teamId)
       .order("updated_at", { ascending: false });
-    if (error) {
-      console.error("Supabase loadEveningsByTeam error:", error.message);
+
+    if (!error && data && data.length > 0) {
+      return (data || []).map((r: any) => r.data as Evening);
+    }
+
+    // Fallback: derive by matching the 4 player ids of the team with evenings' players
+    try {
+      const teamPlayers = await this.listTeamPlayers(teamId);
+      if (teamPlayers.length !== 4) return [];
+      const ids = new Set(teamPlayers.map((p) => p.id));
+      const all = await this.loadEvenings();
+      const filtered = all.filter(
+        (e) => e.players.length === 4 && e.players.every((p) => ids.has(p.id))
+      );
+      return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch {
       return [];
     }
-    return (data || []).map((r: any) => r.data as Evening);
   }
 
   static async deleteEvening(eveningId: string): Promise<void> {

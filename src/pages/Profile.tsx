@@ -80,6 +80,24 @@ const Profile = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Derived rank stats for the mapped player across evenings
+  const myRankCounts = (() => {
+    const counts = { alpha: 0, beta: 0, gamma: 0, delta: 0, tournaments: 0 };
+    if (!playerId) return counts;
+    for (const e of evenings) {
+      if (e.players.some((p) => p.id === playerId)) counts.tournaments += 1;
+      if (!e.rankings) continue;
+      const inAlpha = e.rankings.alpha?.some((p) => p.id === playerId);
+      const inBeta = e.rankings.beta?.some((p) => p.id === playerId);
+      const inGamma = e.rankings.gamma?.some((p) => p.id === playerId);
+      if (inAlpha) counts.alpha += 1;
+      else if (inBeta) counts.beta += 1;
+      else if (inGamma) counts.gamma += 1;
+      else if (e.players.some((p) => p.id === playerId)) counts.delta += 1;
+    }
+    return counts;
+  })();
+
   return (
     <div className="min-h-screen bg-gaming-bg p-4">
       <div className="max-w-md mx-auto">
@@ -113,6 +131,20 @@ const Profile = () => {
                 <p className="text-sm text-muted-foreground">אין שיוך שחקן. פנה למנהל או השתמש במסך הקבוצות לשיוך.</p>
               )}
             </Card>
+
+            {/* Rank stats */}
+            {playerId && (
+              <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
+                <h2 className="text-lg font-semibold text-foreground mb-2">סטטיסטיקת דירוג</h2>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <Badge variant="secondary">Alpha: {myRankCounts.alpha}</Badge>
+                  <Badge variant="secondary">Beta: {myRankCounts.beta}</Badge>
+                  <Badge variant="secondary">Gamma: {myRankCounts.gamma}</Badge>
+                  <Badge variant="secondary">Delta: {myRankCounts.delta}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">סה"כ טורנירים: {myRankCounts.tournaments}</p>
+              </Card>
+            )}
 
             {/* My tournament history */}
             <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
