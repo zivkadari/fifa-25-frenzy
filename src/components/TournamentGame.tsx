@@ -247,12 +247,27 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
 
-    // If no match is currently in progress, create the next one now
-    createNextMatch(currentEvening, currentRound, roundPairs);
-
-    // Ensure UI is at team selection phase until teams are chosen
-    setSelectedClubs([null, null]);
-    setGamePhase('team-selection');
+    // Check if we have an incomplete match that was in progress
+    const currentMatchInProgress = round.matches.find(m => !m.completed);
+    if (currentMatchInProgress) {
+      // If match was already in progress, preserve any selected clubs
+      setCurrentMatch(currentMatchInProgress);
+      
+      // Check if clubs were already selected for this match
+      if (currentMatchInProgress.clubs && currentMatchInProgress.clubs.length === 2) {
+        setSelectedClubs([currentMatchInProgress.clubs[0], currentMatchInProgress.clubs[1]]);
+        setGamePhase('countdown'); // Resume from countdown phase
+      } else {
+        // No clubs selected yet, start fresh
+        setSelectedClubs([null, null]);
+        setGamePhase('team-selection');
+      }
+    } else {
+      // Create next match if needed
+      createNextMatch(currentEvening, currentRound, roundPairs);
+      setSelectedClubs([null, null]);
+      setGamePhase('team-selection');
+    }
   };
   const selectClub = (pairIndex: 0 | 1, club: Club) => {
     const newSelected = [...selectedClubs] as [Club | null, Club | null];

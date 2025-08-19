@@ -30,6 +30,8 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
+  const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
+  const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -135,15 +137,18 @@ useEffect(() => {
     setCurrentEvening(newEvening);
     setCurrentTeamId(effectiveTeamId);
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
-await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
-// Try to fetch the share code right after insert
-try {
-  const code = await RemoteStorageService.getShareCode(newEvening.id);
-  if (code) {
-    toast({ title: "קוד שיתוף", description: `העבר לחברים: ${code}` });
-  }
-} catch {}
-navigateTo('game');
+    await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
+    
+    // Get the share code and show dialog
+    try {
+      const code = await RemoteStorageService.getShareCode(newEvening.id);
+      if (code) {
+        setShareCodeForDialog(code);
+        setShowShareCodeDialog(true);
+      }
+    } catch {}
+    
+    navigateTo('game');
   };
 
   const handleCompleteEvening = (evening: Evening) => {
@@ -343,6 +348,39 @@ const handleGoHome = () => {
               {joinLoading ? "מצטרף..." : "הצטרף"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showShareCodeDialog} onOpenChange={setShowShareCodeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>טורניר נוצר בהצלחה!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              הטורניר החל! שתפו את הקוד הזה עם המשתתפים כדי שיוכלו להצטרף ולצפות בזמן אמת.
+            </p>
+            {shareCodeForDialog && (
+              <div className="bg-gaming-surface p-3 rounded-md border border-border">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-lg">{shareCodeForDialog}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(shareCodeForDialog);
+                      toast({ title: "הקוד הועתק", description: shareCodeForDialog });
+                    }}
+                  >
+                    העתק
+                  </Button>
+                </div>
+              </div>
+            )}
+            <Button onClick={() => setShowShareCodeDialog(false)} className="w-full">
+              סגור
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
