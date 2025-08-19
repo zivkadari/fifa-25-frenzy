@@ -32,8 +32,6 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(savedTeamId ?? undefined);
   const [teamPlayers, setTeamPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
-  const [shareCode, setShareCode] = useState<string | null>(null);
-  const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
     const history = StorageService.loadEvenings();
@@ -177,9 +175,6 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     // Start evening first to get the evening object
     onStartEvening(players, winsToComplete, selectedTeamId);
     
-    // Show share code dialog with instructions
-    setShowShareDialog(true);
-
     toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
   };
 
@@ -389,25 +384,6 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
           </Button>
         </div>
 
-        {/* Share Code Dialog */}
-        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-          <DialogContent className="bg-gaming-surface border-border">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">קוד שיתוף ערב</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                הערב נוצר! לאחר שהטורניר יתחיל, תוכל לקבל קוד שיתוף לשחקנים האחרים.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                הקוד יופיע במסך הטורניר ויאפשר לשחקנים אחרים להצטרף ולצפות בזמן אמת
-              </p>
-              <Button onClick={() => setShowShareDialog(false)} className="w-full">
-                הבנתי, בואו נתחיל!
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

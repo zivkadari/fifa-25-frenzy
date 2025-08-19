@@ -114,9 +114,13 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
     const newRound = TournamentEngine.createRound(roundNumber, roundPairs, currentEvening.winsToComplete);
     
+    // Create first match immediately and persist it to the round so selection survives navigation
+    const firstMatch = TournamentEngine.createNextMatch(newRound, roundPairs);
+    const roundWithMatch = { ...newRound, matches: [firstMatch] };
+
     const updatedEvening = {
       ...currentEvening,
-      rounds: [...currentEvening.rounds, newRound]
+      rounds: [...currentEvening.rounds, roundWithMatch]
     };
     setCurrentEvening(updatedEvening);
     onUpdateEvening(updatedEvening);
@@ -138,8 +142,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setSelectedClubs([null, null]);
     setGamePhase('team-selection');
     
-    // Create and start first match
-    const firstMatch = TournamentEngine.createNextMatch(newRound, roundPairs);
+    // Start first match
     setCurrentMatch(firstMatch);
   };
 
@@ -163,8 +166,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           description: `Tied at ${evening.winsToComplete}-${evening.winsToComplete}. Tap \"Draw Balanced Teams\" to start the decider.`,
         });
 
-        // Mark round as decider
-        const updatedRound = { ...round, isDeciderMatch: true };
+        // Mark round as decider and append the decider match so it persists
+        const updatedRound = { ...round, isDeciderMatch: true, matches: [...round.matches, deciderMatch] };
         const updatedEvening = {
           ...evening,
           rounds: [
@@ -183,6 +186,19 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       // Create next regular match
       const nextMatch = TournamentEngine.createNextMatch(round, roundPairs);
       setCurrentMatch(nextMatch);
+
+      // Persist the new in-progress match so selections survive navigation
+      const updatedRoundPersist = { ...round, matches: [...round.matches, nextMatch] };
+      const updatedEveningPersist = {
+        ...evening,
+        rounds: [
+          ...evening.rounds.slice(0, roundIndex),
+          updatedRoundPersist,
+          ...evening.rounds.slice(roundIndex + 1)
+        ]
+      };
+      setCurrentEvening(updatedEveningPersist);
+      onUpdateEvening(updatedEveningPersist);
       
       // Generate team pools if we don't have them yet or filter existing ones
       if (originalTeamPools[0].length === 0) {
@@ -254,7 +270,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setCurrentMatch(currentMatchInProgress);
       
       // Check if clubs were already selected for this match
-      if (currentMatchInProgress.clubs && currentMatchInProgress.clubs.length === 2) {
+      if (currentMatchInProgress.clubs && currentMatchInProgress.clubs[0]?.id && currentMatchInProgress.clubs[1]?.id) {
         setSelectedClubs([currentMatchInProgress.clubs[0], currentMatchInProgress.clubs[1]]);
         setGamePhase('countdown'); // Resume from countdown phase
       } else {
@@ -275,6 +291,28 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setSelectedClubs(newSelected);
 
     if (newSelected[0] && newSelected[1]) {
+      // Persist selected clubs into the current in-progress match
+      const round = currentEvening.rounds[currentRound];
+      if (round && round.matches.length > 0) {
+        const lastIdx = round.matches.length - 1;
+        const updatedMatch: Match = { ...round.matches[lastIdx], clubs: [newSelected[0]!, newSelected[1]!] as [Club, Club] };
+        const updatedRound: Round = {
+          ...round,
+          matches: [...round.matches.slice(0, lastIdx), updatedMatch, ...round.matches.slice(lastIdx + 1)]
+        };
+        const updatedEvening: Evening = {
+          ...currentEvening,
+          rounds: [
+            ...currentEvening.rounds.slice(0, currentRound),
+            updatedRound,
+            ...currentEvening.rounds.slice(currentRound + 1)
+          ]
+        };
+        setCurrentEvening(updatedEvening);
+        onUpdateEvening(updatedEvening);
+        setCurrentMatch(updatedMatch);
+      }
+
       // Both teams selected, start countdown
       setGamePhase('countdown');
       setCountdown(60);
@@ -315,8 +353,30 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setIsCountdownActive(false);
   };
 
-  // Allow undoing a wrong team selection: simply clear selection and return to selection phase
+  // Allow undoing a wrong team selection: clear selection and clear clubs on the in-progress match
   const undoTeamSelection = () => {
+    const round = currentEvening.rounds[currentRound];
+    if (round && round.matches.length > 0) {
+      const lastIdx = round.matches.length - 1;
+      const blankClub: Club = { id: '', name: '', stars: 0, league: '' };
+      const updatedMatch: Match = { ...round.matches[lastIdx], clubs: [blankClub, blankClub], completed: false, score: undefined, winner: undefined };
+      const updatedRound: Round = {
+        ...round,
+        matches: [...round.matches.slice(0, lastIdx), updatedMatch, ...round.matches.slice(lastIdx + 1)]
+      };
+      const updatedEvening: Evening = {
+        ...currentEvening,
+        rounds: [
+          ...currentEvening.rounds.slice(0, currentRound),
+          updatedRound,
+          ...currentEvening.rounds.slice(currentRound + 1)
+        ]
+      };
+      setCurrentEvening(updatedEvening);
+      onUpdateEvening(updatedEvening);
+      setCurrentMatch(updatedMatch);
+    }
+
     setSelectedClubs([null, null]);
     setIsCountdownActive(false);
     setGamePhase('team-selection');
@@ -345,7 +405,13 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
     // Update round with completed match
     const round = currentEvening.rounds[currentRound];
-    const updatedMatches = [...round.matches, completedMatch];
+    const idx = round.matches.findIndex(m => m.id === currentMatch.id);
+    const updatedMatches = [...round.matches];
+    if (idx >= 0) {
+      updatedMatches[idx] = completedMatch;
+    } else {
+      updatedMatches.push(completedMatch);
+    }
     
     // Update pair scores if there's a winner
     const updatedPairScores = { ...round.pairScores };
