@@ -50,6 +50,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
   const [pairSchedule] = useState<Pair[][]>(() => TournamentEngine.generatePairs(evening.players));
   const [shareCode, setShareCode] = useState<string | null>(null);
+  const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
@@ -67,6 +68,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       try {
         const code = await RemoteStorageService.getShareCode(currentEvening.id);
         setShareCode(code);
+        if (code && currentEvening.rounds.length === 0) {
+          setShowShareCodeDialog(true);
+        }
       } catch {}
     })();
   }, [currentEvening.id]);
@@ -255,11 +259,6 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     newSelected[pairIndex] = club;
     setSelectedClubs(newSelected);
 
-    // Add selected club usage immediately (max 2 per evening)
-    setUsedClubCounts(prev => ({ ...prev, [club.id]: (prev[club.id] ?? 0) + 1 }));
-    // And mark as used for this round (no repeats within round)
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), club.id]));
-
     if (newSelected[0] && newSelected[1]) {
       // Both teams selected, start countdown
       setGamePhase('countdown');
@@ -301,30 +300,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setIsCountdownActive(false);
   };
 
-  // Allow undoing a wrong team selection: revert counts, unmark used, and return to selection phase
+  // Allow undoing a wrong team selection: simply clear selection and return to selection phase
   const undoTeamSelection = () => {
-    const [c1, c2] = selectedClubs;
-    if (!c1 && !c2) return;
-
-    const newUsedSet = new Set(usedClubIdsThisRound);
-    if (c1) newUsedSet.delete(c1.id);
-    if (c2) newUsedSet.delete(c2.id);
-    setUsedClubIdsThisRound(newUsedSet);
-
-    setUsedClubCounts((prev) => {
-      const next = { ...prev } as Record<string, number>;
-      if (c1) next[c1.id] = Math.max(0, (next[c1.id] ?? 1) - 1);
-      if (c2) next[c2.id] = Math.max(0, (next[c2.id] ?? 1) - 1);
-
-      // Rebuild available pools for this round based on original pools
-      const rebuilt: [Club[], Club[]] = [
-        originalTeamPools[0].filter((club) => (next[club.id] ?? 0) < 2 && !newUsedSet.has(club.id)),
-        originalTeamPools[1].filter((club) => (next[club.id] ?? 0) < 2 && !newUsedSet.has(club.id)),
-      ];
-      setTeamPools(rebuilt);
-      return next;
-    });
-
     setSelectedClubs([null, null]);
     setIsCountdownActive(false);
     setGamePhase('team-selection');
@@ -378,6 +355,16 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
     setCurrentEvening(updatedEvening);
     onUpdateEvening(updatedEvening);
+
+    // Mark selected clubs as used only after match completion
+    const c1 = selectedClubs[0]!;
+    const c2 = selectedClubs[1]!;
+    setUsedClubCounts(prev => ({
+      ...prev,
+      [c1.id]: (prev[c1.id] ?? 0) + 1,
+      [c2.id]: (prev[c2.id] ?? 0) + 1,
+    }));
+    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), c1.id, c2.id]));
 
     // Calculate winner names for notification
     const winnerNames = winner ? 
@@ -688,6 +675,31 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             <DiceScoreInput onSubmit={submitResult} />
           </div>
         )}
+
+        {/* Share Code Dialog */}
+        <Dialog open={showShareCodeDialog} onOpenChange={setShowShareCodeDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>קוד שיתוף לערב</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                שתפו את הקוד עם המשתתפים כדי להצטרף לערב ולצפות בזמן אמת.
+              </p>
+              {shareCode && (
+                <Button
+                  variant="outline"
+                  onClick={() => { navigator.clipboard.writeText(shareCode); toast({ title: "הקוד הועתק", description: shareCode }); }}
+                >
+                  קוד: {shareCode}
+                </Button>
+              )}
+              <Button onClick={() => setShowShareCodeDialog(false)} className="w-full">
+                סגור
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Round Winner Dialog */}
         <Dialog open={showRoundWinnerDialog} onOpenChange={setShowRoundWinnerDialog}>

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Users, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RemoteStorageService } from "@/services/remoteStorageService";
+import { StorageService } from "@/services/storageService";
 import type { Evening } from "@/types/tournament";
 
 const Profile = () => {
@@ -29,14 +30,31 @@ const Profile = () => {
           .select("player_id")
           .eq("user_id", user.id)
           .maybeSingle();
-        const pid = mapping?.player_id || null;
+        let pid = mapping?.player_id || null;
+        // Try to infer from profile display name if no mapping
+        if (!pid) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          const name = prof?.display_name?.trim();
+          if (name) {
+            const toSlug = (s: string) =>
+              s.toLowerCase().trim().replace(/[^a-z0-9\u0590-\u05FF]+/g, "-").replace(/^-+|-+$/g, "");
+            pid = `player-${toSlug(name)}`;
+          }
+        }
         if (mounted) setPlayerId(pid);
 
-        // Load all evenings and filter by this player's participation (if mapped)
+        // Load evenings (remote if available, otherwise local)
         let evs: Evening[] = [];
         try {
           evs = await RemoteStorageService.loadEvenings();
         } catch { evs = []; }
+        if (!evs.length) {
+          evs = StorageService.loadEvenings();
+        }
         if (pid) {
           evs = evs.filter(e => e.players.some(p => p.id === pid));
         }

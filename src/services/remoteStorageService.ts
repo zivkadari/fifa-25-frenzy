@@ -95,10 +95,10 @@ export class RemoteStorageService {
       return (data || []).map((r: any) => r.data as Evening);
     }
 
-    // Fallback: derive by matching the 4 player ids of the team with evenings' players
+    // Fallback: derive by matching evening's 4 player ids as subset of the team's players (supports teams with >4)
     try {
       const teamPlayers = await this.listTeamPlayers(teamId);
-      if (teamPlayers.length !== 4) return [];
+      if (teamPlayers.length === 0) return [];
       const ids = new Set(teamPlayers.map((p) => p.id));
       const all = await this.loadEvenings();
       const filtered = all.filter(
