@@ -339,5 +339,34 @@ export class RemoteStorageService {
 
     return teamId;
   }
+
+  // ========== Share Code Helpers ==========
+  private static generateShareCode(): string {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) code += letters[Math.floor(Math.random() * letters.length)];
+    code += '-';
+    for (let i = 0; i < 4; i++) code += digits[Math.floor(Math.random() * digits.length)];
+    return code;
+  }
+
+  static async ensureShareCode(eveningId: string): Promise<string | null> {
+    if (!supabase) return null;
+    // If there is already a code, return it
+    const existing = await this.getShareCode(eveningId);
+    if (existing) return existing;
+
+    const code = this.generateShareCode();
+    const { error } = await supabase
+      .from(EVENINGS_TABLE)
+      .update({ share_code: code } as any)
+      .eq('id', eveningId);
+    if (error) {
+      console.error('ensureShareCode error:', error.message);
+      return null;
+    }
+    return code;
+  }
 }
 

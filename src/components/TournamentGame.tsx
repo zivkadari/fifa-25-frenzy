@@ -48,7 +48,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
-  const [pairSchedule] = useState<Pair[][]>(() => TournamentEngine.generatePairs(evening.players));
+  const [pairSchedule, setPairSchedule] = useState<Pair[][]>(() => currentEvening.pairSchedule ?? TournamentEngine.generatePairs(evening.players));
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
 
@@ -62,18 +62,6 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     saveCurrentState();
   }, [currentEvening, onUpdateEvening]);
 
-  // Fetch share code for this evening
-  useEffect(() => {
-    (async () => {
-      try {
-        const code = await RemoteStorageService.getShareCode(currentEvening.id);
-        setShareCode(code);
-        if (code && currentEvening.rounds.length === 0) {
-          setShowShareCodeDialog(true);
-        }
-      } catch {}
-    })();
-  }, [currentEvening.id]);
 
   // Initialize first round
   useEffect(() => {
@@ -223,13 +211,14 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setGamePhase('team-selection');
   };
 
-  const loadCurrentRound = () => {
-    const round = currentEvening.rounds[currentRound];
+  const loadCurrentRound = (targetIndex?: number) => {
+    const idx = targetIndex ?? currentRound;
+    const round = currentEvening.rounds[idx];
     if (!round) return;
 
     // Restore pairs for this round
     const allPairs = pairSchedule;
-    const roundPairs = allPairs[currentRound];
+    const roundPairs = allPairs[idx];
     setCurrentRoundPairs(roundPairs);
 
     // Restore used clubs from all completed matches across the evening up to this round
@@ -268,7 +257,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     if (currentMatchInProgress) {
       // If match was already in progress, preserve any selected clubs
       setCurrentMatch(currentMatchInProgress);
-      
+      setCurrentRound(idx);
       // Check if clubs were already selected for this match
       if (currentMatchInProgress.clubs && currentMatchInProgress.clubs[0]?.id && currentMatchInProgress.clubs[1]?.id) {
         setSelectedClubs([currentMatchInProgress.clubs[0], currentMatchInProgress.clubs[1]]);
@@ -280,7 +269,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       }
     } else {
       // Create next match if needed
-      createNextMatch(currentEvening, currentRound, roundPairs);
+      setCurrentRound(idx);
+      createNextMatch(currentEvening, idx, roundPairs);
       setSelectedClubs([null, null]);
       setGamePhase('team-selection');
     }

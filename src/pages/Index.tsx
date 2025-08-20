@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { TeamsManager } from "@/components/TeamsManager";
+import { TournamentEngine } from "@/services/tournamentEngine";
 
 type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history' | 'teams';
 
@@ -117,13 +118,17 @@ useEffect(() => {
   };
 
   const handleStartEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
+    // Generate a deterministic pairs schedule once and persist it to the evening to avoid changes on navigation
+    const pairSchedule = TournamentEngine.generatePairs(players);
+
     const newEvening: Evening = {
       id: `evening-${Date.now()}`,
       date: new Date().toISOString(),
       players,
       rounds: [],
       winsToComplete,
-      completed: false
+      completed: false,
+      pairSchedule,
     };
 
     // Determine team automatically if not provided
@@ -139,9 +144,9 @@ useEffect(() => {
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
     await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
     
-    // Get the share code and show dialog
+    // Ensure a share code exists and show it in a persistent dialog
     try {
-      const code = await RemoteStorageService.getShareCode(newEvening.id);
+      const code = await RemoteStorageService.ensureShareCode(newEvening.id);
       if (code) {
         setShareCodeForDialog(code);
         setShowShareCodeDialog(true);

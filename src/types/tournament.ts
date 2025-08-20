@@ -33,6 +33,7 @@ export interface Round {
   currentMatchIndex: number;
   pairScores: { [pairId: string]: number }; // Track wins for each pair in this round
   isDeciderMatch?: boolean; // Flag for tiebreaker match
+  teamPools?: [Club[], Club[]];
 }
 
 export interface Evening {
@@ -48,6 +49,7 @@ export interface Evening {
     gamma: Player[];
     delta?: Player[];
   };
+  pairSchedule?: Pair[][];
 }
 
 export interface PlayerStats {
