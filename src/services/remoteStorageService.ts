@@ -153,14 +153,20 @@ export class RemoteStorageService {
 
   static async joinEveningByCode(code: string): Promise<string | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.rpc("join_evening_by_code", { _code: code });
+    
+    // First try to find the evening by share code
+    const { data: evening, error } = await supabase
+      .from(EVENINGS_TABLE)
+      .select("id")
+      .eq("share_code", code.trim())
+      .maybeSingle();
+    
     if (error) {
       console.error("joinEveningByCode error:", error.message);
       return null;
     }
-    // data could be an array of rows returned
-    const eid = Array.isArray(data) && data.length > 0 ? (data[0] as any).evening_id : null;
-    return eid || null;
+    
+    return evening?.id || null;
   }
 
   // ========== Teams ==========

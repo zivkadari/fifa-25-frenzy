@@ -48,7 +48,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const [showRoundWinnerDialog, setShowRoundWinnerDialog] = useState(false);
   const [roundWinnerMessage, setRoundWinnerMessage] = useState('');
-  const [pairSchedule, setPairSchedule] = useState<Pair[][]>(() => currentEvening.pairSchedule ?? TournamentEngine.generatePairs(evening.players));
+  // Use the evening's persistent pair schedule to ensure teams don't change
+  const pairSchedule = currentEvening.pairSchedule ?? TournamentEngine.generatePairs(evening.players);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
 

@@ -150,8 +150,12 @@ useEffect(() => {
       if (code) {
         setShareCodeForDialog(code);
         setShowShareCodeDialog(true);
+      } else {
+        console.error("Failed to create share code");
       }
-    } catch {}
+    } catch (error) {
+      console.error("Error creating share code:", error);
+    }
     
     navigateTo('game');
   };
