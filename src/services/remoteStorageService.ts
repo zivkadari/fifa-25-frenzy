@@ -153,19 +153,31 @@ export class RemoteStorageService {
 
   static async joinEveningByCode(code: string): Promise<string | null> {
     if (!supabase) return null;
-    
-    // First try to find the evening by share code
+    const cleaned = code.trim().toUpperCase();
+
+    // 1) Try RPC if exists (handles RLS via SECURITY DEFINER on backend)
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('join_evening_by_code', { _code: cleaned });
+      if (!rpcError && rpcData) {
+        // rpcData may be a row or array of rows with evening_id or id
+        const eid = Array.isArray(rpcData)
+          ? ((rpcData as any)[0]?.evening_id || (rpcData as any)[0]?.id)
+          : (rpcData as any)?.evening_id || (rpcData as any)?.id;
+        if (eid) return String(eid);
+      }
+    } catch {}
+
+    // 2) Fallback: direct select by share_code (requires permissive SELECT policy)
     const { data: evening, error } = await supabase
       .from(EVENINGS_TABLE)
-      .select("id")
-      .eq("share_code", code.trim())
+      .select('id')
+      .eq('share_code', cleaned)
       .maybeSingle();
-    
+
     if (error) {
-      console.error("joinEveningByCode error:", error.message);
+      console.error('joinEveningByCode select error:', error.message);
       return null;
     }
-    
     return evening?.id || null;
   }
 
@@ -363,7 +375,7 @@ export class RemoteStorageService {
     const existing = await this.getShareCode(eveningId);
     if (existing) return existing;
 
-    const code = this.generateShareCode();
+    const code = this.generateShareCode().toUpperCase().trim();
     const { error } = await supabase
       .from(EVENINGS_TABLE)
       .update({ share_code: code } as any)
@@ -375,4 +387,5 @@ export class RemoteStorageService {
     return code;
   }
 }
+
 

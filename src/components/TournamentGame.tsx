@@ -113,8 +113,6 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     };
     setCurrentEvening(updatedEvening);
     onUpdateEvening(updatedEvening);
-    // Reset per-round usage (but keep evening counts)
-    setUsedClubIdsThisRound(new Set());
     
     // Generate team pools for the entire round, excluding clubs already used twice this evening
     const teamSelector = new TeamSelector();
@@ -124,6 +122,18 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
     const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
     console.log('Generated pools:', pools);
+
+    // Persist pools on the round so they don't change on navigation
+    const updatedEveningWithPools: Evening = {
+      ...updatedEvening,
+      rounds: [
+        ...updatedEvening.rounds.slice(0, updatedEvening.rounds.length - 1),
+        { ...updatedEvening.rounds[updatedEvening.rounds.length - 1], teamPools: [pools[0], pools[1]] },
+      ],
+    };
+    setCurrentEvening(updatedEveningWithPools);
+    onUpdateEvening(updatedEveningWithPools);
+
     setOriginalTeamPools([pools[0], pools[1]]);
     setTeamPools([pools[0], pools[1]]);
     
@@ -191,13 +201,31 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       
       // Generate team pools if we don't have them yet or filter existing ones
       if (originalTeamPools[0].length === 0) {
-        const teamSelector = new TeamSelector();
-        const maxMatches = currentEvening.winsToComplete * 2 - 1;
-        const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 2);
-        const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
-        const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
-        setOriginalTeamPools([pools[0], pools[1]]);
-        setTeamPools([pools[0], pools[1]]);
+        const basePools: [Club[], Club[]] | null = (round.teamPools as [Club[], Club[]] | undefined) ?? null;
+        if (basePools) {
+          setOriginalTeamPools([basePools[0], basePools[1]]);
+          setTeamPools([basePools[0], basePools[1]]);
+        } else {
+          const teamSelector = new TeamSelector();
+          const maxMatches = currentEvening.winsToComplete * 2 - 1;
+          const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 2);
+          const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
+          const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+          // Persist these pools on the round
+          const roundWithPools: Round = { ...updatedRoundPersist, teamPools: [pools[0], pools[1]] } as Round;
+          const evWithPools: Evening = {
+            ...updatedEveningPersist,
+            rounds: [
+              ...updatedEveningPersist.rounds.slice(0, roundIndex),
+              roundWithPools,
+              ...updatedEveningPersist.rounds.slice(roundIndex + 1)
+            ],
+          };
+          setCurrentEvening(evWithPools);
+          onUpdateEvening(evWithPools);
+          setOriginalTeamPools([pools[0], pools[1]]);
+          setTeamPools([pools[0], pools[1]]);
+        }
       } else {
         // Filter original pools to remove clubs used twice this evening or already used in this round
         const filteredPools: [Club[], Club[]] = [
@@ -244,15 +272,37 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
     setUsedClubIdsThisRound(usedThisRound);
 
-    // Generate/restore team pools for this round
-    const teamSelector = new TeamSelector();
-    const maxMatches = currentEvening.winsToComplete * 2 - 1;
-    const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 2);
-    const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-    const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
-    setOriginalTeamPools([pools[0], pools[1]]);
-    setTeamPools([pools[0], pools[1]]);
-
+    // Generate/restore team pools for this round (persisted to avoid changes on navigation)
+    const basePools: [Club[], Club[]] | null = (round.teamPools as [Club[], Club[]] | undefined) ?? null;
+    if (basePools) {
+      setOriginalTeamPools([basePools[0], basePools[1]]);
+      // Filter for already-used clubs in the evening and this round
+      const filtered: [Club[], Club[]] = [
+        basePools[0].filter(c => (counts[c.id] ?? 0) < 2 && !usedThisRound.has(c.id)),
+        basePools[1].filter(c => (counts[c.id] ?? 0) < 2 && !usedThisRound.has(c.id)),
+      ];
+      setTeamPools(filtered);
+    } else {
+      const teamSelector = new TeamSelector();
+      const maxMatches = currentEvening.winsToComplete * 2 - 1;
+      const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 2);
+      const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
+      const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+      // Persist pools on the round in evening state
+      const roundWithPools: Round = { ...round, teamPools: [pools[0], pools[1]] } as Round;
+      const evWithPools: Evening = {
+        ...currentEvening,
+        rounds: [
+          ...currentEvening.rounds.slice(0, idx),
+          roundWithPools,
+          ...currentEvening.rounds.slice(idx + 1),
+        ],
+      };
+      setCurrentEvening(evWithPools);
+      onUpdateEvening(evWithPools);
+      setOriginalTeamPools([pools[0], pools[1]]);
+      setTeamPools([pools[0], pools[1]]);
+    }
     // Check if we have an incomplete match that was in progress
     const currentMatchInProgress = round.matches.find(m => !m.completed);
     if (currentMatchInProgress) {
