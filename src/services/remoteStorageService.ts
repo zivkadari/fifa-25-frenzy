@@ -155,30 +155,18 @@ export class RemoteStorageService {
     if (!supabase) return null;
     const cleaned = code.trim().toUpperCase();
 
-    // 1) Try RPC if exists (handles RLS via SECURITY DEFINER on backend)
+    // Use RPC function which handles membership insertion and RLS properly
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('join_evening_by_code', { _code: cleaned });
-      if (!rpcError && rpcData) {
-        // rpcData may be a row or array of rows with evening_id or id
-        const eid = Array.isArray(rpcData)
-          ? ((rpcData as any)[0]?.evening_id || (rpcData as any)[0]?.id)
-          : (rpcData as any)?.evening_id || (rpcData as any)?.id;
-        if (eid) return String(eid);
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        return rpcData[0].evening_id;
       }
-    } catch {}
-
-    // 2) Fallback: direct select by share_code (requires permissive SELECT policy)
-    const { data: evening, error } = await supabase
-      .from(EVENINGS_TABLE)
-      .select('id')
-      .eq('share_code', cleaned)
-      .maybeSingle();
-
-    if (error) {
-      console.error('joinEveningByCode select error:', error.message);
+      console.error('joinEveningByCode error:', rpcError?.message || 'Invalid code');
+      return null;
+    } catch (error) {
+      console.error('joinEveningByCode RPC error:', error);
       return null;
     }
-    return evening?.id || null;
   }
 
   // ========== Teams ==========
