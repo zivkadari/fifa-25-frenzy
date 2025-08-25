@@ -481,12 +481,28 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     // Mark selected clubs as used only after match completion
     const c1 = selectedClubs[0]!;
     const c2 = selectedClubs[1]!;
-    setUsedClubCounts(prev => ({
-      ...prev,
-      [c1.id]: (prev[c1.id] ?? 0) + 1,
-      [c2.id]: (prev[c2.id] ?? 0) + 1,
-    }));
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), c1.id, c2.id]));
+    const newUsedClubCounts = {
+      ...usedClubCounts,
+      [c1.id]: (usedClubCounts[c1.id] ?? 0) + 1,
+      [c2.id]: (usedClubCounts[c2.id] ?? 0) + 1,
+    };
+    const newUsedClubIdsThisRound = new Set([...Array.from(usedClubIdsThisRound), c1.id, c2.id]);
+    
+    setUsedClubCounts(newUsedClubCounts);
+    setUsedClubIdsThisRound(newUsedClubIdsThisRound);
+
+    // Immediately update team pools to remove used clubs
+    if (originalTeamPools[0] && originalTeamPools[1]) {
+      const updatedPools: [Club[], Club[]] = [
+        originalTeamPools[0].filter(club => 
+          (newUsedClubCounts[club.id] ?? 0) < 2 && !newUsedClubIdsThisRound.has(club.id)
+        ),
+        originalTeamPools[1].filter(club => 
+          (newUsedClubCounts[club.id] ?? 0) < 2 && !newUsedClubIdsThisRound.has(club.id)
+        ),
+      ];
+      setTeamPools(updatedPools);
+    }
 
     // Calculate winner names for notification
     const winnerNames = winner ? 
