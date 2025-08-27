@@ -688,35 +688,46 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
             
             {currentMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 ? (
-              teamPools.map((pool, pairIndex) => (
-                <Card key={pairIndex} className="bg-gaming-surface border-border p-4">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    {currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ')}
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {pool.map((club) => (
-                      <Button
-                        key={club.id}
-                        variant={selectedClubs[pairIndex]?.id === club.id ? "gaming" : "hero"}
-                        onClick={() => selectClub(pairIndex as 0 | 1, club)}
-                        className="justify-between h-auto p-3"
-                      >
-                        <span className="font-medium">{club.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs ltr-numbers">
-                            {club.stars}★
-                          </Badge>
-                          {club.isNational && (
-                            <Badge variant="outline" className="text-xs">
-                              National
+              teamPools.map((pool, pairIndex) => {
+                const filtered = pool.filter((club) =>
+                  (usedClubCounts[club.id] ?? 0) < 1 &&
+                  !usedClubIdsThisRound.has(club.id) &&
+                  club.id !== (selectedClubs[0]?.id || '') &&
+                  club.id !== (selectedClubs[1]?.id || '')
+                );
+                return (
+                  <Card key={pairIndex} className="bg-gaming-surface border-border p-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      {currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ')}
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {filtered.map((club) => (
+                        <Button
+                          key={club.id}
+                          variant={selectedClubs[pairIndex]?.id === club.id ? "gaming" : "hero"}
+                          onClick={() => selectClub(pairIndex as 0 | 1, club)}
+                          className="justify-between h-auto p-3"
+                        >
+                          <span className="font-medium">{club.name}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs ltr-numbers">
+                              {club.stars}★
                             </Badge>
-                          )}
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </Card>
-              ))
+                            {club.isNational && (
+                              <Badge variant="outline" className="text-xs">
+                                National
+                              </Badge>
+                            )}
+                          </div>
+                        </Button>
+                      ))}
+                      {filtered.length === 0 && (
+                        <p className="text-xs text-muted-foreground">אין קבוצות זמינות</p>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })
             ) : (
               <div className="text-center text-muted-foreground py-8">
                 <p>Loading teams...</p>
