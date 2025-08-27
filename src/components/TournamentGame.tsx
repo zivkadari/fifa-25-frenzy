@@ -114,11 +114,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setCurrentEvening(updatedEvening);
     onUpdateEvening(updatedEvening);
     
-    // Generate team pools for the entire round, excluding clubs already used twice this evening
+    // Generate team pools for the entire round, excluding clubs already used this evening
     const teamSelector = new TeamSelector();
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
     console.log('Generating pools for round with maxMatches:', maxMatches);
-    const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 2);
+    const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
     const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
     console.log('Generated pools:', pools);
@@ -208,7 +208,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         } else {
           const teamSelector = new TeamSelector();
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
-          const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 2);
+           const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
           const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
           const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
           // Persist these pools on the round
@@ -227,10 +227,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           setTeamPools([pools[0], pools[1]]);
         }
       } else {
-        // Filter original pools to remove clubs used twice this evening or already used in this round
+        // Filter original pools to remove clubs already used this evening or already used in this round
         const filteredPools: [Club[], Club[]] = [
-          originalTeamPools[0].filter(club => (usedClubCounts[club.id] ?? 0) < 2 && !usedClubIdsThisRound.has(club.id)),
-          originalTeamPools[1].filter(club => (usedClubCounts[club.id] ?? 0) < 2 && !usedClubIdsThisRound.has(club.id))
+          originalTeamPools[0].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id)),
+          originalTeamPools[1].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id))
         ];
         setTeamPools(filteredPools);
       }
@@ -278,14 +278,14 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setOriginalTeamPools([basePools[0], basePools[1]]);
       // Filter for already-used clubs in the evening and this round
       const filtered: [Club[], Club[]] = [
-        basePools[0].filter(c => (counts[c.id] ?? 0) < 2 && !usedThisRound.has(c.id)),
-        basePools[1].filter(c => (counts[c.id] ?? 0) < 2 && !usedThisRound.has(c.id)),
+        basePools[0].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
+        basePools[1].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
       ];
       setTeamPools(filtered);
     } else {
       const teamSelector = new TeamSelector();
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
-      const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 2);
+      const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
       const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
       // Persist pools on the round in evening state
@@ -367,7 +367,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Auto-draw balanced teams for decider matches (stars >= 4, diff <= 1)
   const drawDeciderTeams = () => {
     const teamSelector = new TeamSelector();
-    const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 2);
+    const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
     const [club1, club2] = teamSelector.generateBalancedDeciderTeams(excludeIds, 4, 1);
     setSelectedClubs([club1, club2]);
