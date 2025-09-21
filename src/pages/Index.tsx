@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TournamentHome } from "@/components/TournamentHome";
 import { EveningSetup } from "@/components/EveningSetup";
+import { GameModeSelection } from "@/components/GameModeSelection";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory } from "@/components/TournamentHistory";
@@ -18,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { TeamsManager } from "@/components/TeamsManager";
 import { TournamentEngine } from "@/services/tournamentEngine";
 
-type AppState = 'home' | 'setup' | 'game' | 'summary' | 'history' | 'teams';
+type AppState = 'home' | 'setup' | 'mode-selection' | 'game' | 'summary' | 'history' | 'teams';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
@@ -33,6 +34,7 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
   const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
+  const [setupData, setSetupData] = useState<{players: Player[], winsToComplete: number, teamId?: string} | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -117,7 +119,22 @@ useEffect(() => {
     // Keep currentEvening to preserve player data
   };
 
-  const handleStartEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
+  const handleSetupComplete = (players: Player[], winsToComplete: number, teamId?: string) => {
+    setSetupData({ players, winsToComplete, teamId });
+    navigateTo('mode-selection');
+  };
+
+  const handleStartRandomEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
+    await startEvening(players, winsToComplete, teamId);
+  };
+
+  const handleStartCustomEvening = async (players: Player[], winsToComplete: number, customTeams: [string[], string[]], teamId?: string) => {
+    // TODO: Implement custom teams logic here
+    // For now, just start with random mode
+    await startEvening(players, winsToComplete, teamId);
+  };
+
+  const startEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
     // Generate a deterministic pairs schedule once and persist it to the evening to avoid changes on navigation
     const pairSchedule = TournamentEngine.generatePairs(players);
 
@@ -267,12 +284,24 @@ const handleGoHome = () => {
         return (
           <EveningSetup
             onBack={() => window.history.back()}
-            onStartEvening={handleStartEvening}
+            onStartEvening={handleSetupComplete}
             savedPlayers={currentEvening?.players}
             savedWinsToComplete={currentEvening?.winsToComplete}
             savedTeamId={currentTeamId ?? undefined}
           />
         );
+      
+      case 'mode-selection':
+        return setupData ? (
+          <GameModeSelection
+            onBack={() => window.history.back()}
+            onStartRandomMode={handleStartRandomEvening}
+            onStartCustomMode={handleStartCustomEvening}
+            players={setupData.players}
+            winsToComplete={setupData.winsToComplete}
+            teamId={setupData.teamId}
+          />
+        ) : null;
       
       case 'game':
         return currentEvening ? (
