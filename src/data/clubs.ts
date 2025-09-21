@@ -12,7 +12,7 @@ export const FIFA_CLUBS: Club[] = [
   // 4.5-star clubs (82-84 rating)
   { id: 'arsenal', name: 'Arsenal', stars: 5, league: 'Premier League' },
   { id: 'psg', name: 'Paris Saint-Germain', stars: 5, league: 'Ligue 1' },
-  { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 5, league: 'Bundesliga' },
+  { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 4.5, league: 'Bundesliga' },
   { id: 'atletico-madrid', name: 'Atlético Madrid', stars: 4.5, league: 'La Liga' },
   { id: 'newcastle', name: 'Newcastle United', stars: 4.5, league: 'Premier League' },
   { id: 'ac-milan', name: 'AC Milan', stars: 4.5, league: 'Serie A' },
@@ -23,6 +23,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'fenerbahce', name: 'Fenerbahçe', stars: 4.5, league: 'Süper Lig' },
   { id: 'lazio', name: 'Lazio', stars: 4.5, league: 'Serie A' },
   { id: 'athletic-bilbao', name: 'Athletic Bilbao', stars: 4.5, league: 'La Liga' },
+  { id: 'aston-villa', name: 'Aston Villa', stars: 4.5, league: 'Premier League' },
   
   // National Teams (5-star)
   { id: 'france', name: 'France', stars: 5, league: 'National Teams', isNational: true },
