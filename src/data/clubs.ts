@@ -13,7 +13,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'arsenal', name: 'Arsenal', stars: 5, league: 'Premier League' },
   { id: 'psg', name: 'Paris Saint-Germain', stars: 5, league: 'Ligue 1' },
   { id: 'bayer-leverkusen', name: 'Bayer 04 Leverkusen', stars: 4.5, league: 'Bundesliga' },
-  { id: 'atletico-madrid', name: 'Atlético Madrid', stars: 4.5, league: 'La Liga' },
+  { id: 'atletico-madrid', name: 'Atlético Madrid', stars: 5, league: 'La Liga' },
   { id: 'newcastle', name: 'Newcastle United', stars: 4.5, league: 'Premier League' },
   { id: 'ac-milan', name: 'AC Milan', stars: 4.5, league: 'Serie A' },
   { id: 'borussia-dortmund', name: 'Borussia Dortmund', stars: 4.5, league: 'Bundesliga' },
@@ -43,11 +43,14 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'portugal', name: 'Portugal', stars: 5, league: 'National Teams', isNational: true },
   { id: 'netherlands', name: 'Netherlands', stars: 5, league: 'National Teams', isNational: true },
   { id: 'argentina', name: 'Argentina', stars: 5, league: 'National Teams', isNational: true },
-  { id: 'italy', name: 'Italy', stars: 4.5, league: 'National Teams', isNational: true },
+  { id: 'italy', name: 'Italy', stars: 5, league: 'National Teams', isNational: true },
+  
+  // National Teams (4.5-star continued)
+  { id: 'morocco', name: 'Morocco', stars: 4.5, league: 'National Teams', isNational: true },
+  { id: 'croatia', name: 'Croatia', stars: 4.5, league: 'National Teams', isNational: true },
   
   // National Teams (4-star)
-  { id: 'morocco', name: 'Morocco', stars: 4, league: 'National Teams', isNational: true },
-  { id: 'croatia', name: 'Croatia', stars: 4, league: 'National Teams', isNational: true },
+  { id: 'scotland', name: 'Scotland', stars: 4, league: 'National Teams', isNational: true },
   { id: 'denmark', name: 'Denmark', stars: 4, league: 'National Teams', isNational: true },
   { id: 'sweden', name: 'Sweden', stars: 4, league: 'National Teams', isNational: true },
   { id: 'norway', name: 'Norway', stars: 4, league: 'National Teams', isNational: true },
@@ -69,6 +72,9 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'real-sociedad', name: 'Real Sociedad', stars: 4, league: 'La Liga' },
   { id: 'villarreal', name: 'Villarreal CF', stars: 4, league: 'La Liga' },
   { id: 'girona', name: 'Girona FC', stars: 4, league: 'La Liga' },
+  { id: 'rayo-vallecano', name: 'Rayo Vallecano', stars: 4, league: 'La Liga' },
+  { id: 'espanyol', name: 'RCD Espanyol', stars: 4, league: 'La Liga' },
+  { id: 'sevilla', name: 'Sevilla FC', stars: 4, league: 'La Liga' },
   { id: 'psv-eindhoven', name: 'PSV Eindhoven', stars: 4, league: 'Eredivisie' },
   { id: 'fiorentina', name: 'Fiorentina', stars: 4, league: 'Serie A' },
   { id: 'lille', name: 'Lille OSC', stars: 4, league: 'Ligue 1' },
