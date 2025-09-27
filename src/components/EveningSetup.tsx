@@ -175,7 +175,7 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     // Start evening first to get the evening object
     onStartEvening(players, winsToComplete, selectedTeamId);
     
-    toast({ title: "Tournament Starting!", description: `3 rounds • First to ${winsToComplete} wins each round` });
+    toast({ title: "בחר סוג טורניר!", description: `ערב זוגות או ערב יחידים?` });
   };
 
   return (

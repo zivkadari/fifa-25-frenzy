@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { TournamentHome } from "@/components/TournamentHome";
 import { EveningSetup } from "@/components/EveningSetup";
-import { GameModeSelection } from "@/components/GameModeSelection";
+import { TournamentTypeSelection } from "@/components/TournamentTypeSelection";
+import { SinglesSetup } from "@/components/SinglesSetup";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory } from "@/components/TournamentHistory";
@@ -19,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { TeamsManager } from "@/components/TeamsManager";
 import { TournamentEngine } from "@/services/tournamentEngine";
 
-type AppState = 'home' | 'setup' | 'mode-selection' | 'game' | 'summary' | 'history' | 'teams';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'game' | 'summary' | 'history' | 'teams';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
@@ -121,7 +122,7 @@ useEffect(() => {
 
   const handleSetupComplete = (players: Player[], winsToComplete: number, teamId?: string) => {
     setSetupData({ players, winsToComplete, teamId });
-    navigateTo('mode-selection');
+    navigateTo('tournament-type');
   };
 
   const handleStartRandomEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
@@ -291,15 +292,26 @@ const handleGoHome = () => {
           />
         );
       
-      case 'mode-selection':
+      case 'tournament-type':
         return setupData ? (
-          <GameModeSelection
+          <TournamentTypeSelection
             onBack={() => window.history.back()}
-            onStartRandomMode={handleStartRandomEvening}
-            onStartCustomMode={handleStartCustomEvening}
+            onSelectPairs={() => handleStartRandomEvening(setupData.players, setupData.winsToComplete, setupData.teamId)}
+            onSelectSingles={() => navigateTo('singles-setup')}
             players={setupData.players}
             winsToComplete={setupData.winsToComplete}
-            teamId={setupData.teamId}
+          />
+        ) : null;
+      
+      case 'singles-setup':
+        return setupData ? (
+          <SinglesSetup
+            onBack={() => window.history.back()}
+            onStartSingles={(players: Player[], clubsPerPlayer: number) => {
+              // TODO: Implement singles tournament
+              console.log('Starting singles tournament', players, clubsPerPlayer);
+            }}
+            savedPlayers={setupData.players}
           />
         ) : null;
       
