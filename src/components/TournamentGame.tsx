@@ -17,6 +17,7 @@ import { Home } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
+import { SinglesGameComponent } from "@/components/SinglesGame";
 import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
@@ -33,6 +34,20 @@ interface TournamentGameProps {
 }
 
 export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening }: TournamentGameProps) => {
+  // If this is a singles tournament, use the singles component
+  if (evening.type === 'singles') {
+    return (
+      <SinglesGameComponent
+        evening={evening}
+        onBack={onBack}
+        onComplete={onComplete}
+        onGoHome={onGoHome}
+        onUpdateEvening={onUpdateEvening}
+      />
+    );
+  }
+
+  // Continue with pairs tournament logic
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentRound, setCurrentRound] = useState(0);

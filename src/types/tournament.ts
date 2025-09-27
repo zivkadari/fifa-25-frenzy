@@ -50,6 +50,21 @@ export interface Evening {
     delta?: Player[];
   };
   pairSchedule?: Pair[][];
+  // Singles tournament fields
+  type?: 'pairs' | 'singles';
+  clubsPerPlayer?: number;
+  playerClubs?: { [playerId: string]: Club[] }; // Clubs assigned to each player
+  gameSequence?: SinglesGame[]; // Pre-generated sequence of games
+  currentGameIndex?: number;
+}
+
+export interface SinglesGame {
+  id: string;
+  players: [Player, Player]; // Two players competing
+  clubs: [Club, Club]; // Clubs they're using
+  score?: [number, number];
+  winner?: string; // player id
+  completed: boolean;
 }
 
 export interface PlayerStats {

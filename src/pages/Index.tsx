@@ -146,6 +146,7 @@ useEffect(() => {
       rounds: [],
       winsToComplete,
       completed: false,
+      type: 'pairs', // Explicitly set as pairs tournament
       pairSchedule,
     };
 
@@ -308,8 +309,22 @@ const handleGoHome = () => {
           <SinglesSetup
             onBack={() => window.history.back()}
             onStartSingles={(players: Player[], clubsPerPlayer: number) => {
-              // TODO: Implement singles tournament
-              console.log('Starting singles tournament', players, clubsPerPlayer);
+              const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, setupData.teamId);
+              setCurrentEvening(singlesEvening);
+              setCurrentTeamId(setupData.teamId ?? null);
+              
+              // Push to remote storage for sharing
+              RemoteStorageService.upsertEveningLiveWithTeam(singlesEvening, setupData.teamId ?? null).catch(() => {});
+              
+              // Create share code
+              RemoteStorageService.ensureShareCode(singlesEvening.id).then(code => {
+                if (code) {
+                  setShareCodeForDialog(code);
+                  setShowShareCodeDialog(true);
+                }
+              }).catch(() => {});
+              
+              navigateTo('game');
             }}
             savedPlayers={setupData.players}
           />
