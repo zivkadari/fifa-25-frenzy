@@ -172,10 +172,8 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
     // Create players with stable ids based on name
     const players: Player[] = trimmedNames.map((name) => ({ id: `player-${slugify(name)}`, name }));
 
-    // Start evening first to get the evening object
+    // Proceed to tournament type selection
     onStartEvening(players, winsToComplete, selectedTeamId);
-    
-    toast({ title: "בחר סוג טורניר!", description: `ערב זוגות או ערב יחידים?` });
   };
 
   return (
