@@ -51,7 +51,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
       if (nextGame && !nextGame.completed) {
         setCurrentGame(nextGame);
         setGamePhase('club-selection');
-        setSelectedClubs([null, null]);
+        setSelectedClubs([null, null]); // Always start with no clubs selected
       } else if (TournamentEngine.isSinglesComplete(evening)) {
         setShowCompletionDialog(true);
       }
@@ -74,7 +74,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
     currentEvening.gameSequence.forEach(game => {
       if (game.completed) {
         const playerIndex = game.players.findIndex(p => p.id === playerId);
-        if (playerIndex !== -1) {
+        if (playerIndex !== -1 && game.clubs[playerIndex] && game.clubs[playerIndex].id) {
           usedClubs.add(game.clubs[playerIndex].id);
         }
       }
@@ -164,7 +164,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
       if (nextGame) {
         setCurrentGame(nextGame);
         setGamePhase('club-selection');
-        setSelectedClubs([null, null]);
+        setSelectedClubs([null, null]); // Reset for next game
       }
     }
   };

@@ -296,7 +296,7 @@ export class TournamentEngine {
       return {
         id: `singles-game-${matchup.player1.id}-${matchup.player2.id}-${matchup.clubIndex}-${index}`,
         players: [matchup.player1, matchup.player2],
-        clubs: [club1, club2],
+        clubs: [{ id: '', name: '', stars: 0, league: '' }, { id: '', name: '', stars: 0, league: '' }], // Empty clubs - will be selected during game
         completed: false
       };
     });

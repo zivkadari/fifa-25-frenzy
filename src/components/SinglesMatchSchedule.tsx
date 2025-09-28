@@ -65,14 +65,8 @@ export const SinglesMatchSchedule = ({
                         {game.players[1].name}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {game.clubs[0].name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">vs</span>
-                      <span className="text-xs text-muted-foreground">
-                        {game.clubs[1].name}
-                      </span>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      השחקנים יבחרו קבוצות במהלך המשחק
                     </div>
                   </div>
                 </div>
