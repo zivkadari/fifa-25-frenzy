@@ -19,8 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { TeamsManager } from "@/components/TeamsManager";
 import { TournamentEngine } from "@/services/tournamentEngine";
+import { SinglesClubAssignment } from "@/components/SinglesClubAssignment";
+import { SinglesMatchSchedule } from "@/components/SinglesMatchSchedule";
+import { SinglesGameLive } from "@/components/SinglesGameLive";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'game' | 'summary' | 'history' | 'teams';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
@@ -36,6 +39,7 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
   const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
   const [setupData, setSetupData] = useState<{players: Player[], winsToComplete: number, teamId?: string} | null>(null);
+  const [singlesFlowState, setSinglesFlowState] = useState<'club-assignment' | 'match-schedule' | 'game'>('club-assignment');
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -312,33 +316,69 @@ const handleGoHome = () => {
               const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, setupData.teamId);
               setCurrentEvening(singlesEvening);
               setCurrentTeamId(setupData.teamId ?? null);
-              
+              setSinglesFlowState('club-assignment');
+              navigateTo('singles-clubs');
+            }}
+            savedPlayers={setupData.players}
+          />
+        ) : null;
+      
+      case 'singles-clubs':
+        return currentEvening && currentEvening.type === 'singles' ? (
+          <SinglesClubAssignment
+            onBack={() => window.history.back()}
+            onContinue={() => {
+              setSinglesFlowState('match-schedule');
+              navigateTo('singles-schedule');
+            }}
+            players={currentEvening.players}
+            playerClubs={currentEvening.playerClubs || {}}
+            clubsPerPlayer={currentEvening.clubsPerPlayer || 0}
+          />
+        ) : null;
+      
+      case 'singles-schedule':
+        return currentEvening && currentEvening.type === 'singles' ? (
+          <SinglesMatchSchedule
+            onBack={() => window.history.back()}
+            onStartTournament={() => {
               // Push to remote storage for sharing
-              RemoteStorageService.upsertEveningLiveWithTeam(singlesEvening, setupData.teamId ?? null).catch(() => {});
+              RemoteStorageService.upsertEveningLiveWithTeam(currentEvening, currentTeamId ?? null).catch(() => {});
               
               // Create share code
-              RemoteStorageService.ensureShareCode(singlesEvening.id).then(code => {
+              RemoteStorageService.ensureShareCode(currentEvening.id).then(code => {
                 if (code) {
                   setShareCodeForDialog(code);
                   setShowShareCodeDialog(true);
                 }
               }).catch(() => {});
               
+              setSinglesFlowState('game');
               navigateTo('game');
             }}
-            savedPlayers={setupData.players}
+            gameSequence={currentEvening.gameSequence || []}
           />
         ) : null;
       
       case 'game':
         return currentEvening ? (
-          <TournamentGame
-            evening={currentEvening}
-            onBack={() => window.history.back()}
-            onComplete={handleCompleteEvening}
-            onGoHome={handleGoHome}
-            onUpdateEvening={handleUpdateEvening}
-          />
+          currentEvening.type === 'singles' ? (
+            <SinglesGameLive
+              evening={currentEvening}
+              onBack={() => window.history.back()}
+              onComplete={handleCompleteEvening}
+              onGoHome={handleGoHome}
+              onUpdateEvening={handleUpdateEvening}
+            />
+          ) : (
+            <TournamentGame
+              evening={currentEvening}
+              onBack={() => window.history.back()}
+              onComplete={handleCompleteEvening}
+              onGoHome={handleGoHome}
+              onUpdateEvening={handleUpdateEvening}
+            />
+          )
         ) : null;
       
       case 'summary':

@@ -268,33 +268,85 @@ export class TournamentEngine {
   }
 
   static generateSinglesGameSequence(players: Player[], playerClubs: { [playerId: string]: Club[] }): SinglesGame[] {
-    const games: SinglesGame[] = [];
     const totalClubsPerPlayer = Object.values(playerClubs)[0]?.length || 0;
     
-    // For each club each player has, generate matchups
+    // Generate all possible matchups (each player vs each other player, for each club they have)
+    const allMatchups: { player1: Player; player2: Player; clubIndex: number }[] = [];
+    
     for (let clubIndex = 0; clubIndex < totalClubsPerPlayer; clubIndex++) {
-      // Generate all possible pairings for this club round
       for (let i = 0; i < players.length; i++) {
         for (let j = i + 1; j < players.length; j++) {
-          const player1 = players[i];
-          const player2 = players[j];
-          const club1 = playerClubs[player1.id][clubIndex];
-          const club2 = playerClubs[player2.id][clubIndex];
-          
-          if (club1 && club2) {
-            games.push({
-              id: `singles-game-${player1.id}-${player2.id}-${clubIndex}`,
-              players: [player1, player2],
-              clubs: [club1, club2],
-              completed: false
-            });
-          }
+          allMatchups.push({
+            player1: players[i],
+            player2: players[j],
+            clubIndex
+          });
         }
       }
     }
 
-    // Shuffle the games for random order
-    return games.sort(() => Math.random() - 0.5);
+    // Optimize order to minimize waiting time
+    const optimizedOrder = this.optimizeMatchSequence(allMatchups, players);
+    
+    // Convert to SinglesGame objects
+    const games: SinglesGame[] = optimizedOrder.map((matchup, index) => {
+      const club1 = playerClubs[matchup.player1.id][matchup.clubIndex];
+      const club2 = playerClubs[matchup.player2.id][matchup.clubIndex];
+      
+      return {
+        id: `singles-game-${matchup.player1.id}-${matchup.player2.id}-${matchup.clubIndex}-${index}`,
+        players: [matchup.player1, matchup.player2],
+        clubs: [club1, club2],
+        completed: false
+      };
+    });
+
+    return games;
+  }
+
+  static optimizeMatchSequence(
+    matchups: { player1: Player; player2: Player; clubIndex: number }[], 
+    players: Player[]
+  ): { player1: Player; player2: Player; clubIndex: number }[] {
+    const sequence: { player1: Player; player2: Player; clubIndex: number }[] = [];
+    const remaining = [...matchups];
+    const lastPlayed = new Map<string, number>(); // playerId -> last game index they played
+    
+    players.forEach(p => lastPlayed.set(p.id, -1));
+
+    while (remaining.length > 0) {
+      // Find the best next match that minimizes waiting
+      let bestMatchIndex = 0;
+      let bestScore = Infinity;
+      
+      for (let i = 0; i < remaining.length; i++) {
+        const match = remaining[i];
+        const player1LastGame = lastPlayed.get(match.player1.id) ?? -1;
+        const player2LastGame = lastPlayed.get(match.player2.id) ?? -1;
+        
+        // Score based on how long each player has been waiting
+        const currentGameIndex = sequence.length;
+        const waitTime1 = currentGameIndex - player1LastGame - 1;
+        const waitTime2 = currentGameIndex - player2LastGame - 1;
+        const totalWaitTime = waitTime1 + waitTime2;
+        
+        if (totalWaitTime < bestScore) {
+          bestScore = totalWaitTime;
+          bestMatchIndex = i;
+        }
+      }
+      
+      // Add the best match to sequence
+      const selectedMatch = remaining.splice(bestMatchIndex, 1)[0];
+      sequence.push(selectedMatch);
+      
+      // Update last played times
+      const gameIndex = sequence.length - 1;
+      lastPlayed.set(selectedMatch.player1.id, gameIndex);
+      lastPlayed.set(selectedMatch.player2.id, gameIndex);
+    }
+
+    return sequence;
   }
 
   static isSinglesComplete(evening: Evening): boolean {
