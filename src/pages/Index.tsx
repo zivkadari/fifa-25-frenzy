@@ -38,7 +38,6 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
   const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
-  const [setupData, setSetupData] = useState<{players: Player[], winsToComplete: number, teamId?: string} | null>(null);
   const [singlesFlowState, setSinglesFlowState] = useState<'club-assignment' | 'match-schedule' | 'game'>('club-assignment');
   const [selectedTournamentType, setSelectedTournamentType] = useState<'pairs' | 'singles' | null>(null);
 
@@ -124,18 +123,6 @@ useEffect(() => {
   const handleBackToSetup = () => {
     setAppState('setup');
     // Keep currentEvening to preserve player data
-  };
-
-  const handleSetupComplete = (players: Player[], winsToComplete: number, teamId?: string) => {
-    setSetupData({ players, winsToComplete, teamId });
-    
-    // Based on selected tournament type, go to appropriate next step
-    if (selectedTournamentType === 'singles') {
-      navigateTo('singles-setup');
-    } else {
-      // Pairs tournament - start immediately
-      handleStartRandomEvening(players, winsToComplete, teamId);
-    }
   };
 
   const handleStartRandomEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
@@ -305,16 +292,20 @@ const handleGoHome = () => {
             }}
             onSelectSingles={() => {
               setSelectedTournamentType('singles');
-              navigateTo('setup');
+              navigateTo('singles-setup');
             }}
           />
         );
       
       case 'setup':
+        // This is only for pairs tournament
         return (
           <EveningSetup
             onBack={() => window.history.back()}
-            onStartEvening={handleSetupComplete}
+            onStartEvening={(players: Player[], winsToComplete: number, teamId?: string) => {
+              // Pairs tournament - start immediately
+              handleStartRandomEvening(players, winsToComplete, teamId);
+            }}
             savedPlayers={currentEvening?.players}
             savedWinsToComplete={currentEvening?.winsToComplete}
             savedTeamId={currentTeamId ?? undefined}
@@ -322,19 +313,18 @@ const handleGoHome = () => {
         );
       
       case 'singles-setup':
-        return setupData ? (
+        return (
           <SinglesSetup
             onBack={() => window.history.back()}
             onStartSingles={(players: Player[], clubsPerPlayer: number) => {
-              const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, setupData.teamId);
+              const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, currentTeamId ?? undefined);
               setCurrentEvening(singlesEvening);
-              setCurrentTeamId(setupData.teamId ?? null);
               setSinglesFlowState('club-assignment');
               navigateTo('singles-clubs');
             }}
-            savedPlayers={setupData.players}
+            savedPlayers={currentEvening?.players}
           />
-        ) : null;
+        );
       
       case 'singles-clubs':
         return currentEvening && currentEvening.type === 'singles' ? (
