@@ -238,14 +238,66 @@ export class TournamentEngine {
   // ========== SINGLES TOURNAMENT METHODS ==========
 
   static createSinglesEvening(players: Player[], clubsPerPlayer: number, teamId?: string): Evening {
-    // Assign random clubs to each player
+    // Assign clubs to each player with specific star distribution
     const playerClubs: { [playerId: string]: Club[] } = {};
-    const availableClubs = FIFA_CLUBS.filter(club => club.stars >= 4); // Only 4+ star clubs
+    
+    // Get available clubs by star rating
+    const fiveStarClubs = FIFA_CLUBS.filter(club => club.stars === 5);
+    const fourHalfStarClubs = FIFA_CLUBS.filter(club => club.stars === 4.5);
+    const fourStarClubs = FIFA_CLUBS.filter(club => club.stars === 4);
+    
+    // Pool of all available clubs for additional slots
+    const additionalClubPool = [...fourHalfStarClubs, ...fourStarClubs];
     
     players.forEach(player => {
-      const shuffledClubs = [...availableClubs].sort(() => Math.random() - 0.5);
-      playerClubs[player.id] = shuffledClubs.slice(0, clubsPerPlayer);
+      const assignedClubs: Club[] = [];
+      const usedClubIds = new Set<string>();
+      
+      // Slot 1: Always 5-star
+      if (clubsPerPlayer >= 1) {
+        const available5Star = fiveStarClubs.filter(c => !usedClubIds.has(c.id));
+        if (available5Star.length > 0) {
+          const club = available5Star[Math.floor(Math.random() * available5Star.length)];
+          assignedClubs.push(club);
+          usedClubIds.add(club.id);
+        }
+      }
+      
+      // Slot 2: Always 4.5-star
+      if (clubsPerPlayer >= 2) {
+        const available4Half = fourHalfStarClubs.filter(c => !usedClubIds.has(c.id));
+        if (available4Half.length > 0) {
+          const club = available4Half[Math.floor(Math.random() * available4Half.length)];
+          assignedClubs.push(club);
+          usedClubIds.add(club.id);
+        }
+      }
+      
+      // Slot 3: Always 4.5-star
+      if (clubsPerPlayer >= 3) {
+        const available4Half = fourHalfStarClubs.filter(c => !usedClubIds.has(c.id));
+        if (available4Half.length > 0) {
+          const club = available4Half[Math.floor(Math.random() * available4Half.length)];
+          assignedClubs.push(club);
+          usedClubIds.add(club.id);
+        }
+      }
+      
+      // Slots 4+: Random from pool (4.5 and 4 star clubs)
+      for (let i = 3; i < clubsPerPlayer; i++) {
+        const availableAdditional = additionalClubPool.filter(c => !usedClubIds.has(c.id));
+        if (availableAdditional.length > 0) {
+          const club = availableAdditional[Math.floor(Math.random() * availableAdditional.length)];
+          assignedClubs.push(club);
+          usedClubIds.add(club.id);
+        }
+      }
+      
+      playerClubs[player.id] = assignedClubs;
     });
+    
+    // Balance average stars across all players
+    this.balancePlayerClubStars(playerClubs, players);
 
     // Generate game sequence
     const gameSequence = this.generateSinglesGameSequence(players, playerClubs);
@@ -265,6 +317,65 @@ export class TournamentEngine {
     };
 
     return evening;
+  }
+
+  static balancePlayerClubStars(playerClubs: { [playerId: string]: Club[] }, players: Player[]): void {
+    // Calculate average stars for each player
+    const playerAvgStars = new Map<string, number>();
+    players.forEach(player => {
+      const clubs = playerClubs[player.id] || [];
+      const totalStars = clubs.reduce((sum, club) => sum + club.stars, 0);
+      playerAvgStars.set(player.id, clubs.length > 0 ? totalStars / clubs.length : 0);
+    });
+
+    // Calculate global average
+    const globalAvg = Array.from(playerAvgStars.values()).reduce((sum, avg) => sum + avg, 0) / players.length;
+
+    // Try to balance by swapping clubs between players
+    const maxIterations = 50;
+    for (let iter = 0; iter < maxIterations; iter++) {
+      let improved = false;
+
+      for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+          const player1 = players[i];
+          const player2 = players[j];
+          const clubs1 = playerClubs[player1.id];
+          const clubs2 = playerClubs[player2.id];
+
+          // Only try to swap clubs from slot 4 onwards (indices 3+)
+          for (let idx1 = 3; idx1 < clubs1.length; idx1++) {
+            for (let idx2 = 3; idx2 < clubs2.length; idx2++) {
+              const club1 = clubs1[idx1];
+              const club2 = clubs2[idx2];
+
+              // Calculate current deviation
+              const avg1 = clubs1.reduce((sum, c) => sum + c.stars, 0) / clubs1.length;
+              const avg2 = clubs2.reduce((sum, c) => sum + c.stars, 0) / clubs2.length;
+              const currentDev = Math.abs(avg1 - globalAvg) + Math.abs(avg2 - globalAvg);
+
+              // Simulate swap
+              clubs1[idx1] = club2;
+              clubs2[idx2] = club1;
+              const newAvg1 = clubs1.reduce((sum, c) => sum + c.stars, 0) / clubs1.length;
+              const newAvg2 = clubs2.reduce((sum, c) => sum + c.stars, 0) / clubs2.length;
+              const newDev = Math.abs(newAvg1 - globalAvg) + Math.abs(newAvg2 - globalAvg);
+
+              if (newDev < currentDev) {
+                // Keep the swap
+                improved = true;
+              } else {
+                // Revert the swap
+                clubs1[idx1] = club1;
+                clubs2[idx2] = club2;
+              }
+            }
+          }
+        }
+      }
+
+      if (!improved) break; // No more improvements possible
+    }
   }
 
   static generateSinglesGameSequence(players: Player[], playerClubs: { [playerId: string]: Club[] }): SinglesGame[] {
