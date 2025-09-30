@@ -310,40 +310,60 @@ export class TournamentEngine {
   ): { player1: Player; player2: Player; clubIndex: number }[] {
     const sequence: { player1: Player; player2: Player; clubIndex: number }[] = [];
     const remaining = [...matchups];
-    const lastPlayed = new Map<string, number>(); // playerId -> last game index they played
-    
+    const lastPlayed = new Map<string, number>();
     players.forEach(p => lastPlayed.set(p.id, -1));
 
+    const pairKey = (a: Player, b: Player) => {
+      const ids = [a.id, b.id].sort();
+      return ids.join('-');
+    };
+
     while (remaining.length > 0) {
-      // Find the best next match that minimizes waiting
-      let bestMatchIndex = 0;
-      let bestScore = Infinity;
-      
-      for (let i = 0; i < remaining.length; i++) {
-        const match = remaining[i];
-        const player1LastGame = lastPlayed.get(match.player1.id) ?? -1;
-        const player2LastGame = lastPlayed.get(match.player2.id) ?? -1;
-        
-        // Score based on how long each player has been waiting
-        const currentGameIndex = sequence.length;
-        const waitTime1 = currentGameIndex - player1LastGame - 1;
-        const waitTime2 = currentGameIndex - player2LastGame - 1;
-        const totalWaitTime = waitTime1 + waitTime2;
-        
-        if (totalWaitTime < bestScore) {
-          bestScore = totalWaitTime;
-          bestMatchIndex = i;
+      // Compute waiting times per player
+      const currentIndex = sequence.length;
+      const wait = new Map<string, number>();
+      players.forEach(p => {
+        const lp = lastPlayed.get(p.id) ?? -1;
+        wait.set(p.id, currentIndex - lp - 1);
+      });
+      const maxWait = Math.max(...Array.from(wait.values()));
+
+      // 1) Prefer matches that include at least one player who waited the most
+      let candidates = remaining.filter(
+        m => (wait.get(m.player1.id) ?? 0) === maxWait || (wait.get(m.player2.id) ?? 0) === maxWait
+      );
+      if (candidates.length === 0) candidates = [...remaining];
+
+      // 2) Avoid repeating the exact same pair as the previous game, if possible
+      const last = sequence[sequence.length - 1];
+      if (last) {
+        const prevKey = pairKey(last.player1, last.player2);
+        const nonRepeat = candidates.filter(m => pairKey(m.player1, m.player2) !== prevKey);
+        if (nonRepeat.length > 0) candidates = nonRepeat;
+      }
+
+      // 3) Pick the candidate maximizing total waiting time (reduces overall idle time)
+      let bestIdx = 0;
+      let bestScore = -Infinity;
+      for (let i = 0; i < candidates.length; i++) {
+        const m = candidates[i];
+        const score = (wait.get(m.player1.id) ?? 0) + (wait.get(m.player2.id) ?? 0);
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
         }
       }
-      
-      // Add the best match to sequence
-      const selectedMatch = remaining.splice(bestMatchIndex, 1)[0];
-      sequence.push(selectedMatch);
-      
-      // Update last played times
-      const gameIndex = sequence.length - 1;
-      lastPlayed.set(selectedMatch.player1.id, gameIndex);
-      lastPlayed.set(selectedMatch.player2.id, gameIndex);
+
+      const selected = candidates[bestIdx];
+      // Remove by identity from remaining
+      const remIndex = remaining.indexOf(selected);
+      const [spliced] = remaining.splice(remIndex, 1);
+      sequence.push(spliced);
+
+      // Update last played indices
+      const gi = sequence.length - 1;
+      lastPlayed.set(spliced.player1.id, gi);
+      lastPlayed.set(spliced.player2.id, gi);
     }
 
     return sequence;
