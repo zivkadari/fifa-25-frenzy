@@ -40,6 +40,7 @@ const [userEmail, setUserEmail] = useState<string | null>(null);
   const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
   const [setupData, setSetupData] = useState<{players: Player[], winsToComplete: number, teamId?: string} | null>(null);
   const [singlesFlowState, setSinglesFlowState] = useState<'club-assignment' | 'match-schedule' | 'game'>('club-assignment');
+  const [selectedTournamentType, setSelectedTournamentType] = useState<'pairs' | 'singles' | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   const navigateTo = (next: AppState) => {
@@ -106,8 +107,9 @@ useEffect(() => {
   }, [appState, currentEvening?.id]);
 
   const handleStartNewEvening = () => {
-    navigateTo('setup');
+    navigateTo('tournament-type');
     setCurrentEvening(null);
+    setSelectedTournamentType(null);
   };
 
   const handleViewHistory = () => {
@@ -126,7 +128,14 @@ useEffect(() => {
 
   const handleSetupComplete = (players: Player[], winsToComplete: number, teamId?: string) => {
     setSetupData({ players, winsToComplete, teamId });
-    navigateTo('tournament-type');
+    
+    // Based on selected tournament type, go to appropriate next step
+    if (selectedTournamentType === 'singles') {
+      navigateTo('singles-setup');
+    } else {
+      // Pairs tournament - start immediately
+      handleStartRandomEvening(players, winsToComplete, teamId);
+    }
   };
 
   const handleStartRandomEvening = async (players: Player[], winsToComplete: number, teamId?: string) => {
@@ -286,6 +295,21 @@ const handleGoHome = () => {
           />
         );
       
+      case 'tournament-type':
+        return (
+          <TournamentTypeSelection
+            onBack={() => window.history.back()}
+            onSelectPairs={() => {
+              setSelectedTournamentType('pairs');
+              navigateTo('setup');
+            }}
+            onSelectSingles={() => {
+              setSelectedTournamentType('singles');
+              navigateTo('setup');
+            }}
+          />
+        );
+      
       case 'setup':
         return (
           <EveningSetup
@@ -296,17 +320,6 @@ const handleGoHome = () => {
             savedTeamId={currentTeamId ?? undefined}
           />
         );
-      
-      case 'tournament-type':
-        return setupData ? (
-          <TournamentTypeSelection
-            onBack={() => window.history.back()}
-            onSelectPairs={() => handleStartRandomEvening(setupData.players, setupData.winsToComplete, setupData.teamId)}
-            onSelectSingles={() => navigateTo('singles-setup')}
-            players={setupData.players}
-            winsToComplete={setupData.winsToComplete}
-          />
-        ) : null;
       
       case 'singles-setup':
         return setupData ? (

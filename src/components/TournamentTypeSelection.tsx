@@ -7,16 +7,12 @@ interface TournamentTypeSelectionProps {
   onBack: () => void;
   onSelectPairs: () => void;
   onSelectSingles: () => void;
-  players: Player[];
-  winsToComplete: number;
 }
 
 export const TournamentTypeSelection = ({ 
   onBack, 
   onSelectPairs, 
-  onSelectSingles, 
-  players, 
-  winsToComplete 
+  onSelectSingles
 }: TournamentTypeSelectionProps) => {
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
@@ -43,7 +39,7 @@ export const TournamentTypeSelection = ({
               <div>
                 <h3 className="text-lg font-semibold text-foreground">ערב זוגות</h3>
                 <p className="text-muted-foreground text-sm">טורניר זוגות קלאסי - 4 שחקנים משחקים בזוגות</p>
-                <p className="text-xs text-muted-foreground mt-1">3 סיבובים • ראשון ל-{winsToComplete} ניצחונות</p>
+                <p className="text-xs text-muted-foreground mt-1">3 סיבובים • ראשון למספר ניצחונות שנקבע</p>
               </div>
             </div>
           </Card>
