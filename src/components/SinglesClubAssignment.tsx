@@ -72,9 +72,15 @@ export const SinglesClubAssignment = ({
                         <span className="text-sm font-medium text-foreground">{club.name}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {Array.from({ length: club.stars }).map((_, i) => (
+                        {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
                           <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
                         ))}
+                        {club.stars % 1 !== 0 && (
+                          <div className="relative h-3 w-3">
+                            <Star className="h-3 w-3 text-neon-green absolute" />
+                            <Star className="h-3 w-3 fill-neon-green text-neon-green absolute" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )) || []}
