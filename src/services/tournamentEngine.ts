@@ -379,19 +379,26 @@ export class TournamentEngine {
   }
 
   static generateSinglesGameSequence(players: Player[], playerClubs: { [playerId: string]: Club[] }): SinglesGame[] {
-    const totalClubsPerPlayer = Object.values(playerClubs)[0]?.length || 0;
-    
     // Generate all possible matchups (each player vs each other player, for each club they have)
     const allMatchups: { player1: Player; player2: Player; clubIndex: number }[] = [];
     
-    for (let clubIndex = 0; clubIndex < totalClubsPerPlayer; clubIndex++) {
+    // Find the minimum number of clubs any player has (this determines max games)
+    const minClubsPerPlayer = Math.min(...players.map(p => playerClubs[p.id]?.length || 0));
+    
+    for (let clubIndex = 0; clubIndex < minClubsPerPlayer; clubIndex++) {
       for (let i = 0; i < players.length; i++) {
         for (let j = i + 1; j < players.length; j++) {
-          allMatchups.push({
-            player1: players[i],
-            player2: players[j],
-            clubIndex
-          });
+          const player1 = players[i];
+          const player2 = players[j];
+          
+          // Only create matchup if both players have a club at this index
+          if (playerClubs[player1.id]?.[clubIndex] && playerClubs[player2.id]?.[clubIndex]) {
+            allMatchups.push({
+              player1,
+              player2,
+              clubIndex
+            });
+          }
         }
       }
     }
