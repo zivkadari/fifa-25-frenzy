@@ -14,7 +14,8 @@ import {
   RotateCcw,
   Crown,
   Home,
-  Star
+  Star,
+  History
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Evening, SinglesGame, PlayerStats, Club } from "@/types/tournament";
@@ -40,6 +41,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
+  const [showGamesHistory, setShowGamesHistory] = useState(false);
 
   useEffect(() => {
     setCurrentEvening(evening);
@@ -409,10 +411,20 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
         {/* Player Stats */}
         {playerStats.length > 0 && (
           <Card className="bg-gaming-surface/50 border-border/50 p-4 mt-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Crown className="h-5 w-5 text-neon-green" />
-              דירוג שחקנים
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Crown className="h-5 w-5 text-neon-green" />
+                דירוג שחקנים
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowGamesHistory(true)}
+                className="h-8 w-8"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="space-y-2">
               {playerStats.map((stat, index) => (
                 <div key={stat.player.id} className="flex items-center justify-between p-2 rounded bg-gaming-surface/50">
@@ -433,6 +445,52 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
             </div>
           </Card>
         )}
+
+        {/* Games History Dialog */}
+        <Dialog open={showGamesHistory} onOpenChange={setShowGamesHistory}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                היסטוריית משחקים
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {currentEvening.gameSequence?.filter(game => game.completed).map((game, index) => (
+                <Card key={game.id} className="bg-gaming-surface/30 border-border/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground mb-1">משחק {index + 1}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm">
+                          <span className="font-medium">{game.players[0].name}</span>
+                          <span className="text-xs text-muted-foreground block">{game.clubs[0].name}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs px-2">
+                          {game.score?.[0]} - {game.score?.[1]}
+                        </Badge>
+                        <div className="text-sm">
+                          <span className="font-medium">{game.players[1].name}</span>
+                          <span className="text-xs text-muted-foreground block">{game.clubs[1].name}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {game.winner && (
+                      <Trophy className={`h-4 w-4 ml-2 ${
+                        game.winner === game.players[0].id ? 'text-neon-green' : 'text-muted-foreground'
+                      }`} />
+                    )}
+                  </div>
+                </Card>
+              ))}
+              {(!currentEvening.gameSequence?.some(g => g.completed)) && (
+                <div className="text-center text-muted-foreground py-8">
+                  עדיין לא נשחקו משחקים
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Completion Dialog */}
         <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
