@@ -489,7 +489,28 @@ export class TournamentEngine {
 
   static isSinglesComplete(evening: Evening): boolean {
     if (evening.type !== 'singles' || !evening.gameSequence) return false;
-    return evening.gameSequence.every(game => game.completed);
+
+    // Completion rule: tournament ends once ALL players have used ALL of their assigned clubs at least once
+    if (evening.playerClubs) {
+      const allPlayersUsedAll = evening.players.every((player) => {
+        const assigned = evening.playerClubs?.[player.id]?.length ?? 0;
+        if (assigned === 0) return false;
+        const used = new Set<string>();
+        evening.gameSequence!.forEach((game) => {
+          if (!game.completed) return;
+          const idx = game.players.findIndex((p) => p.id === player.id);
+          if (idx !== -1) {
+            const club = game.clubs[idx];
+            if (club && club.id) used.add(club.id);
+          }
+        });
+        return used.size >= assigned;
+      });
+      if (allPlayersUsedAll) return true;
+    }
+
+    // Fallback: all scheduled games were completed
+    return evening.gameSequence.every((game) => game.completed);
   }
 
   static getSinglesStats(evening: Evening): PlayerStats[] {

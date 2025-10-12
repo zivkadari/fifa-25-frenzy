@@ -47,14 +47,16 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
     setCurrentEvening(evening);
     updatePlayerStats(evening);
     
-    // Auto-select next game if available
+    // Auto-select next playable game if available
     if (evening.gameSequence && evening.currentGameIndex !== undefined) {
-      const nextGame = evening.gameSequence[evening.currentGameIndex];
-      if (nextGame && !nextGame.completed) {
+      const nextPlayableIndex = findNextPlayableGameIndex(evening);
+      if (nextPlayableIndex >= 0) {
+        const nextGame = evening.gameSequence[nextPlayableIndex];
         setCurrentGame(nextGame);
         setGamePhase('club-selection');
         setSelectedClubs([null, null]); // Always start with no clubs selected
       } else if (TournamentEngine.isSinglesComplete(evening)) {
+        setCurrentGame(null);
         setShowCompletionDialog(true);
       }
     }
@@ -63,6 +65,35 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
   const updatePlayerStats = (evening: Evening) => {
     const stats = TournamentEngine.getSinglesStats(evening);
     setPlayerStats(stats);
+  };
+
+  // Helper: available clubs for a player within a given evening state
+  const getAvailableClubsInEvening = (ev: Evening, playerId: string): Club[] => {
+    if (!ev.playerClubs || !ev.gameSequence) return [];
+    const allClubs = ev.playerClubs[playerId] || [];
+    const used = new Set<string>();
+    ev.gameSequence.forEach((game) => {
+      if (!game.completed) return;
+      const idx = game.players.findIndex((p) => p.id === playerId);
+      if (idx !== -1) {
+        const club = game.clubs[idx];
+        if (club && club.id) used.add(club.id);
+      }
+    });
+    return allClubs.filter((c) => !used.has(c.id));
+  };
+
+  // Helper: find next game that both players can actually play (both have remaining clubs)
+  const findNextPlayableGameIndex = (ev: Evening): number => {
+    if (!ev.gameSequence) return -1;
+    for (let i = 0; i < ev.gameSequence.length; i++) {
+      const g = ev.gameSequence[i];
+      if (g.completed) continue;
+      const aHas = getAvailableClubsInEvening(ev, g.players[0].id).length > 0;
+      const bHas = getAvailableClubsInEvening(ev, g.players[1].id).length > 0;
+      if (aHas && bHas) return i;
+    }
+    return -1;
   };
 
   const getAvailableClubs = (playerId: string): Club[] => {
@@ -141,9 +172,9 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
       if (gameIndex !== -1) {
         updatedEvening.gameSequence[gameIndex] = updatedGame;
         
-        // Move to next game
-        const nextIncompleteIndex = updatedEvening.gameSequence.findIndex(g => !g.completed);
-        updatedEvening.currentGameIndex = nextIncompleteIndex >= 0 ? nextIncompleteIndex : updatedEvening.gameSequence.length;
+        // Move to next playable game
+        const nextPlayableIndex = findNextPlayableGameIndex(updatedEvening);
+        updatedEvening.currentGameIndex = nextPlayableIndex >= 0 ? nextPlayableIndex : updatedEvening.gameSequence.length;
       }
     }
 
@@ -161,25 +192,38 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
       updatedEvening.completed = true;
       setShowCompletionDialog(true);
     } else {
-      // Move to next game
+      // Move to next playable game
       const nextGame = updatedEvening.gameSequence?.[updatedEvening.currentGameIndex || 0];
       if (nextGame) {
         setCurrentGame(nextGame);
         setGamePhase('club-selection');
         setSelectedClubs([null, null]); // Reset for next game
+      } else {
+        // No playable games left
+        setCurrentGame(null);
+        setShowCompletionDialog(true);
       }
     }
   };
 
   const getGameProgress = () => {
     if (!currentEvening.gameSequence) return 0;
-    const completed = currentEvening.gameSequence.filter(g => g.completed).length;
-    return (completed / currentEvening.gameSequence.length) * 100;
+    // Progress based on how many clubs have been used out of all assigned clubs
+    const totalAssigned = Object.values(currentEvening.playerClubs || {}).reduce((sum, clubs) => sum + clubs.length, 0);
+    if (totalAssigned === 0) return 0;
+    const usedTotal = currentEvening.players.reduce((acc, p) => {
+      const assigned = currentEvening.playerClubs?.[p.id]?.length || 0;
+      const available = getAvailableClubs(p.id).length;
+      return acc + Math.min(assigned, assigned - available);
+    }, 0);
+    return Math.min(100, (usedTotal / totalAssigned) * 100);
   };
 
   const getRemainingGames = () => {
     if (!currentEvening.gameSequence) return 0;
-    return currentEvening.gameSequence.filter(g => !g.completed).length;
+    return currentEvening.gameSequence.filter(g => !g.completed)
+      .filter(g => getAvailableClubs(g.players[0].id).length > 0 && getAvailableClubs(g.players[1].id).length > 0)
+      .length;
   };
 
   // Countdown effect
