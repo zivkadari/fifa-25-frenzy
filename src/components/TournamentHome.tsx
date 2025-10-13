@@ -23,7 +23,7 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShar
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            FIFA 25
+            EA FC 26
           </h1>
           <h2 className="text-xl font-semibold text-neon-green mb-2">
             Tournament Manager
@@ -106,7 +106,7 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShar
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-muted-foreground text-xs">
-            FIFA 25 Tournament Automation • Ranking Tracking • Bragging Rights Preservation
+            EA FC 26 Tournament Automation • Ranking Tracking • Bragging Rights Preservation
           </p>
         </div>
       </div>
