@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, Trophy, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Users, Trophy, Star, RefreshCw } from "lucide-react";
 import { Player, Club } from "@/types/tournament";
+import { toast } from "sonner";
 
 interface SinglesClubAssignmentProps {
   onBack: () => void;
@@ -16,9 +20,66 @@ export const SinglesClubAssignment = ({
   onBack, 
   onContinue, 
   players, 
-  playerClubs, 
+  playerClubs: initialPlayerClubs, 
   clubsPerPlayer 
 }: SinglesClubAssignmentProps) => {
+  const [playerClubs, setPlayerClubs] = useState(initialPlayerClubs);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [selectedSwap, setSelectedSwap] = useState<{
+    fromPlayerId: string;
+    fromClubIndex: number;
+    toPlayerId?: string;
+    toClubIndex?: number;
+  } | null>(null);
+
+  const handleSwapClick = (playerId: string, clubIndex: number) => {
+    setSelectedSwap({
+      fromPlayerId: playerId,
+      fromClubIndex: clubIndex,
+      toPlayerId: undefined,
+      toClubIndex: undefined
+    });
+    setSwapDialogOpen(true);
+  };
+
+  const handleSwapConfirm = () => {
+    if (!selectedSwap || !selectedSwap.toPlayerId || selectedSwap.toClubIndex === undefined) {
+      return;
+    }
+
+    const fromPlayer = players.find(p => p.id === selectedSwap.fromPlayerId);
+    const toPlayer = players.find(p => p.id === selectedSwap.toPlayerId);
+    
+    if (!fromPlayer || !toPlayer) return;
+
+    const newPlayerClubs = { ...playerClubs };
+    const fromClub = newPlayerClubs[selectedSwap.fromPlayerId][selectedSwap.fromClubIndex];
+    const toClub = newPlayerClubs[selectedSwap.toPlayerId][selectedSwap.toClubIndex];
+
+    // Swap the clubs
+    newPlayerClubs[selectedSwap.fromPlayerId][selectedSwap.fromClubIndex] = toClub;
+    newPlayerClubs[selectedSwap.toPlayerId][selectedSwap.toClubIndex] = fromClub;
+
+    setPlayerClubs(newPlayerClubs);
+    setSwapDialogOpen(false);
+    setSelectedSwap(null);
+    
+    toast.success(`הקבוצה ${fromClub.name} של ${fromPlayer.name} הוחלפה עם ${toClub.name} של ${toPlayer.name}`);
+  };
+
+  const availablePlayersForSwap = selectedSwap 
+    ? players.filter(p => p.id !== selectedSwap.fromPlayerId)
+    : [];
+
+  const availableClubsForSwap = selectedSwap?.toPlayerId 
+    ? playerClubs[selectedSwap.toPlayerId] || []
+    : [];
+
+  const handleContinue = () => {
+    // Pass the updated playerClubs to the parent
+    onContinue();
+  };
+
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
@@ -65,22 +126,32 @@ export const SinglesClubAssignment = ({
                 <div className="grid grid-cols-1 gap-2">
                   {playerClubs[player.id]?.map((club, index) => (
                     <div key={club.id} className="flex items-center justify-between p-2 rounded bg-gaming-surface/50 border border-border/50">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                         <Badge variant="outline" className="text-xs">
                           {index + 1}
                         </Badge>
                         <span className="text-sm font-medium text-foreground">{club.name}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
-                          <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
-                        ))}
-                        {club.stars % 1 !== 0 && (
-                          <div className="relative h-3 w-3">
-                            <Star className="h-3 w-3 text-neon-green absolute" />
-                            <Star className="h-3 w-3 fill-neon-green text-neon-green absolute" style={{ clipPath: 'inset(0 50% 0 0)' }} />
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
+                            <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
+                          ))}
+                          {club.stars % 1 !== 0 && (
+                            <div className="relative h-3 w-3">
+                              <Star className="h-3 w-3 text-neon-green absolute" />
+                              <Star className="h-3 w-3 fill-neon-green text-neon-green absolute" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSwapClick(player.id, index)}
+                          className="h-7 px-2"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   )) || []}
@@ -94,12 +165,127 @@ export const SinglesClubAssignment = ({
         <Button
           variant="gaming"
           size="xl"
-          onClick={onContinue}
+          onClick={handleContinue}
           className="w-full"
         >
           <Trophy className="h-5 w-5 mr-2" />
           המשך לסדר המשחקים
         </Button>
+
+        {/* Swap Dialog */}
+        <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
+          <DialogContent className="bg-gaming-surface border-neon-green/20">
+            <DialogHeader>
+              <DialogTitle className="text-foreground">החלף קבוצות</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {selectedSwap && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      מחליף:
+                    </label>
+                    <div className="p-3 rounded bg-gaming-bg border border-border/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-foreground">
+                          {players.find(p => p.id === selectedSwap.fromPlayerId)?.name}
+                        </span>
+                        <span className="text-sm font-medium text-neon-green">
+                          {playerClubs[selectedSwap.fromPlayerId]?.[selectedSwap.fromClubIndex]?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      בחר שחקן להחלפה:
+                    </label>
+                    <Select
+                      value={selectedSwap.toPlayerId}
+                      onValueChange={(value) => {
+                        setSelectedSwap({
+                          ...selectedSwap,
+                          toPlayerId: value,
+                          toClubIndex: undefined
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="bg-gaming-bg border-border/50">
+                        <SelectValue placeholder="בחר שחקן..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePlayersForSwap.map((player) => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedSwap.toPlayerId && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">
+                        בחר קבוצה להחלפה:
+                      </label>
+                      <Select
+                        value={selectedSwap.toClubIndex?.toString()}
+                        onValueChange={(value) => {
+                          setSelectedSwap({
+                            ...selectedSwap,
+                            toClubIndex: parseInt(value)
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="bg-gaming-bg border-border/50">
+                          <SelectValue placeholder="בחר קבוצה..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableClubsForSwap.map((club, index) => (
+                            <SelectItem key={club.id} value={index.toString()}>
+                              <div className="flex items-center gap-2">
+                                <span>{club.name}</span>
+                                <div className="flex items-center gap-1">
+                                  {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
+                                    <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
+                                  ))}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSwapDialogOpen(false);
+                        setSelectedSwap(null);
+                      }}
+                      className="flex-1"
+                    >
+                      ביטול
+                    </Button>
+                    <Button
+                      variant="gaming"
+                      onClick={handleSwapConfirm}
+                      disabled={!selectedSwap.toPlayerId || selectedSwap.toClubIndex === undefined}
+                      className="flex-1"
+                    >
+                      <RefreshCw className="h-4 w-4 ml-2" />
+                      החלף
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
