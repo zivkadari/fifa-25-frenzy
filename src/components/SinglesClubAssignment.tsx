@@ -125,14 +125,14 @@ export const SinglesClubAssignment = ({
                 
                 <div className="grid grid-cols-1 gap-2">
                   {playerClubs[player.id]?.map((club, index) => (
-                    <div key={club.id} className="flex items-center justify-between p-2 rounded bg-gaming-surface/50 border border-border/50">
-                      <div className="flex items-center gap-2 flex-1">
-                        <Badge variant="outline" className="text-xs">
-                          {index + 1}
-                        </Badge>
-                        <span className="text-sm font-medium text-foreground">{club.name}</span>
+                    <div key={club.id} className="flex items-center gap-2 p-3 rounded bg-gaming-surface/50 border border-border/50">
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-foreground block truncate">{club.name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <div className="flex items-center gap-1">
                           {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
                             <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
@@ -148,9 +148,10 @@ export const SinglesClubAssignment = ({
                           variant="outline"
                           size="sm"
                           onClick={() => handleSwapClick(player.id, index)}
-                          className="h-7 px-2"
+                          className="h-8 px-3 bg-gaming-bg/50 border-neon-green/30 hover:bg-neon-green/10 hover:border-neon-green"
                         >
-                          <RefreshCw className="h-3 w-3" />
+                          <RefreshCw className="h-3 w-3 ml-1" />
+                          <span className="text-xs">החלף</span>
                         </Button>
                       </div>
                     </div>
