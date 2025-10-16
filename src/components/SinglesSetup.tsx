@@ -169,13 +169,14 @@ export const SinglesSetup = ({ onBack, onStartSingles, savedPlayers }: SinglesSe
                           value={name}
                           onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                           placeholder={`שם שחקן ${index + 1}`}
-                          className="bg-gaming-surface border-border"
+                          className="bg-gaming-surface border-border pr-8"
+                          dir="rtl"
                         />
                         {name && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
                             onClick={() => clearSlot(index)}
                             aria-label="Clear player"
                           >
@@ -215,6 +216,7 @@ export const SinglesSetup = ({ onBack, onStartSingles, savedPlayers }: SinglesSe
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="bg-gaming-surface border-border"
+                  dir="rtl"
                 />
               </div>
 
@@ -224,6 +226,7 @@ export const SinglesSetup = ({ onBack, onStartSingles, savedPlayers }: SinglesSe
                   value={newPlayer}
                   onChange={(e) => setNewPlayer(e.target.value)}
                   className="bg-gaming-surface border-border"
+                  dir="rtl"
                 />
                 <Button variant="outline" size="sm" onClick={addNewPlayerToList}>
                   הוסף
