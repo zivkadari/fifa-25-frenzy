@@ -248,9 +248,6 @@ export class TournamentEngine {
     const fourStarClubs = FIFA_CLUBS.filter(club => club.stars === 4);
     const threeHalfStarClubs = FIFA_CLUBS.filter(club => club.stars === 3.5);
     
-    // Pool of all available clubs for additional random slots
-    const additionalClubPool = [...FIFA_CLUBS];
-    
     // Track used clubs globally across all players
     const globalUsedClubIds = new Set<string>();
     
@@ -289,11 +286,27 @@ export class TournamentEngine {
           }
         }
         
-        // Remaining slots: Completely random
+        // Remaining slots: Random but prefer 4+ stars
         while (assignedClubs.length < clubsPerPlayer) {
-          const available = additionalClubPool.filter(c => !globalUsedClubIds.has(c.id));
-          if (available.length > 0) {
-            const club = available[Math.floor(Math.random() * available.length)];
+          // Try to get clubs 4+ stars first
+          const preferredClubs = FIFA_CLUBS.filter(c => 
+            c.stars >= 4 && !globalUsedClubIds.has(c.id)
+          );
+          
+          let club: Club | null = null;
+          
+          if (preferredClubs.length > 0) {
+            // Pick random from 4+ star clubs
+            club = preferredClubs[Math.floor(Math.random() * preferredClubs.length)];
+          } else {
+            // No 4+ star clubs left, use any available club
+            const anyAvailable = FIFA_CLUBS.filter(c => !globalUsedClubIds.has(c.id));
+            if (anyAvailable.length > 0) {
+              club = anyAvailable[Math.floor(Math.random() * anyAvailable.length)];
+            }
+          }
+          
+          if (club) {
             assignedClubs.push(club);
             globalUsedClubIds.add(club.id);
           } else {
