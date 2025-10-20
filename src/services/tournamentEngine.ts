@@ -251,49 +251,51 @@ export class TournamentEngine {
     // Pool of all available clubs for additional random slots
     const additionalClubPool = [...FIFA_CLUBS];
     
+    // Track used clubs globally across all players
+    const globalUsedClubIds = new Set<string>();
+    
     players.forEach(player => {
       const assignedClubs: Club[] = [];
-      const usedClubIds = new Set<string>();
       
       // If 8+ clubs per player, use new distribution
       if (clubsPerPlayer >= 8) {
         // Slots 1-2: Two 5-star clubs (not nationals)
         for (let i = 0; i < 2 && assignedClubs.length < clubsPerPlayer; i++) {
-          const available = fiveStarClubs.filter(c => !usedClubIds.has(c.id));
+          const available = fiveStarClubs.filter(c => !globalUsedClubIds.has(c.id));
           if (available.length > 0) {
             const club = available[Math.floor(Math.random() * available.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Slots 3-4: Two 5-star nationals
         for (let i = 0; i < 2 && assignedClubs.length < clubsPerPlayer; i++) {
-          const available = fiveStarNationals.filter(c => !usedClubIds.has(c.id));
+          const available = fiveStarNationals.filter(c => !globalUsedClubIds.has(c.id));
           if (available.length > 0) {
             const club = available[Math.floor(Math.random() * available.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Slots 5-7: Three 4.5-star clubs
         for (let i = 0; i < 3 && assignedClubs.length < clubsPerPlayer; i++) {
-          const available = fourHalfStarClubs.filter(c => !usedClubIds.has(c.id));
+          const available = fourHalfStarClubs.filter(c => !globalUsedClubIds.has(c.id));
           if (available.length > 0) {
             const club = available[Math.floor(Math.random() * available.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Remaining slots: Completely random
         while (assignedClubs.length < clubsPerPlayer) {
-          const available = additionalClubPool.filter(c => !usedClubIds.has(c.id));
+          const available = additionalClubPool.filter(c => !globalUsedClubIds.has(c.id));
           if (available.length > 0) {
             const club = available[Math.floor(Math.random() * available.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           } else {
             break; // No more clubs available
           }
@@ -302,42 +304,42 @@ export class TournamentEngine {
         // Original logic for less than 8 clubs
         // Slot 1: Always 5-star
         if (clubsPerPlayer >= 1) {
-          const available5Star = [...fiveStarClubs, ...fiveStarNationals].filter(c => !usedClubIds.has(c.id));
+          const available5Star = [...fiveStarClubs, ...fiveStarNationals].filter(c => !globalUsedClubIds.has(c.id));
           if (available5Star.length > 0) {
             const club = available5Star[Math.floor(Math.random() * available5Star.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Slot 2: Always 4.5-star
         if (clubsPerPlayer >= 2) {
-          const available4Half = fourHalfStarClubs.filter(c => !usedClubIds.has(c.id));
+          const available4Half = fourHalfStarClubs.filter(c => !globalUsedClubIds.has(c.id));
           if (available4Half.length > 0) {
             const club = available4Half[Math.floor(Math.random() * available4Half.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Slot 3: Always 4.5-star
         if (clubsPerPlayer >= 3) {
-          const available4Half = fourHalfStarClubs.filter(c => !usedClubIds.has(c.id));
+          const available4Half = fourHalfStarClubs.filter(c => !globalUsedClubIds.has(c.id));
           if (available4Half.length > 0) {
             const club = available4Half[Math.floor(Math.random() * available4Half.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
         
         // Slots 4+: Random from pool (4.5 and 4 star clubs)
         const additionalPool = [...fourHalfStarClubs, ...fourStarClubs];
         for (let i = 3; i < clubsPerPlayer; i++) {
-          const availableAdditional = additionalPool.filter(c => !usedClubIds.has(c.id));
+          const availableAdditional = additionalPool.filter(c => !globalUsedClubIds.has(c.id));
           if (availableAdditional.length > 0) {
             const club = availableAdditional[Math.floor(Math.random() * availableAdditional.length)];
             assignedClubs.push(club);
-            usedClubIds.add(club.id);
+            globalUsedClubIds.add(club.id);
           }
         }
       }
