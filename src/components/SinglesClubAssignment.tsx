@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Users, Trophy, Star, RefreshCw } from "lucide-react";
 import { Player, Club } from "@/types/tournament";
 import { toast } from "sonner";
@@ -129,9 +130,18 @@ export const SinglesClubAssignment = ({
                       <Badge variant="outline" className="text-xs shrink-0">
                         {index + 1}
                       </Badge>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-foreground block truncate">{club.name}</span>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium text-foreground block truncate">{club.name}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-gaming-surface border-neon-green/20">
+                            <p className="text-sm text-foreground">{club.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="flex items-center gap-1">
                           {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
