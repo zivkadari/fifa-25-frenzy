@@ -33,6 +33,28 @@ export const SinglesClubAssignment = ({
     toClubIndex?: number;
   } | null>(null);
 
+  // Function to shorten long club names intelligently
+  const shortenClubName = (name: string): string => {
+    if (name.length <= 15) return name;
+    
+    const words = name.split(' ');
+    if (words.length === 1) {
+      // Single word - truncate with ellipsis
+      return name.substring(0, 12) + '...';
+    }
+    
+    // Multiple words - shorten first word(s) if long
+    const shortened = words.map((word, index) => {
+      if (index === 0 && word.length > 4) {
+        return word.substring(0, 3) + '.';
+      }
+      return word;
+    }).join(' ');
+    
+    // If still too long, truncate
+    return shortened.length > 18 ? shortened.substring(0, 15) + '...' : shortened;
+  };
+
   const handleSwapClick = (playerId: string, clubIndex: number) => {
     setSelectedSwap({
       fromPlayerId: playerId,
@@ -134,7 +156,7 @@ export const SinglesClubAssignment = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-foreground block truncate">{club.name}</span>
+                              <span className="text-xs font-medium text-foreground">{shortenClubName(club.name)}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="bg-gaming-surface border-neon-green/20">
