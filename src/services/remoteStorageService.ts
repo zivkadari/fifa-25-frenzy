@@ -214,6 +214,18 @@ export class RemoteStorageService {
 
   static async deleteTeam(teamId: string): Promise<boolean> {
     if (!supabase) return false;
+    
+    // First delete all team_players links
+    const { error: playersError } = await supabase
+      .from(TEAM_PLAYERS_TABLE)
+      .delete()
+      .eq("team_id", teamId);
+    
+    if (playersError) {
+      console.error("deleteTeam/remove players error:", playersError.message);
+    }
+    
+    // Then delete the team
     const { error } = await supabase
       .from(TEAMS_TABLE)
       .delete()

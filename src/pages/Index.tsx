@@ -31,13 +31,8 @@ const Index = () => {
   const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
   const { toast } = useToast();
   const [isAuthed, setIsAuthed] = useState(false);
-const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [joinOpen, setJoinOpen] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
-  const [joinLoading, setJoinLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
-  const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
-  const [shareCodeForDialog, setShareCodeForDialog] = useState<string | null>(null);
   const [singlesFlowState, setSinglesFlowState] = useState<'club-assignment' | 'match-schedule' | 'game'>('club-assignment');
   const [selectedTournamentType, setSelectedTournamentType] = useState<'pairs' | 'singles' | null>(null);
 
@@ -163,19 +158,6 @@ useEffect(() => {
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
     await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
     
-    // Ensure a share code exists and show it in a persistent dialog
-    try {
-      const code = await RemoteStorageService.ensureShareCode(newEvening.id);
-      if (code) {
-        setShareCodeForDialog(code);
-        setShowShareCodeDialog(true);
-      } else {
-        console.error("Failed to create share code");
-      }
-    } catch (error) {
-      console.error("Error creating share code:", error);
-    }
-    
     navigateTo('game');
   };
 
@@ -244,40 +226,14 @@ const handleGoHome = () => {
       window.location.href = "/auth";
     }
   };
-
-  const handleJoinShared = () => {
-    setJoinOpen(true);
-  };
-
-  const handleConfirmJoin = async () => {
-    const code = joinCode.trim();
-    if (!code) return;
-    setJoinLoading(true);
-    try {
-      const eid = await RemoteStorageService.joinEveningByCode(code);
-      if (eid) {
-        toast({ title: "הצטרפת בהצלחה", description: "נטען את ההיסטוריה המשותפת" });
-        const updatedHistory = await RemoteStorageService.loadEvenings();
-        setTournamentHistory(updatedHistory);
-        setJoinOpen(false);
-        setJoinCode("");
-        navigateTo('history');
-      } else {
-        toast({ title: "קוד לא תקין או לא מחובר", description: "וודא התחברות וקוד נכון", variant: "destructive" });
-      }
-    } finally {
-      setJoinLoading(false);
-    }
-  };
   const renderCurrentState = () => {
     switch (appState) {
       case 'home':
         return (
-<TournamentHome
+          <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
-            onJoinShared={handleJoinShared}
             onManageTeams={() => navigateTo('teams')}
           />
         );
@@ -347,14 +303,6 @@ const handleGoHome = () => {
             onStartTournament={() => {
               // Push to remote storage for sharing
               RemoteStorageService.upsertEveningLiveWithTeam(currentEvening, currentTeamId ?? null).catch(() => {});
-              
-              // Create share code
-              RemoteStorageService.ensureShareCode(currentEvening.id).then(code => {
-                if (code) {
-                  setShareCodeForDialog(code);
-                  setShowShareCodeDialog(true);
-                }
-              }).catch(() => {});
               
               setSinglesFlowState('game');
               navigateTo('game');
@@ -433,64 +381,6 @@ const handleGoHome = () => {
       <FitToScreen>
         {renderCurrentState()}
       </FitToScreen>
-
-      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>הצטרפות לערב משותף</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="text-sm text-muted-foreground">הזן קוד שיתוף</label>
-            <Input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="ABCDE12345"
-              className="bg-gaming-surface border-border"
-              inputMode="text"
-              autoComplete="one-time-code"
-            />
-          </div>
-          <DialogFooter className="mt-4">
-            <Button variant="secondary" onClick={() => setJoinOpen(false)} disabled={joinLoading}>בטל</Button>
-            <Button variant="gaming" onClick={handleConfirmJoin} disabled={joinLoading || !joinCode.trim()}>
-              {joinLoading ? "מצטרף..." : "הצטרף"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showShareCodeDialog} onOpenChange={setShowShareCodeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>טורניר נוצר בהצלחה!</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              הטורניר החל! שתפו את הקוד הזה עם המשתתפים כדי שיוכלו להצטרף ולצפות בזמן אמת.
-            </p>
-            {shareCodeForDialog && (
-              <div className="bg-gaming-surface p-3 rounded-md border border-border">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-lg">{shareCodeForDialog}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(shareCodeForDialog);
-                      toast({ title: "הקוד הועתק", description: shareCodeForDialog });
-                    }}
-                  >
-                    העתק
-                  </Button>
-                </div>
-              </div>
-            )}
-            <Button onClick={() => setShowShareCodeDialog(false)} className="w-full">
-              סגור
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

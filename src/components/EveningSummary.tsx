@@ -30,12 +30,12 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
   const playerStats = TournamentEngine.calculatePlayerStats(evening);
   const rankings = evening.rankings || TournamentEngine.calculateRankings(playerStats);
 
-  const handleSaveToHistory = () => {
-    onSaveToHistory(evening);
+  const handleSaveToHistory = async () => {
+    await onSaveToHistory(evening);
     setSaved(true);
     toast({
-      title: "Evening Saved!",
-      description: "Tournament results have been saved to history",
+      title: "הטורניר נשמר!",
+      description: "תוצאות הטורניר נשמרו בהיסטוריה",
     });
   };
 

@@ -6,11 +6,10 @@ interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
   onResume?: () => void;
-  onJoinShared?: () => void;
   onManageTeams?: () => void;
 }
 
-export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShared, onManageTeams }: TournamentHomeProps) => {
+export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTeams }: TournamentHomeProps) => {
   return (
     <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-4 mobile-optimized">
       <div className="w-full max-w-md animate-scale-in">
@@ -78,17 +77,6 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onJoinShar
             <History className="h-5 w-5" />
             History
           </Button>
-          {onJoinShared && (
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={onJoinShared}
-              className="w-full"
-            >
-              <Users className="h-5 w-5" />
-              Join Shared Evening
-            </Button>
-          )}
 
           <Button
             asChild
