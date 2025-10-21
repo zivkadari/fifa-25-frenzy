@@ -94,7 +94,7 @@ export const SinglesClubAssignment = ({
     let text = "";
     
     players.forEach((player, playerIndex) => {
-      text += `"${player.name}"\n`;
+      text += `*${player.name}*\n`;
       const clubs = playerClubs[player.id] || [];
       clubs.forEach((club, clubIndex) => {
         text += `${club.name}\n`;
