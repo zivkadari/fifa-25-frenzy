@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Users, Trophy, Star, RefreshCw } from "lucide-react";
+import { ArrowLeft, Users, Trophy, Star, RefreshCw, Copy } from "lucide-react";
 import { Player, Club } from "@/types/tournament";
 import { toast } from "sonner";
 
@@ -88,6 +88,28 @@ export const SinglesClubAssignment = ({
     setSelectedSwap(null);
     
     toast.success(`הקבוצה ${fromClub.name} של ${fromPlayer.name} הוחלפה עם ${toClub.name} של ${toPlayer.name}`);
+  };
+
+  const handleCopyClubsList = () => {
+    let text = "";
+    
+    players.forEach((player, playerIndex) => {
+      text += `"${player.name}"\n`;
+      const clubs = playerClubs[player.id] || [];
+      clubs.forEach((club, clubIndex) => {
+        text += `${club.name}\n`;
+      });
+      // Add extra line between players (except after last player)
+      if (playerIndex < players.length - 1) {
+        text += "\n";
+      }
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("רשימת הקבוצות הועתקה ללוח!");
+    }).catch(() => {
+      toast.error("שגיאה בהעתקת הרשימה");
+    });
   };
 
   const availablePlayersForSwap = selectedSwap 
@@ -194,16 +216,28 @@ export const SinglesClubAssignment = ({
           ))}
         </div>
 
-        {/* Continue Button */}
-        <Button
-          variant="gaming"
-          size="xl"
-          onClick={handleContinue}
-          className="w-full"
-        >
-          <Trophy className="h-5 w-5 mr-2" />
-          המשך לסדר המשחקים
-        </Button>
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleCopyClubsList}
+            className="w-full bg-gaming-surface/50 border-neon-green/30 hover:bg-neon-green/10 hover:border-neon-green"
+          >
+            <Copy className="h-5 w-5 ml-2" />
+            העתק רשימת קבוצות
+          </Button>
+
+          <Button
+            variant="gaming"
+            size="xl"
+            onClick={handleContinue}
+            className="w-full"
+          >
+            <Trophy className="h-5 w-5 mr-2" />
+            המשך לסדר המשחקים
+          </Button>
+        </div>
 
         {/* Swap Dialog */}
         <Dialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
