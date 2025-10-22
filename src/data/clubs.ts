@@ -32,6 +32,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'marseille', name: 'Olympique de Marseille', stars: 4.5, league: 'Ligue 1' },
   { id: 'crystal-palace', name: 'Crystal Palace', stars: 4.5, league: 'Premier League' },
   { id: 'nottingham-forest', name: 'Nottingham Forest', stars: 4.5, league: 'Premier League' },
+  { id: 'roma', name: 'Roma', stars: 4.5, league: 'Serie A' },
   
   // National Teams (5-star)
   { id: 'france', name: 'France', stars: 5, league: 'National Teams', isNational: true },
@@ -99,7 +100,6 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'hoffenheim', name: 'TSG Hoffenheim', stars: 4, league: 'Bundesliga' },
   { id: 'stuttgart', name: 'VfB Stuttgart', stars: 4, league: 'Bundesliga' },
   { id: 'wolfsburg', name: 'VfL Wolfsburg', stars: 4, league: 'Bundesliga' },
-  { id: 'roma', name: 'Roma', stars: 4, league: 'Serie A' },
   { id: 'como', name: 'Como', stars: 4, league: 'Serie A' },
   { id: 'lazio', name: 'Lazio', stars: 4, league: 'Serie A' },
   { id: 'braga', name: 'SC Braga', stars: 4, league: 'Primeira Liga' },
