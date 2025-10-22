@@ -1,5 +1,6 @@
 import { Evening, Player } from "@/types/tournament";
 import { supabase } from "@/integrations/supabase/client";
+import { validateTeamName, validatePlayerName } from "@/lib/validation";
 
 const EVENINGS_TABLE = "evenings";
 const TEAMS_TABLE = "teams";
@@ -185,11 +186,19 @@ export class RemoteStorageService {
 
   static async createTeam(name: string): Promise<{ id: string; name: string } | null> {
     if (!supabase) return null;
+    
+    // Validate team name
+    const validation = validateTeamName(name);
+    if (!validation.valid) {
+      console.error("createTeam validation error:", validation.error);
+      throw new Error(validation.error);
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase
       .from(TEAMS_TABLE)
-      .insert({ name, owner_id: user.id })
+      .insert({ name: validation.value, owner_id: user.id })
       .select("id, name")
       .maybeSingle();
     if (error) {
@@ -201,9 +210,17 @@ export class RemoteStorageService {
 
   static async renameTeam(teamId: string, name: string): Promise<boolean> {
     if (!supabase) return false;
+    
+    // Validate team name
+    const validation = validateTeamName(name);
+    if (!validation.valid) {
+      console.error("renameTeam validation error:", validation.error);
+      throw new Error(validation.error);
+    }
+    
     const { error } = await supabase
       .from(TEAMS_TABLE)
-      .update({ name })
+      .update({ name: validation.value })
       .eq("id", teamId);
     if (error) {
       console.error("renameTeam error:", error.message);
@@ -256,14 +273,22 @@ export class RemoteStorageService {
 
   static async addPlayerToTeamByName(teamId: string, name: string): Promise<boolean> {
     if (!supabase) return false;
+    
+    // Validate player name
+    const validation = validatePlayerName(name);
+    if (!validation.valid) {
+      console.error("addPlayerToTeamByName validation error:", validation.error);
+      throw new Error(validation.error);
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
-    const playerId = `player-${slugify(name)}`;
+    const playerId = `player-${slugify(validation.value)}`;
     // Upsert player row
     const { error: upErr } = await supabase
       .from(PLAYERS_TABLE)
-      .upsert({ id: playerId, display_name: name, created_by: user.id }, { onConflict: "id" });
+      .upsert({ id: playerId, display_name: validation.value, created_by: user.id }, { onConflict: "id" });
     if (upErr) {
       console.error("addPlayerToTeamByName/insert player error:", upErr.message);
       return false;
@@ -302,11 +327,18 @@ export class RemoteStorageService {
     // Upsert players by deterministic id based on name
     const playerIds: string[] = [];
     for (const p of players) {
-      const pid = `player-${slugify(p.name)}`;
+      // Validate player name
+      const validation = validatePlayerName(p.name);
+      if (!validation.valid) {
+        console.error("ensureTeamForPlayers validation error:", validation.error);
+        continue; // Skip invalid players
+      }
+      
+      const pid = `player-${slugify(validation.value)}`;
       playerIds.push(pid);
       const { error: upErr } = await supabase
         .from(PLAYERS_TABLE)
-        .upsert({ id: pid, display_name: p.name, created_by: user.id }, { onConflict: "id" });
+        .upsert({ id: pid, display_name: validation.value, created_by: user.id }, { onConflict: "id" });
       if (upErr) {
         console.error("ensureTeamForPlayers upsert player error:", upErr.message);
       }

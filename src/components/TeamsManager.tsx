@@ -9,6 +9,7 @@ import { RemoteStorageService } from "@/services/remoteStorageService";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { Evening, PlayerStats } from "@/types/tournament";
 import { ArrowLeft, Users, Plus, Trash2, Trophy } from "lucide-react";
+import { validateTeamName, validatePlayerName } from "@/lib/validation";
 
 interface TeamsManagerProps {
   onBack: () => void;
@@ -83,14 +84,26 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const createTeam = async () => {
     const name = newTeamName.trim();
     if (!name) return;
-    const created = await RemoteStorageService.createTeam(name);
-    if (created) {
-      setTeams((prev) => [created, ...prev]);
-      setNewTeamName("");
-      setSelectedTeamId(created.id);
-      toast({ title: "קבוצה נוצרה", description: name });
-    } else {
-      toast({ title: "שגיאה ביצירת קבוצה", variant: "destructive" });
+    
+    // Validate team name
+    const validation = validateTeamName(name);
+    if (!validation.valid) {
+      toast({ title: "שגיאה בשם הקבוצה", description: validation.error, variant: "destructive" });
+      return;
+    }
+    
+    try {
+      const created = await RemoteStorageService.createTeam(validation.value);
+      if (created) {
+        setTeams((prev) => [created, ...prev]);
+        setNewTeamName("");
+        setSelectedTeamId(created.id);
+        toast({ title: "קבוצה נוצרה", description: validation.value });
+      } else {
+        toast({ title: "שגיאה ביצירת קבוצה", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "שגיאה ביצירת קבוצה", description: error instanceof Error ? error.message : "שגיאה לא ידועה", variant: "destructive" });
     }
   };
 
@@ -98,13 +111,25 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     if (!selectedTeamId) return;
     const name = newPlayerName.trim();
     if (!name) return;
-    const ok = await RemoteStorageService.addPlayerToTeamByName(selectedTeamId, name);
-    if (ok) {
-      setNewPlayerName("");
-      const players = await RemoteStorageService.listTeamPlayers(selectedTeamId);
-      setTeamPlayers(players);
-    } else {
-      toast({ title: "שגיאה בהוספת שחקן", variant: "destructive" });
+    
+    // Validate player name
+    const validation = validatePlayerName(name);
+    if (!validation.valid) {
+      toast({ title: "שגיאה בשם השחקן", description: validation.error, variant: "destructive" });
+      return;
+    }
+    
+    try {
+      const ok = await RemoteStorageService.addPlayerToTeamByName(selectedTeamId, validation.value);
+      if (ok) {
+        setNewPlayerName("");
+        const players = await RemoteStorageService.listTeamPlayers(selectedTeamId);
+        setTeamPlayers(players);
+      } else {
+        toast({ title: "שגיאה בהוספת שחקן", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "שגיאה בהוספת שחקן", description: error instanceof Error ? error.message : "שגיאה לא ידועה", variant: "destructive" });
     }
   };
 
