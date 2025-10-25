@@ -264,6 +264,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_join_evening: { Args: { _evening_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
