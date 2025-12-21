@@ -135,7 +135,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     console.log('Generating pools for round with maxMatches:', maxMatches);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
-    const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+    const pools = currentEvening.winsToComplete === 4 
+      ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
+      : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
     console.log('Generated pools:', pools);
 
     // Persist pools on the round so they don't change on navigation
@@ -225,7 +227,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
            const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
           const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
-          const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+          const pools = currentEvening.winsToComplete === 4 
+            ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
+            : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
           // Persist these pools on the round
           const roundWithPools: Round = { ...updatedRoundPersist, teamPools: [pools[0], pools[1]] } as Round;
           const evWithPools: Evening = {
@@ -302,7 +306,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-      const pools = teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+      const pools = currentEvening.winsToComplete === 4 
+        ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
+        : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
       // Persist pools on the round in evening state
       const roundWithPools: Round = { ...round, teamPools: [pools[0], pools[1]] } as Round;
       const evWithPools: Evening = {
