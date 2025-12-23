@@ -271,6 +271,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_join_attempts: { Args: never; Returns: undefined }
+      get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
       join_evening_by_code: {
         Args: { _code: string }
         Returns: {
