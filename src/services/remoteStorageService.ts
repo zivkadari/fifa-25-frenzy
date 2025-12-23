@@ -6,6 +6,9 @@ const EVENINGS_TABLE = "evenings";
 const TEAMS_TABLE = "teams";
 const TEAM_PLAYERS_TABLE = "team_players";
 const PLAYERS_TABLE = "players";
+const PROFILES_TABLE = "profiles";
+const PLAYER_ACCOUNTS_TABLE = "player_accounts";
+const TEAM_MEMBERS_TABLE = "team_members";
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9\u0590-\u05FF]+/g, "-").replace(/^-+|-+$/g, "");
@@ -417,6 +420,134 @@ export class RemoteStorageService {
       return null;
     }
     return code;
+  }
+
+  // ========== User Profile ==========
+  static async getProfile(userId: string): Promise<{ display_name: string; avatar_url: string | null } | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from(PROFILES_TABLE)
+      .select("display_name, avatar_url")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) {
+      console.error("getProfile error:", error.message);
+      return null;
+    }
+    return data;
+  }
+
+  static async updateProfile(updates: { display_name?: string; avatar_url?: string }): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    
+    const { error } = await supabase
+      .from(PROFILES_TABLE)
+      .update(updates)
+      .eq("id", user.id);
+    if (error) {
+      console.error("updateProfile error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
+  // ========== Player Accounts (claim player) ==========
+  static async getClaimedPlayer(): Promise<{ player_id: string; player_name: string } | null> {
+    if (!supabase) return null;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .select("player_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error || !data) return null;
+
+    // Get player name
+    const { data: player } = await supabase
+      .from(PLAYERS_TABLE)
+      .select("display_name")
+      .eq("id", data.player_id)
+      .maybeSingle();
+
+    return { player_id: data.player_id, player_name: player?.display_name || data.player_id };
+  }
+
+  static async claimPlayer(playerId: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .insert({ player_id: playerId, user_id: user.id });
+    if (error) {
+      console.error("claimPlayer error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
+  static async unclaimPlayer(): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .delete()
+      .eq("user_id", user.id);
+    if (error) {
+      console.error("unclaimPlayer error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
+  // ========== Team Members ==========
+  static async getUserTeamMemberships(): Promise<Array<{ team_id: string; team_name: string; role: string }>> {
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from(TEAM_MEMBERS_TABLE)
+      .select("team_id, role")
+      .eq("user_id", user.id);
+    if (error || !data) return [];
+
+    // Get team names
+    const teamIds = data.map(m => m.team_id);
+    if (teamIds.length === 0) return [];
+
+    const { data: teams } = await supabase
+      .from(TEAMS_TABLE)
+      .select("id, name")
+      .in("id", teamIds);
+
+    const teamMap = new Map((teams || []).map(t => [t.id, t.name]));
+    return data.map(m => ({
+      team_id: m.team_id,
+      team_name: teamMap.get(m.team_id) || "Unknown",
+      role: m.role
+    }));
+  }
+
+  // ========== All Players (for claiming) ==========
+  static async listAllPlayers(): Promise<Array<{ id: string; name: string }>> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from(PLAYERS_TABLE)
+      .select("id, display_name")
+      .order("display_name", { ascending: true });
+    if (error) {
+      console.error("listAllPlayers error:", error.message);
+      return [];
+    }
+    return (data || []).map(p => ({ id: p.id, name: p.display_name }));
   }
 }
 
