@@ -84,6 +84,27 @@ export type Database = {
           },
         ]
       }
+      join_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           created_at: string
@@ -170,6 +191,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_join_attempts: { Args: never; Returns: undefined }
       join_evening_by_code: {
         Args: { _code: string }
         Returns: {
