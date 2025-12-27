@@ -73,6 +73,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
   const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
+  const [showRankings, setShowRankings] = useState(false);
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
@@ -807,12 +808,19 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             )}
 
             {/* Player Rankings Table */}
-            <Card className="bg-gaming-surface border-border p-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                דירוג שחקנים
-              </h3>
-              <div className="overflow-x-auto">
+            <Collapsible open={showRankings} onOpenChange={setShowRankings}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between mb-2">
+                  <span className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4" />
+                    דירוג שחקנים ({currentEvening.players.length})
+                  </span>
+                  {showRankings ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <Card className="bg-gaming-surface border-border p-4">
+                  <div className="overflow-x-auto">
                 {(() => {
                   // Define match info type
                   type MatchInfo = {
@@ -985,8 +993,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     </Table>
                   );
                 })()}
-              </div>
-            </Card>
+                  </div>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )}
 
