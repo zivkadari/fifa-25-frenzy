@@ -6,7 +6,6 @@ import { SinglesSetup } from "@/components/SinglesSetup";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory } from "@/components/TournamentHistory";
-import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { Evening, Player } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
