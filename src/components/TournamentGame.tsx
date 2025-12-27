@@ -683,47 +683,39 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Round Progress</span>
-            <span>Matches {completedMatches} / {maxMatchesInRound}</span>
+        {/* Progress - Compact */}
+        <div className="mb-3">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Round {currentRound + 1}/3</span>
+            <span>{completedMatches}/{maxMatchesInRound} matches</span>
           </div>
           <Progress 
             value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
-            className="h-2" 
+            className="h-1.5" 
           />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Tournament: Round {currentRound + 1}/3</span>
-            <span>Matches {completedMatches} / {maxMatchesInRound}</span>
-          </div>
         </div>
 
-        {/* Current Matchup */}
+        {/* Current Matchup - Single compact card */}
         {currentMatch && (
-          <Card className="bg-gradient-card border-neon-green/20 p-4 mb-6 shadow-card">
-            <div className="flex items-center justify-between gap-6 md:gap-10">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Pair 1</p>
-                <p className="font-semibold text-foreground">
+          <Card className="bg-gradient-card border-neon-green/20 p-3 mb-3 shadow-card">
+            <div className="flex items-center justify-between">
+              <div className="text-center flex-1">
+                <p className="text-xs text-muted-foreground truncate max-w-[100px]">
                   {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
+                <p className="text-xl font-bold text-neon-green">{currentRoundScore[0]}</p>
               </div>
-              <div className="text-neon-green font-bold text-xl mx-6 md:mx-10">VS</div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Pair 2</p>
-                <p className="font-semibold text-foreground">
+              <div className="text-neon-green font-bold px-2">VS</div>
+              <div className="text-center flex-1">
+                <p className="text-xs text-muted-foreground truncate max-w-[100px]">
                   {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-lg font-bold text-neon-green">{currentRoundScore[1]}</p>
+                <p className="text-xl font-bold text-neon-green">{currentRoundScore[1]}</p>
               </div>
             </div>
             {currentRoundData?.isDeciderMatch && (
-              <div className="text-center mt-2">
-                <Badge variant="destructive" className="animate-pulse">
-                  Decider Match
-                </Badge>
+              <div className="text-center mt-1">
+                <Badge variant="destructive" className="animate-pulse text-xs">Decider</Badge>
               </div>
             )}
           </Card>
@@ -731,24 +723,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
         {/* Game Phases */}
         {gamePhase === 'team-selection' && currentMatch && (
-          <div className="space-y-4">
-            {/* Game Title - Shows both pairs */}
-            <Card className="bg-gradient-card border-neon-green/20 p-4">
-              <div className="flex items-center justify-center gap-3 text-center">
-                <span className="font-bold text-foreground">
-                  {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
-                </span>
-                <span className="text-neon-green font-bold text-lg">VS</span>
-                <span className="font-bold text-foreground">
-                  {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
-                </span>
-              </div>
-              {currentRoundData?.isDeciderMatch && (
-                <div className="text-center mt-2">
-                  <Badge variant="destructive" className="animate-pulse">Decider Match</Badge>
-                </div>
-              )}
-            </Card>
+          <div className="space-y-3">
 
             {/* Decider Match - Draw Balanced Teams Button */}
             {currentRoundData?.isDeciderMatch && (

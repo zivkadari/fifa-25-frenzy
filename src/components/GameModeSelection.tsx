@@ -91,45 +91,44 @@ export const GameModeSelection = ({
   };
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
+    <div className="min-h-screen bg-gaming-bg p-3 mobile-optimized">
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">בחירת מצב משחק</h1>
-            <p className="text-muted-foreground text-sm">כיצד תרצו לבחור קבוצות?</p>
+            <h1 className="text-xl font-bold text-foreground">בחירת מצב משחק</h1>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Mode Selection */}
           {!selectedMode && (
             <>
               <Card 
-                className="bg-gradient-card border-neon-green/20 p-6 shadow-card cursor-pointer hover:border-neon-green/40 transition-colors"
+                className="bg-gradient-card border-neon-green/20 p-4 shadow-card cursor-pointer hover:border-neon-green/40 transition-colors"
                 onClick={() => handleModeSelect('random')}
               >
                 <div className="flex items-center gap-3">
-                  <Dice1 className="h-8 w-8 text-neon-green" />
+                  <Dice1 className="h-6 w-6 text-neon-green" />
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">בחירה רנדומלית</h3>
-                    <p className="text-muted-foreground text-sm">המערכת תבחר קבוצות באופן רנדומלי לכל משחק</p>
+                    <h3 className="text-base font-semibold text-foreground">בחירה רנדומלית</h3>
+                    <p className="text-muted-foreground text-xs">המערכת תבחר קבוצות באופן רנדומלי</p>
                   </div>
                 </div>
               </Card>
 
               <Card 
-                className="bg-gradient-card border-neon-green/20 p-6 shadow-card cursor-pointer hover:border-neon-green/40 transition-colors"
+                className="bg-gradient-card border-neon-green/20 p-4 shadow-card cursor-pointer hover:border-neon-green/40 transition-colors"
                 onClick={() => handleModeSelect('ucl-uel')}
               >
                 <div className="flex items-center gap-3">
-                  <Trophy className="h-8 w-8 text-neon-green" />
+                  <Trophy className="h-6 w-6 text-neon-green" />
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">UCL & UEL</h3>
-                    <p className="text-muted-foreground text-sm">כל זוג יקבל קבוצה מליגת האלופות ויוכל למלא שמות קבוצות בעצמו</p>
+                    <h3 className="text-base font-semibold text-foreground">UCL & UEL</h3>
+                    <p className="text-muted-foreground text-xs">כל זוג יקבל קבוצה מליגת האלופות</p>
                   </div>
                 </div>
               </Card>
@@ -138,13 +137,12 @@ export const GameModeSelection = ({
 
           {/* Random Mode Confirmation */}
           {selectedMode === 'random' && (
-            <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
-              <div className="text-center space-y-4">
-                <Dice1 className="h-12 w-12 text-neon-green mx-auto" />
-                <h3 className="text-lg font-semibold text-foreground">בחירה רנדומלית</h3>
-                <p className="text-muted-foreground">המערכת תבחר קבוצות באופן רנדומלי לכל משחק במהלך הטורניר</p>
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setSelectedMode(null)}>
+            <Card className="bg-gradient-card border-neon-green/20 p-4 shadow-card">
+              <div className="text-center space-y-3">
+                <Dice1 className="h-8 w-8 text-neon-green mx-auto" />
+                <h3 className="text-base font-semibold text-foreground">בחירה רנדומלית</h3>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedMode(null)}>
                     חזור
                   </Button>
                   <Button 

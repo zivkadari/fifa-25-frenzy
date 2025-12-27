@@ -170,54 +170,49 @@ export const SinglesGameComponent = ({ evening, onBack, onComplete, onGoHome, on
 
   const renderCurrentGame = () => {
     if (!currentGame) {
-      return (
-        <Card className="bg-gaming-surface/50 border-border/50 p-6">
-          <div className="text-center">
-            <Trophy className="h-12 w-12 text-neon-green mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">הטורניר הושלם!</h3>
-            <p className="text-muted-foreground">כל המשחקים הסתיימו</p>
-          </div>
-        </Card>
-      );
-    }
+        return (
+          <Card className="bg-gaming-surface/50 border-border/50 p-4">
+            <div className="text-center">
+              <Trophy className="h-8 w-8 text-neon-green mx-auto mb-2" />
+              <h3 className="text-base font-semibold text-foreground">הטורניר הושלם!</h3>
+            </div>
+          </Card>
+        );
+      }
 
-    return (
-      <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-4">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-gaming-surface border-2 border-neon-green flex items-center justify-center mb-2">
-                <span className="text-sm font-bold text-neon-green">
-                  {currentGame.players[0].name.slice(0, 2).toUpperCase()}
-                </span>
-              </div>
-              <h3 className="font-semibold text-foreground">{currentGame.players[0].name}</h3>
-              <Badge variant="outline" className="text-xs">
-                {currentGame.clubs[0].name}
-              </Badge>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-bold text-muted-foreground mb-2">VS</div>
-              {gamePhase === 'countdown' && (
-                <div className="text-3xl font-bold text-neon-green">
-                  {formatTime(countdown)}
+      return (
+        <Card className="bg-gradient-card border-neon-green/20 p-4 shadow-card">
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-3">
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-gaming-surface border-2 border-neon-green flex items-center justify-center mb-1">
+                  <span className="text-xs font-bold text-neon-green">
+                    {currentGame.players[0].name.slice(0, 2).toUpperCase()}
+                  </span>
                 </div>
-              )}
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-gaming-surface border-2 border-neon-green flex items-center justify-center mb-2">
-                <span className="text-sm font-bold text-neon-green">
-                  {currentGame.players[1].name.slice(0, 2).toUpperCase()}
-                </span>
+                <p className="text-sm font-medium text-foreground">{currentGame.players[0].name}</p>
+                <p className="text-xs text-muted-foreground">{currentGame.clubs[0].name}</p>
               </div>
-              <h3 className="font-semibold text-foreground">{currentGame.players[1].name}</h3>
-              <Badge variant="outline" className="text-xs">
-                {currentGame.clubs[1].name}
-              </Badge>
+              
+              <div className="text-center px-2">
+                <div className="text-lg font-bold text-muted-foreground">VS</div>
+                {gamePhase === 'countdown' && (
+                  <div className="text-2xl font-bold text-neon-green">
+                    {formatTime(countdown)}
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-gaming-surface border-2 border-neon-green flex items-center justify-center mb-1">
+                  <span className="text-xs font-bold text-neon-green">
+                    {currentGame.players[1].name.slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-foreground">{currentGame.players[1].name}</p>
+                <p className="text-xs text-muted-foreground">{currentGame.clubs[1].name}</p>
+              </div>
             </div>
-          </div>
 
           {gamePhase === 'countdown' && (
             <div className="space-y-4">
@@ -275,41 +270,35 @@ export const SinglesGameComponent = ({ evening, onBack, onComplete, onGoHome, on
           </Button>
         </div>
 
-        {/* Progress */}
-        <Card className="bg-gaming-surface/50 border-border/50 p-4 mb-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">התקדמות טורניר</span>
-              <span className="text-neon-green font-medium">{Math.round(getGameProgress())}%</span>
-            </div>
-            <Progress value={getGameProgress()} className="h-2" />
+        {/* Progress - Compact */}
+        <Card className="bg-gaming-surface/50 border-border/50 p-2 mb-3">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-muted-foreground">התקדמות</span>
+            <span className="text-neon-green font-medium">{Math.round(getGameProgress())}%</span>
           </div>
+          <Progress value={getGameProgress()} className="h-1.5" />
         </Card>
 
         {/* Current Game */}
         {renderCurrentGame()}
 
-        {/* Player Stats */}
+        {/* Player Stats - Compact */}
         {playerStats.length > 0 && (
-          <Card className="bg-gaming-surface/50 border-border/50 p-4 mt-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Crown className="h-5 w-5 text-neon-green" />
-              דירוג שחקנים
+          <Card className="bg-gaming-surface/50 border-border/50 p-3 mt-3">
+            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-neon-green" />
+              דירוג
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {playerStats.map((stat, index) => (
-                <div key={stat.player.id} className="flex items-center justify-between p-2 rounded bg-gaming-surface/50">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={index === 0 ? "default" : "outline"} className="min-w-[24px] h-6">
-                      {index + 1}
-                    </Badge>
-                    <span className="font-medium text-foreground">{stat.player.name}</span>
+                <div key={stat.player.id} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
+                    <span className="text-sm font-medium text-foreground">{stat.player.name}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-neon-green">{stat.wins} ניצחונות</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stat.goalsFor}-{stat.goalsAgainst}
-                    </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-neon-green font-medium">{stat.wins}W</span>
+                    <span className="text-muted-foreground">{stat.goalsFor}-{stat.goalsAgainst}</span>
                   </div>
                 </div>
               ))}
