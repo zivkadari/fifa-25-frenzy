@@ -233,6 +233,105 @@ export type Database = {
         }
         Relationships: []
       }
+      player_stats_by_team: {
+        Row: {
+          alpha_count: number
+          beta_count: number
+          delta_count: number
+          games_drawn: number
+          games_lost: number
+          games_played: number
+          games_won: number
+          gamma_count: number
+          goals_against: number
+          goals_for: number
+          id: string
+          player_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          gamma_count?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          player_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          gamma_count?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          player_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      player_stats_global: {
+        Row: {
+          alpha_count: number
+          beta_count: number
+          delta_count: number
+          games_drawn: number
+          games_lost: number
+          games_played: number
+          games_won: number
+          gamma_count: number
+          goals_against: number
+          goals_for: number
+          id: string
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          gamma_count?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          gamma_count?: number
+          goals_against?: number
+          goals_for?: number
+          id?: string
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           created_at: string
