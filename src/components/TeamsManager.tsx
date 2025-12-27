@@ -1,15 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
-import { TournamentEngine } from "@/services/tournamentEngine";
-import { Evening, PlayerStats } from "@/types/tournament";
-import { ArrowLeft, Users, Plus, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw } from "lucide-react";
 import { validateTeamName, validatePlayerName } from "@/lib/validation";
+
+interface TeamLeaderboardEntry {
+  player_id: string;
+  player_name: string;
+  games_played: number;
+  games_won: number;
+  games_lost: number;
+  games_drawn: number;
+  goals_for: number;
+  goals_against: number;
+  alpha_count: number;
+  beta_count: number;
+  gamma_count: number;
+  delta_count: number;
+}
 
 interface TeamsManagerProps {
   onBack: () => void;
@@ -23,8 +35,9 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [teamPlayers, setTeamPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [newTeamName, setNewTeamName] = useState("");
   const [newPlayerName, setNewPlayerName] = useState("");
-  const [teamEvenings, setTeamEvenings] = useState<Evening[]>([]);
+  const [leaderboard, setLeaderboard] = useState<TeamLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -42,12 +55,12 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     const loadTeam = async () => {
       setLoading(true);
       try {
-        const [players, evenings] = await Promise.all([
+        const [players, stats] = await Promise.all([
           RemoteStorageService.listTeamPlayers(selectedTeamId),
-          RemoteStorageService.loadEveningsByTeam(selectedTeamId),
+          RemoteStorageService.getTeamLeaderboard(selectedTeamId),
         ]);
         setTeamPlayers(players);
-        setTeamEvenings(evenings);
+        setLeaderboard(stats);
       } finally {
         setLoading(false);
       }
@@ -55,31 +68,24 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     loadTeam();
   }, [selectedTeamId]);
 
-  const leaderboard: PlayerStats[] = useMemo(() => {
-    // Aggregate stats across all evenings for this team
-    const map = new Map<string, PlayerStats>();
-    const addStats = (ps: PlayerStats) => {
-      const prev = map.get(ps.player.id);
-      if (!prev) {
-        map.set(ps.player.id, { ...ps });
-        return;
+  const handleSyncStats = async () => {
+    setSyncing(true);
+    try {
+      const success = await RemoteStorageService.syncStats(undefined, true);
+      if (success) {
+        toast({ title: "סטטיסטיקות עודכנו", description: "הנתונים חושבו מחדש מכל הערבים" });
+        // Reload leaderboard
+        if (selectedTeamId) {
+          const stats = await RemoteStorageService.getTeamLeaderboard(selectedTeamId);
+          setLeaderboard(stats);
+        }
+      } else {
+        toast({ title: "שגיאה בעדכון סטטיסטיקות", variant: "destructive" });
       }
-      prev.wins += ps.wins;
-      prev.goalsFor += ps.goalsFor;
-      prev.goalsAgainst += ps.goalsAgainst;
-      prev.points += ps.points;
-      prev.longestWinStreak = Math.max(prev.longestWinStreak, ps.longestWinStreak);
-    };
-    teamEvenings.forEach((e) => {
-      TournamentEngine.calculatePlayerStats(e).forEach(addStats);
-    });
-
-    return Array.from(map.values()).sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.wins !== a.wins) return b.wins - a.wins;
-      return (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst);
-    });
-  }, [teamEvenings]);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const createTeam = async () => {
     const name = newTeamName.trim();
@@ -151,6 +157,7 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
       if (selectedTeamId === teamId) {
         setSelectedTeamId(null);
         setTeamPlayers([]);
+        setLeaderboard([]);
       }
       toast({ title: "קבוצה נמחקה", description: "הקבוצה נמחקה בהצלחה" });
     } else {
@@ -255,12 +262,22 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
 
             {/* Team leaderboard */}
             <Card className="bg-gradient-card border-neon-green/20 p-6 shadow-card">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="h-5 w-5 text-neon-green" />
-                <h2 className="text-lg font-semibold text-foreground">טבלת על של הקבוצה</h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-neon-green" />
+                  <h2 className="text-lg font-semibold text-foreground">טבלת על של הקבוצה</h2>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleSyncStats}
+                  disabled={syncing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                </Button>
               </div>
               <div className="text-xs text-muted-foreground mb-3">
-                כולל את כל הערבים המשויכים לקבוצה זו אי פעם
+                סטטיסטיקות מחושבות מכל הערבים המשויכים לקבוצה
               </div>
               <Separator className="mb-3" />
               <div className="space-y-2">
@@ -268,20 +285,19 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
                   <p className="text-sm text-muted-foreground">טוען...</p>
                 ) : leaderboard.length ? (
                   leaderboard.map((s, idx) => (
-                    <div key={s.player.id} className="flex items-center justify-between border-b border-border/50 py-2">
+                    <div key={s.player_id} className="flex items-center justify-between border-b border-border/50 py-2">
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground w-5 text-right">{idx + 1}</span>
-                        <span className="text-foreground font-medium">{s.player.name}</span>
+                        <span className="text-foreground font-medium">{s.player_name}</span>
                       </div>
                       <div className="text-right text-sm text-muted-foreground">
-                        <span className="inline-block min-w-[4ch]">נק׳ {s.points}</span>
-                        <span className="inline-block min-w-[4ch] ml-3">ניצ׳ {s.wins}</span>
-                        <span className="inline-block min-w-[7ch] ml-3">שערים {s.goalsFor}:{s.goalsAgainst}</span>
+                        <span className="inline-block min-w-[4ch]">ניצ׳ {s.games_won}</span>
+                        <span className="inline-block min-w-[7ch] ml-3">שערים {s.goals_for}:{s.goals_against}</span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">אין נתונים להצגה</p>
+                  <p className="text-sm text-muted-foreground">אין נתונים להצגה. לחץ על כפתור הרענון לעדכון סטטיסטיקות.</p>
                 )}
               </div>
             </Card>
