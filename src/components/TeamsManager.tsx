@@ -101,7 +101,9 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     try {
       const created = await RemoteStorageService.createTeam(validation.value);
       if (created) {
-        setTeams((prev) => [created, ...prev]);
+        // Refresh teams list from server to ensure RLS/membership is properly reflected
+        const freshTeams = await RemoteStorageService.listTeams();
+        setTeams(freshTeams);
         setNewTeamName("");
         setSelectedTeamId(created.id);
         toast({ title: "קבוצה נוצרה", description: validation.value });
