@@ -35,8 +35,9 @@ function pickClubWithFallback(
   // Fallback: all clubs of this category are exhausted
   // Allow reuse of clubs with the SAME star rating that were already used
   if (preferredStars !== undefined) {
+    // CRITICAL: Also check !banned.has(c.id) to prevent duplicates within the same round
     const usedWithSameStars = Array.from(usedClubsMap.values())
-      .filter(c => c.stars === preferredStars);
+      .filter(c => c.stars === preferredStars && !banned.has(c.id));
     if (usedWithSameStars.length > 0) {
       const idx = Math.floor(Math.random() * usedWithSameStars.length);
       return { club: usedWithSameStars[idx], isRecycled: true };
@@ -183,8 +184,10 @@ export class TeamSelector {
       let isRecycledBatch = false;
       
       // If no unused 4+ star clubs, allow reuse of 4+ star clubs
+      // CRITICAL: Also check !banned.has(c.id) to prevent duplicates within the same round
       if (available.length === 0) {
-        const usedFourPlus = Array.from(usedClubsMap.values()).filter(c => c.stars >= 4);
+        const usedFourPlus = Array.from(usedClubsMap.values())
+          .filter(c => c.stars >= 4 && !banned.has(c.id));
         if (usedFourPlus.length > 0) {
           available = usedFourPlus;
           isRecycledBatch = true;
