@@ -11,14 +11,16 @@ import {
   Play, 
   Pause, 
   RotateCcw,
-  Crown
+  Crown,
+  ChevronDown
 } from "lucide-react";
 import { Home } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
 import { SinglesGameComponent } from "@/components/SinglesGame";
-import { FloatingScoreTable } from "@/components/FloatingScoreTable";
 import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { TeamSelector } from "@/services/teamSelector";
@@ -688,73 +690,167 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         )}
 
         {/* Game Phases */}
-        {gamePhase === 'team-selection' && (
+        {gamePhase === 'team-selection' && currentMatch && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-center text-foreground">
-              {currentRoundData?.isDeciderMatch ? "Decider Match - Balanced Teams" : "Select Your Teams"}
-            </h2>
+            {/* Game Title - Shows both pairs */}
+            <Card className="bg-gradient-card border-neon-green/20 p-4">
+              <div className="flex items-center justify-center gap-3 text-center">
+                <span className="font-bold text-foreground">
+                  {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
+                </span>
+                <span className="text-neon-green font-bold text-lg">VS</span>
+                <span className="font-bold text-foreground">
+                  {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
+                </span>
+              </div>
+              {currentRoundData?.isDeciderMatch && (
+                <div className="text-center mt-2">
+                  <Badge variant="destructive" className="animate-pulse">Decider Match</Badge>
+                </div>
+              )}
+            </Card>
 
+            {/* Decider Match - Draw Balanced Teams Button */}
             {currentRoundData?.isDeciderMatch && (
-              <div className="text-center space-y-4">
+              <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
                 <Button variant="gaming" onClick={drawDeciderTeams}>Draw Balanced Teams</Button>
               </div>
             )}
-            {/* Debug info (hidden in decider) */}
-            {!currentRoundData?.isDeciderMatch && (
-              <div className="text-xs text-muted-foreground text-center">
-                Team pools: {teamPools[0]?.length || 0} / {teamPools[1]?.length || 0}
+
+            {/* Accordion Team Selection */}
+            {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 && (
+              <Accordion type="single" collapsible className="space-y-2">
+                {teamPools.map((pool, pairIndex) => {
+                  const pairNames = currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ');
+                  const selectedClub = selectedClubs[pairIndex];
+                  const filtered = pool.filter((club) =>
+                    (usedClubCounts[club.id] ?? 0) < 1 &&
+                    !usedClubIdsThisRound.has(club.id) &&
+                    club.id !== (selectedClubs[0]?.id || '') &&
+                    club.id !== (selectedClubs[1]?.id || '')
+                  );
+
+                  return (
+                    <AccordionItem 
+                      key={pairIndex} 
+                      value={`pair-${pairIndex}`}
+                      className="border rounded-lg bg-gaming-surface overflow-hidden"
+                    >
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
+                        <div className="flex items-center justify-between w-full pr-2">
+                          <span className="font-medium text-foreground">{pairNames}</span>
+                          {selectedClub ? (
+                            <Badge variant="default" className="bg-neon-green text-background">
+                              {selectedClub.name} {selectedClub.stars}★
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              לחץ לבחירה
+                            </Badge>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-2 pb-2">
+                        <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                          {filtered.map((club) => (
+                            <Button
+                              key={club.id}
+                              variant={selectedClub?.id === club.id ? "gaming" : "ghost"}
+                              onClick={() => selectClub(pairIndex as 0 | 1, club)}
+                              className="justify-between h-auto py-2 px-3"
+                            >
+                              <span className="font-medium">{club.name}</span>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs ltr-numbers">
+                                  {club.stars}★
+                                </Badge>
+                                {club.isNational && (
+                                  <Badge variant="outline" className="text-xs">National</Badge>
+                                )}
+                              </div>
+                            </Button>
+                          ))}
+                          {filtered.length === 0 && (
+                            <p className="text-xs text-muted-foreground text-center py-2">אין קבוצות זמינות</p>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
+
+            {/* Loading State */}
+            {!currentRoundData?.isDeciderMatch && (!teamPools[0] || !teamPools[1] || teamPools[0].length === 0 || teamPools[1].length === 0) && (
+              <div className="text-center text-muted-foreground py-8">
+                <p>Loading teams...</p>
               </div>
             )}
 
-            
-            {currentMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 ? (
-              teamPools.map((pool, pairIndex) => {
-                const filtered = pool.filter((club) =>
-                  (usedClubCounts[club.id] ?? 0) < 1 &&
-                  !usedClubIdsThisRound.has(club.id) &&
-                  club.id !== (selectedClubs[0]?.id || '') &&
-                  club.id !== (selectedClubs[1]?.id || '')
-                );
-                return (
-                  <Card key={pairIndex} className="bg-gaming-surface border-border p-4">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                      {currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ')}
-                    </h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      {filtered.map((club) => (
-                        <Button
-                          key={club.id}
-                          variant={selectedClubs[pairIndex]?.id === club.id ? "gaming" : "hero"}
-                          onClick={() => selectClub(pairIndex as 0 | 1, club)}
-                          className="justify-between h-auto p-3"
-                        >
-                          <span className="font-medium">{club.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs ltr-numbers">
-                              {club.stars}★
-                            </Badge>
-                            {club.isNational && (
-                              <Badge variant="outline" className="text-xs">
-                                National
-                              </Badge>
-                            )}
-                          </div>
-                        </Button>
-                      ))}
-                      {filtered.length === 0 && (
-                        <p className="text-xs text-muted-foreground">אין קבוצות זמינות</p>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <p>Loading teams...</p>
-                <p className="text-xs mt-2">Pools: {JSON.stringify(teamPools.map(p => p?.length || 0))}</p>
+            {/* Player Rankings Table */}
+            <Card className="bg-gaming-surface border-border p-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                דירוג שחקנים
+              </h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">שחקן</TableHead>
+                      <TableHead className="text-center">נצ׳</TableHead>
+                      <TableHead className="text-center">למע׳</TableHead>
+                      <TableHead className="text-center">נגד</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      // Calculate player stats inline
+                      const statsMap = new Map<string, { player: typeof currentEvening.players[0]; totalWins: number; goalsFor: number; goalsAgainst: number }>();
+                      currentEvening.players.forEach(player => {
+                        statsMap.set(player.id, { player, totalWins: 0, goalsFor: 0, goalsAgainst: 0 });
+                      });
+                      currentEvening.rounds.forEach(round => {
+                        round.matches.forEach(match => {
+                          if (match.completed && match.score && match.winner) {
+                            const [score1, score2] = match.score;
+                            const [pair1, pair2] = match.pairs;
+                            pair1.players.forEach(p => {
+                              const s = statsMap.get(p.id);
+                              if (s) { s.goalsFor += score1; s.goalsAgainst += score2; }
+                            });
+                            pair2.players.forEach(p => {
+                              const s = statsMap.get(p.id);
+                              if (s) { s.goalsFor += score2; s.goalsAgainst += score1; }
+                            });
+                            const winningPair = match.winner === pair1.id ? pair1 : pair2;
+                            winningPair.players.forEach(p => {
+                              const s = statsMap.get(p.id);
+                              if (s) { s.totalWins += 1; }
+                            });
+                          }
+                        });
+                      });
+                      return Array.from(statsMap.values())
+                        .sort((a, b) => b.totalWins - a.totalWins || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst))
+                        .map((stats, idx) => (
+                          <TableRow key={stats.player.id}>
+                            <TableCell className="text-right font-medium">
+                              {idx === 0 && stats.totalWins > 0 && <Trophy className="w-3 h-3 inline mr-1 text-yellow-500" />}
+                              {stats.player.name}
+                            </TableCell>
+                            <TableCell className="text-center font-bold">{stats.totalWins}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{stats.goalsFor}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{stats.goalsAgainst}</TableCell>
+                          </TableRow>
+                        ));
+                    })()}
+                  </TableBody>
+                </Table>
               </div>
-            )}
+            </Card>
           </div>
         )}
 
@@ -882,9 +978,6 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Score Table Component */}
-        <FloatingScoreTable evening={currentEvening} />
       </div>
     </div>
   );
