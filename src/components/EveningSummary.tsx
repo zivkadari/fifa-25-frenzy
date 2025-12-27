@@ -79,140 +79,73 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
       )}
 
       <div className="max-w-md mx-auto relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8 animate-scale-in">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Trophy className="h-16 w-16 text-neon-green animate-glow-pulse" />
-              <div className="absolute -inset-4 bg-neon-green/20 rounded-full blur-xl"></div>
-            </div>
+        {/* Header - Compact */}
+        <div className="text-center mb-4 animate-scale-in">
+          <div className="flex justify-center mb-2">
+            <Trophy className="h-10 w-10 text-neon-green animate-glow-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Tournament Complete!
-          </h1>
-          <p className="text-muted-foreground">
-            {evening.date} • {evening.rounds.length} Rounds Played
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Tournament Complete!</h1>
+          <p className="text-xs text-muted-foreground">{evening.date}</p>
         </div>
 
-        {/* Podium */}
-        <div className="space-y-4 mb-8">
+        {/* Podium - Compact */}
+        <div className="space-y-2 mb-4">
           {/* Alpha (1st Place) */}
           {rankings.alpha.length > 0 && (
-            <Card className={`${getRankColor('alpha')} border-2 p-6 shadow-glow animate-scale-in`}>
-              <div className="flex items-center gap-4">
-                {getRankIcon('alpha')}
+            <Card className={`${getRankColor('alpha')} border-2 p-3 shadow-glow animate-scale-in`}>
+              <div className="flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-yellow-400" />
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-foreground mb-1">
-                    Alpha of the Night
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {rankings.alpha.map((player, index) => (
-                      <Badge key={player.id} variant="secondary" className="bg-yellow-400/20 text-yellow-300 border-yellow-400/30">
-                        {player.name}
-                      </Badge>
-                    ))}
-                  </div>
+                  <span className="text-sm font-bold text-foreground">Alpha: </span>
+                  {rankings.alpha.map((player) => (
+                    <Badge key={player.id} variant="secondary" className="bg-yellow-400/20 text-yellow-300 border-yellow-400/30 ml-1">
+                      {player.name}
+                    </Badge>
+                  ))}
                 </div>
               </div>
             </Card>
           )}
 
-          {/* Beta (2nd Place) */}
-          {rankings.beta.length > 0 && (
-            <Card className={`${getRankColor('beta')} border-2 p-4`}>
-              <div className="flex items-center gap-4">
-                {getRankIcon('beta')}
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">Beta</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {rankings.beta.map((player, index) => (
-                      <Badge key={player.id} variant="secondary" className="bg-gray-400/20 text-gray-300 border-gray-400/30">
-                        {player.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Gamma (3rd Place) */}
-          {rankings.gamma.length > 0 && (
-            <Card className={`${getRankColor('gamma')} border-2 p-4`}>
-              <div className="flex items-center gap-4">
-                {getRankIcon('gamma')}
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">Gamma</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {rankings.gamma.map((player, index) => (
-                      <Badge key={player.id} variant="secondary" className="bg-amber-600/20 text-amber-300 border-amber-600/30">
-                        {player.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Delta (4th Place) */}
-          {rankings.delta && rankings.delta.length > 0 && (
-            <Card className={`${getRankColor('delta')} border-2 p-4`}>
-              <div className="flex items-center gap-4">
-                {getRankIcon('delta')}
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">Delta</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {rankings.delta.map((player) => (
-                      <Badge key={player.id} variant="secondary" className="bg-sky-400/20 text-sky-300 border-sky-400/30">
-                        {player.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
+          {/* Beta, Gamma, Delta in a row */}
+          <div className="grid grid-cols-3 gap-2">
+            {rankings.beta.length > 0 && (
+              <Card className={`${getRankColor('beta')} border p-2 text-center`}>
+                <Medal className="h-4 w-4 text-gray-400 mx-auto mb-1" />
+                <p className="text-xs font-medium">{rankings.beta.map(p => p.name).join(', ')}</p>
+              </Card>
+            )}
+            {rankings.gamma.length > 0 && (
+              <Card className={`${getRankColor('gamma')} border p-2 text-center`}>
+                <Award className="h-4 w-4 text-amber-600 mx-auto mb-1" />
+                <p className="text-xs font-medium">{rankings.gamma.map(p => p.name).join(', ')}</p>
+              </Card>
+            )}
+            {rankings.delta && rankings.delta.length > 0 && (
+              <Card className={`${getRankColor('delta')} border p-2 text-center`}>
+                <Target className="h-4 w-4 text-sky-400 mx-auto mb-1" />
+                <p className="text-xs font-medium">{rankings.delta.map(p => p.name).join(', ')}</p>
+              </Card>
+            )}
+          </div>
         </div>
 
-        {/* Detailed Stats */}
-        <Card className="bg-gradient-card border-neon-green/20 p-6 mb-6 shadow-card">
-          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-neon-green" />
-            Player Statistics
+        {/* Detailed Stats - Compact */}
+        <Card className="bg-gradient-card border-neon-green/20 p-3 mb-4 shadow-card">
+          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-neon-green" />
+            Stats
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {playerStats.map((stats, index) => (
-              <div key={stats.player.id} className="border-b border-border/30 pb-3 last:border-b-0">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      #{index + 1}
-                    </Badge>
-                    <span className="font-semibold text-foreground">{stats.player.name}</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-neon-green/20 text-neon-green border-neon-green/30">
-                    {stats.points} pts
-                  </Badge>
+              <div key={stats.player.id} className="flex items-center justify-between py-1 border-b border-border/20 last:border-b-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                  <span className="text-sm font-medium text-foreground">{stats.player.name}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-4 text-xs text-muted-foreground">
-                  <div className="text-center">
-                    <p className="font-medium text-foreground">{stats.wins}</p>
-                    <p>Wins</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-foreground">{stats.goalsFor}</p>
-                    <p>Goals For</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-foreground">{stats.goalsAgainst}</p>
-                    <p>Goals Against</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium text-foreground">{stats.longestWinStreak}</p>
-                    <p>Longest Streak</p>
-                  </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-neon-green font-medium">{stats.wins}W</span>
+                  <span className="text-muted-foreground">{stats.goalsFor}-{stats.goalsAgainst}</span>
                 </div>
               </div>
             ))}
@@ -220,35 +153,27 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
         </Card>
 
         {/* Action Buttons */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {!saved && (
             <Button
               variant="gaming"
-              size="xl"
+              size="lg"
               onClick={handleSaveToHistory}
               className="w-full"
             >
-              <Save className="h-5 w-5" />
+              <Save className="h-4 w-4" />
               Save to History
             </Button>
           )}
           
           <Button
             variant="hero"
-            size="lg"
             onClick={onBackToHome}
             className="w-full"
           >
-            <Home className="h-5 w-5" />
+            <Home className="h-4 w-4" />
             Back to Home
           </Button>
-        </div>
-
-        {/* Footer Message */}
-        <div className="mt-8 text-center">
-          <p className="text-muted-foreground text-sm">
-            🎮 Great tournament! Ready for another round? 🏆
-          </p>
         </div>
       </div>
     </div>
