@@ -549,6 +549,132 @@ export class RemoteStorageService {
     }
     return (data || []).map(p => ({ id: p.id, name: p.display_name }));
   }
-}
 
+  // ========== Player Stats (from normalized tables) ==========
+  static async getPlayerStatsGlobal(playerId: string): Promise<{
+    games_played: number;
+    games_won: number;
+    games_lost: number;
+    games_drawn: number;
+    goals_for: number;
+    goals_against: number;
+    alpha_count: number;
+    beta_count: number;
+    gamma_count: number;
+    delta_count: number;
+  } | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from("player_stats_global")
+      .select("*")
+      .eq("player_id", playerId)
+      .maybeSingle();
+    if (error) {
+      console.error("getPlayerStatsGlobal error:", error.message);
+      return null;
+    }
+    return data;
+  }
+
+  static async getPlayerStatsByTeam(playerId: string): Promise<Array<{
+    team_id: string;
+    team_name: string;
+    games_played: number;
+    games_won: number;
+    games_lost: number;
+    games_drawn: number;
+    goals_for: number;
+    goals_against: number;
+    alpha_count: number;
+    beta_count: number;
+    gamma_count: number;
+    delta_count: number;
+  }>> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("player_stats_by_team")
+      .select("*")
+      .eq("player_id", playerId);
+    if (error) {
+      console.error("getPlayerStatsByTeam error:", error.message);
+      return [];
+    }
+    if (!data || data.length === 0) return [];
+
+    // Get team names
+    const teamIds = data.map(s => s.team_id);
+    const { data: teams } = await supabase
+      .from(TEAMS_TABLE)
+      .select("id, name")
+      .in("id", teamIds);
+
+    const teamMap = new Map((teams || []).map(t => [t.id, t.name]));
+    return data.map(s => ({
+      ...s,
+      team_name: teamMap.get(s.team_id) || "Unknown"
+    }));
+  }
+
+  static async getTeamLeaderboard(teamId: string): Promise<Array<{
+    player_id: string;
+    player_name: string;
+    games_played: number;
+    games_won: number;
+    games_lost: number;
+    games_drawn: number;
+    goals_for: number;
+    goals_against: number;
+    alpha_count: number;
+    beta_count: number;
+    gamma_count: number;
+    delta_count: number;
+  }>> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from("player_stats_by_team")
+      .select("*")
+      .eq("team_id", teamId);
+    if (error) {
+      console.error("getTeamLeaderboard error:", error.message);
+      return [];
+    }
+    if (!data || data.length === 0) return [];
+
+    // Get player names
+    const playerIds = data.map(s => s.player_id);
+    const { data: players } = await supabase
+      .from(PLAYERS_TABLE)
+      .select("id, display_name")
+      .in("id", playerIds);
+
+    const playerMap = new Map((players || []).map(p => [p.id, p.display_name]));
+    return data
+      .map(s => ({
+        ...s,
+        player_name: playerMap.get(s.player_id) || s.player_id
+      }))
+      .sort((a, b) => {
+        // Sort by wins, then goal diff
+        if (b.games_won !== a.games_won) return b.games_won - a.games_won;
+        return (b.goals_for - b.goals_against) - (a.goals_for - a.goals_against);
+      });
+  }
+
+  static async syncStats(eveningId?: string, backfillAll?: boolean): Promise<boolean> {
+    if (!supabase) return false;
+    try {
+      const { error } = await supabase.functions.invoke('sync-stats', {
+        body: eveningId ? { evening_id: eveningId } : { backfill_all: backfillAll }
+      });
+      if (error) {
+        console.error("syncStats error:", error.message);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error("syncStats exception:", e);
+      return false;
+    }
+  }
+}
 
