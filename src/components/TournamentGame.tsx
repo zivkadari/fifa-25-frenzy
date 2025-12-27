@@ -770,7 +770,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                             <Button
                               key={club.id}
                               variant={selectedClub?.id === club.id ? "gaming" : "ghost"}
-                              onClick={() => selectClub(pairIndex as 0 | 1, club)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                selectClub(pairIndex as 0 | 1, club);
+                              }}
                               className="justify-between h-auto py-2 px-3"
                             >
                               <span className="font-medium">{club.name}</span>
