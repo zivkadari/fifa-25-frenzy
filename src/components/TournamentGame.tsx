@@ -12,13 +12,15 @@ import {
   Pause, 
   RotateCcw,
   Crown,
-  ChevronDown
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { Home } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tournament";
 import { SinglesGameComponent } from "@/components/SinglesGame";
 import { DiceScoreInput } from "@/components/DiceScoreInput";
@@ -69,6 +71,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const pairSchedule = currentEvening.pairSchedule ?? TournamentEngine.generatePairs(evening.players);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
+  const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
@@ -353,6 +357,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const newSelected = [...selectedClubs] as [Club | null, Club | null];
     newSelected[pairIndex] = club;
     setSelectedClubs(newSelected);
+    
+    // Close accordion after selection
+    setOpenAccordion(undefined);
 
     if (newSelected[0] && newSelected[1]) {
       // Persist selected clubs into the current in-progress match
@@ -720,7 +727,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
             {/* Accordion Team Selection */}
             {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 && (
-              <Accordion type="single" collapsible className="space-y-2">
+              <Accordion type="single" collapsible value={openAccordion} onValueChange={setOpenAccordion} className="space-y-2">
                 {teamPools.map((pool, pairIndex) => {
                   const pairNames = currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ');
                   const selectedClub = selectedClubs[pairIndex];
@@ -796,59 +803,178 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                 דירוג שחקנים
               </h3>
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">שחקן</TableHead>
-                      <TableHead className="text-center">נצ׳</TableHead>
-                      <TableHead className="text-center">למע׳</TableHead>
-                      <TableHead className="text-center">נגד</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(() => {
-                      // Calculate player stats inline
-                      const statsMap = new Map<string, { player: typeof currentEvening.players[0]; totalWins: number; goalsFor: number; goalsAgainst: number }>();
-                      currentEvening.players.forEach(player => {
-                        statsMap.set(player.id, { player, totalWins: 0, goalsFor: 0, goalsAgainst: 0 });
-                      });
-                      currentEvening.rounds.forEach(round => {
-                        round.matches.forEach(match => {
-                          if (match.completed && match.score && match.winner) {
-                            const [score1, score2] = match.score;
-                            const [pair1, pair2] = match.pairs;
-                            pair1.players.forEach(p => {
-                              const s = statsMap.get(p.id);
-                              if (s) { s.goalsFor += score1; s.goalsAgainst += score2; }
-                            });
-                            pair2.players.forEach(p => {
-                              const s = statsMap.get(p.id);
-                              if (s) { s.goalsFor += score2; s.goalsAgainst += score1; }
-                            });
-                            const winningPair = match.winner === pair1.id ? pair1 : pair2;
-                            winningPair.players.forEach(p => {
-                              const s = statsMap.get(p.id);
-                              if (s) { s.totalWins += 1; }
+                {(() => {
+                  // Define match info type
+                  type MatchInfo = {
+                    roundNumber: number;
+                    partnerName: string;
+                    myClub: Club;
+                    opponentClub: Club;
+                    opponentNames: string;
+                    score: [number, number];
+                    result: 'win' | 'draw' | 'loss';
+                  };
+                  
+                  // Calculate player stats with wins/draws/losses and match history
+                  const statsMap = new Map<string, { 
+                    player: typeof currentEvening.players[0]; 
+                    wins: number; 
+                    draws: number; 
+                    losses: number;
+                    goalsFor: number; 
+                    goalsAgainst: number;
+                    matches: MatchInfo[];
+                  }>();
+                  
+                  currentEvening.players.forEach(player => {
+                    statsMap.set(player.id, { player, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, matches: [] });
+                  });
+                  
+                  currentEvening.rounds.forEach((round, roundIdx) => {
+                    round.matches.forEach(match => {
+                      if (match.completed && match.score) {
+                        const [score1, score2] = match.score;
+                        const [pair1, pair2] = match.pairs;
+                        const isDraw = score1 === score2;
+                        const pair1Wins = score1 > score2;
+                        const pair2Wins = score2 > score1;
+                        
+                        // Update stats for pair1 players
+                        pair1.players.forEach(p => {
+                          const s = statsMap.get(p.id);
+                          if (s) { 
+                            s.goalsFor += score1; 
+                            s.goalsAgainst += score2;
+                            if (isDraw) s.draws++;
+                            else if (pair1Wins) s.wins++;
+                            else s.losses++;
+                            
+                            // Add match info
+                            const partner = pair1.players.find(pl => pl.id !== p.id);
+                            s.matches.push({
+                              roundNumber: roundIdx + 1,
+                              partnerName: partner?.name || '',
+                              myClub: match.clubs[0],
+                              opponentClub: match.clubs[1],
+                              opponentNames: pair2.players.map(pl => pl.name).join(' + '),
+                              score: [score1, score2],
+                              result: isDraw ? 'draw' : pair1Wins ? 'win' : 'loss'
                             });
                           }
                         });
-                      });
-                      return Array.from(statsMap.values())
-                        .sort((a, b) => b.totalWins - a.totalWins || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst))
-                        .map((stats, idx) => (
-                          <TableRow key={stats.player.id}>
-                            <TableCell className="text-right font-medium">
-                              {idx === 0 && stats.totalWins > 0 && <Trophy className="w-3 h-3 inline mr-1 text-yellow-500" />}
-                              {stats.player.name}
-                            </TableCell>
-                            <TableCell className="text-center font-bold">{stats.totalWins}</TableCell>
-                            <TableCell className="text-center text-muted-foreground">{stats.goalsFor}</TableCell>
-                            <TableCell className="text-center text-muted-foreground">{stats.goalsAgainst}</TableCell>
-                          </TableRow>
-                        ));
-                    })()}
-                  </TableBody>
-                </Table>
+                        
+                        // Update stats for pair2 players
+                        pair2.players.forEach(p => {
+                          const s = statsMap.get(p.id);
+                          if (s) { 
+                            s.goalsFor += score2; 
+                            s.goalsAgainst += score1;
+                            if (isDraw) s.draws++;
+                            else if (pair2Wins) s.wins++;
+                            else s.losses++;
+                            
+                            // Add match info
+                            const partner = pair2.players.find(pl => pl.id !== p.id);
+                            s.matches.push({
+                              roundNumber: roundIdx + 1,
+                              partnerName: partner?.name || '',
+                              myClub: match.clubs[1],
+                              opponentClub: match.clubs[0],
+                              opponentNames: pair1.players.map(pl => pl.name).join(' + '),
+                              score: [score2, score1],
+                              result: isDraw ? 'draw' : pair2Wins ? 'win' : 'loss'
+                            });
+                          }
+                        });
+                      }
+                    });
+                  });
+                  
+                  const sortedStats = Array.from(statsMap.values())
+                    .sort((a, b) => b.wins - a.wins || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+                  
+                  const togglePlayer = (playerId: string) => {
+                    setExpandedPlayerIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(playerId)) {
+                        next.delete(playerId);
+                      } else {
+                        next.add(playerId);
+                      }
+                      return next;
+                    });
+                  };
+                  
+                  return (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">שחקן</TableHead>
+                          <TableHead className="text-center">נצ׳</TableHead>
+                          <TableHead className="text-center">תיקו</TableHead>
+                          <TableHead className="text-center">הפס׳</TableHead>
+                          <TableHead className="text-center">למע׳</TableHead>
+                          <TableHead className="text-center">נגד</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedStats.map((stats, idx) => {
+                          const isExpanded = expandedPlayerIds.has(stats.player.id);
+                          return (
+                            <>
+                              <TableRow 
+                                key={stats.player.id} 
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => togglePlayer(stats.player.id)}
+                              >
+                                <TableCell className="text-right font-medium">
+                                  <div className="flex items-center gap-1">
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                    )}
+                                    {idx === 0 && stats.wins > 0 && <Trophy className="w-3 h-3 text-yellow-500" />}
+                                    {stats.player.name}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center font-bold text-green-500">{stats.wins}</TableCell>
+                                <TableCell className="text-center text-muted-foreground">{stats.draws}</TableCell>
+                                <TableCell className="text-center text-red-500">{stats.losses}</TableCell>
+                                <TableCell className="text-center text-muted-foreground">{stats.goalsFor}</TableCell>
+                                <TableCell className="text-center text-muted-foreground">{stats.goalsAgainst}</TableCell>
+                              </TableRow>
+                              {isExpanded && stats.matches.length > 0 && (
+                                <TableRow key={`${stats.player.id}-matches`}>
+                                  <TableCell colSpan={6} className="p-0 bg-muted/30">
+                                    <div className="px-4 py-2 space-y-1.5 text-xs">
+                                      {stats.matches.map((m, mIdx) => (
+                                        <div key={mIdx} className="flex items-center gap-2 text-muted-foreground">
+                                          <Badge variant="outline" className="text-[10px] px-1">ס{m.roundNumber}</Badge>
+                                          <span className="font-medium text-foreground">{stats.player.name}+{m.partnerName}</span>
+                                          <span className="text-muted-foreground">({m.myClub?.name} {m.myClub?.stars}★)</span>
+                                          <span className="text-muted-foreground">vs</span>
+                                          <span>{m.opponentNames}</span>
+                                          <span className="text-muted-foreground">({m.opponentClub?.name} {m.opponentClub?.stars}★)</span>
+                                          <span className="font-bold ml-auto">
+                                            {m.score[0]}:{m.score[1]}
+                                          </span>
+                                          <span className={m.result === 'win' ? 'text-green-500' : m.result === 'loss' ? 'text-red-500' : 'text-yellow-500'}>
+                                            {m.result === 'win' ? '✓' : m.result === 'loss' ? '✗' : '='}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  );
+                })()}
               </div>
             </Card>
           </div>
