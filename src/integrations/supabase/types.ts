@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      club_stats: {
+        Row: {
+          club_id: string
+          club_name: string
+          goals_conceded: number
+          goals_scored: number
+          times_used: number
+          times_won: number
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          club_name: string
+          goals_conceded?: number
+          goals_scored?: number
+          times_used?: number
+          times_won?: number
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          club_name?: string
+          goals_conceded?: number
+          goals_scored?: number
+          times_used?: number
+          times_won?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evening_members: {
         Row: {
           evening_id: string
@@ -130,6 +160,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      player_matchups: {
+        Row: {
+          id: string
+          player1_id: string
+          player1_wins: number
+          player2_id: string
+          player2_wins: number
+          total_games: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player1_id: string
+          player1_wins?: number
+          player2_id: string
+          player2_wins?: number
+          total_games?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player1_id?: string
+          player1_wins?: number
+          player2_id?: string
+          player2_wins?: number
+          total_games?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      player_stats: {
+        Row: {
+          alpha_count: number
+          beta_count: number
+          delta_count: number
+          gamma_count: number
+          longest_win_streak: number
+          player_id: string
+          total_goals_against: number
+          total_goals_for: number
+          total_wins: number
+          tournaments_played: number
+          updated_at: string
+        }
+        Insert: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          gamma_count?: number
+          longest_win_streak?: number
+          player_id: string
+          total_goals_against?: number
+          total_goals_for?: number
+          total_wins?: number
+          tournaments_played?: number
+          updated_at?: string
+        }
+        Update: {
+          alpha_count?: number
+          beta_count?: number
+          delta_count?: number
+          gamma_count?: number
+          longest_win_streak?: number
+          player_id?: string
+          total_goals_against?: number
+          total_goals_for?: number
+          total_wins?: number
+          tournaments_played?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       players: {
         Row: {
