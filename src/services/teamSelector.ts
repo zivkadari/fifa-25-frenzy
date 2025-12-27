@@ -2,6 +2,14 @@ import { Club, Pair } from '@/types/tournament';
 import { getClubsByStars, getNationalTeams, getRandomClub, FIFA_CLUBS, getPrimeTeams, getClubsOnly, getNationalTeamsByStars } from '@/data/clubs';
 
 /**
+ * Result from team pool generation including recycled club info
+ */
+export interface TeamPoolResult {
+  pools: Club[][];
+  recycledClubIds: Set<string>;
+}
+
+/**
  * Smart club picker that ensures each club appears only once per evening.
  * Falls back to allowing reuse ONLY when all clubs of the required star rating are exhausted.
  * 
@@ -9,18 +17,19 @@ import { getClubsByStars, getNationalTeams, getRandomClub, FIFA_CLUBS, getPrimeT
  * @param banned - Set of club IDs that have been used this evening
  * @param usedClubsMap - Map of club ID to Club for potential reuse fallback
  * @param preferredStars - The star rating we prefer (for fallback matching)
+ * @returns Object with the club and whether it was recycled
  */
 function pickClubWithFallback(
   sourceClubs: Club[],
   banned: Set<string>,
   usedClubsMap: Map<string, Club>,
   preferredStars?: number
-): Club | null {
+): { club: Club | null; isRecycled: boolean } {
   // First: try to find an unused club
   const available = sourceClubs.filter(c => !banned.has(c.id));
   if (available.length > 0) {
     const idx = Math.floor(Math.random() * available.length);
-    return available[idx];
+    return { club: available[idx], isRecycled: false };
   }
   
   // Fallback: all clubs of this category are exhausted
@@ -30,11 +39,11 @@ function pickClubWithFallback(
       .filter(c => c.stars === preferredStars);
     if (usedWithSameStars.length > 0) {
       const idx = Math.floor(Math.random() * usedWithSameStars.length);
-      return usedWithSameStars[idx];
+      return { club: usedWithSameStars[idx], isRecycled: true };
     }
   }
   
-  return null;
+  return { club: null, isRecycled: false };
 }
 
 export class TeamSelector {
@@ -49,10 +58,11 @@ export class TeamSelector {
    * 
    * Each club appears ONLY ONCE per evening, unless all clubs of that star rating are exhausted.
    */
-  generateTeamPoolsFor4Rounds(pairs: Pair[], excludeClubIds: string[] = []): Club[][] {
+  generateTeamPoolsFor4Rounds(pairs: Pair[], excludeClubIds: string[] = []): TeamPoolResult {
     const pools: Club[][] = [];
     const banned = new Set<string>(excludeClubIds);
     const usedClubsMap = new Map<string, Club>();
+    const recycledClubIds = new Set<string>();
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
@@ -61,12 +71,15 @@ export class TeamSelector {
     });
 
     const pickAndBan = (sourceClubs: Club[], stars?: number): Club | null => {
-      const club = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
-      if (club) {
-        banned.add(club.id);
-        usedClubsMap.set(club.id, club);
+      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
+      if (result.club) {
+        banned.add(result.club.id);
+        usedClubsMap.set(result.club.id, result.club);
+        if (result.isRecycled) {
+          recycledClubIds.add(result.club.id);
+        }
       }
-      return club;
+      return result.club;
     };
 
     pairs.forEach(() => {
@@ -100,17 +113,18 @@ export class TeamSelector {
       pools.push(pool);
     });
 
-    return pools;
+    return { pools, recycledClubIds };
   }
 
   /**
    * Generate team pools for pairs tournament.
    * Each club appears ONLY ONCE per evening, unless all clubs of that star rating are exhausted.
    */
-  generateTeamPools(pairs: Pair[], excludeClubIds: string[] = [], clubsPerPair: number = 5): Club[][] {
+  generateTeamPools(pairs: Pair[], excludeClubIds: string[] = [], clubsPerPair: number = 5): TeamPoolResult {
     const pools: Club[][] = [];
     const banned = new Set<string>(excludeClubIds);
     const usedClubsMap = new Map<string, Club>();
+    const recycledClubIds = new Set<string>();
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
@@ -124,12 +138,15 @@ export class TeamSelector {
 
     // Helper to pick and ban
     const pickFromPool = (sourceClubs: Club[], stars: number): Club | null => {
-      const club = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
-      if (club) {
-        banned.add(club.id);
-        usedClubsMap.set(club.id, club);
+      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
+      if (result.club) {
+        banned.add(result.club.id);
+        usedClubsMap.set(result.club.id, result.club);
+        if (result.isRecycled) {
+          recycledClubIds.add(result.club.id);
+        }
       }
-      return club;
+      return result.club;
     };
 
     // Get initial 5-star clubs pool
@@ -163,12 +180,14 @@ export class TeamSelector {
       
       // Try to find unused clubs with 4+ stars
       let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= 4);
+      let isRecycledBatch = false;
       
       // If no unused 4+ star clubs, allow reuse of 4+ star clubs
       if (available.length === 0) {
         const usedFourPlus = Array.from(usedClubsMap.values()).filter(c => c.stars >= 4);
         if (usedFourPlus.length > 0) {
           available = usedFourPlus;
+          isRecycledBatch = true;
         } else {
           // Last resort: any unused club
           available = FIFA_CLUBS.filter(c => !banned.has(c.id));
@@ -181,6 +200,9 @@ export class TeamSelector {
       const first = available[idx1];
       banned.add(first.id);
       usedClubsMap.set(first.id, first);
+      if (isRecycledBatch) {
+        recycledClubIds.add(first.id);
+      }
 
       if (pools[0].length >= clubsPerPair) {
         pools[1].push(first);
@@ -201,6 +223,9 @@ export class TeamSelector {
         second = remainingAvailable[idx2];
         banned.add(second.id);
         usedClubsMap.set(second.id, second);
+        if (isRecycledBatch) {
+          recycledClubIds.add(second.id);
+        }
       }
 
       const lowerIdx = poolsSums[0] <= poolsSums[1] ? 0 : 1;
@@ -221,12 +246,12 @@ export class TeamSelector {
       }
     }
 
-    return pools;
+    return { pools, recycledClubIds };
   }
   
   generateClubsForMatch(pair1: Pair, pair2: Pair, excludeClubIds: string[] = [], clubsPerPair: number = 5): [Club[], Club[]] {
-    const pools = this.generateTeamPools([pair1, pair2], excludeClubIds, clubsPerPair);
-    return [pools[0], pools[1]];
+    const result = this.generateTeamPools([pair1, pair2], excludeClubIds, clubsPerPair);
+    return [result.pools[0], result.pools[1]];
   }
 
   /**
