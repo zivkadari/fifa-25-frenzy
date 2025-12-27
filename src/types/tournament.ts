@@ -34,6 +34,7 @@ export interface Round {
   pairScores: { [pairId: string]: number }; // Track wins for each pair in this round
   isDeciderMatch?: boolean; // Flag for tiebreaker match
   teamPools?: [Club[], Club[]];
+  recycledClubIds?: string[]; // IDs of clubs that were recycled (reused because star rating ran out)
 }
 
 export interface Evening {

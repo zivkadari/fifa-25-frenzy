@@ -62,6 +62,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [usedClubCounts, setUsedClubCounts] = useState<Record<string, number>>({});
   const [usedClubIdsThisRound, setUsedClubIdsThisRound] = useState<Set<string>>(new Set());
+  const [recycledClubIds, setRecycledClubIds] = useState<Set<string>>(new Set()); // Track clubs that were recycled (reused because star rating exhausted)
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -142,24 +143,31 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     console.log('Generating pools for round with maxMatches:', maxMatches);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
-    const pools = currentEvening.winsToComplete === 4 
+    const poolResult = currentEvening.winsToComplete === 4 
       ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
       : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
-    console.log('Generated pools:', pools);
+    console.log('Generated pools:', poolResult.pools);
 
-    // Persist pools on the round so they don't change on navigation
+    // Track recycled clubs for this round
+    setRecycledClubIds(poolResult.recycledClubIds);
+
+    // Persist pools and recycled club IDs on the round so they don't change on navigation
     const updatedEveningWithPools: Evening = {
       ...updatedEvening,
       rounds: [
         ...updatedEvening.rounds.slice(0, updatedEvening.rounds.length - 1),
-        { ...updatedEvening.rounds[updatedEvening.rounds.length - 1], teamPools: [pools[0], pools[1]] },
+        { 
+          ...updatedEvening.rounds[updatedEvening.rounds.length - 1], 
+          teamPools: [poolResult.pools[0], poolResult.pools[1]],
+          recycledClubIds: Array.from(poolResult.recycledClubIds)
+        },
       ],
     };
     setCurrentEvening(updatedEveningWithPools);
     onUpdateEvening(updatedEveningWithPools);
 
-    setOriginalTeamPools([pools[0], pools[1]]);
-    setTeamPools([pools[0], pools[1]]);
+    setOriginalTeamPools([poolResult.pools[0], poolResult.pools[1]]);
+    setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
     
     // Reset game state for new round
     setSelectedClubs([null, null]);
@@ -229,16 +237,24 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         if (basePools) {
           setOriginalTeamPools([basePools[0], basePools[1]]);
           setTeamPools([basePools[0], basePools[1]]);
+          // Restore recycled club IDs from round
+          setRecycledClubIds(new Set(round.recycledClubIds ?? []));
         } else {
           const teamSelector = new TeamSelector();
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
            const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
           const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
-          const pools = currentEvening.winsToComplete === 4 
+          const poolResult = currentEvening.winsToComplete === 4 
             ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
             : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+          // Track recycled clubs
+          setRecycledClubIds(poolResult.recycledClubIds);
           // Persist these pools on the round
-          const roundWithPools: Round = { ...updatedRoundPersist, teamPools: [pools[0], pools[1]] } as Round;
+          const roundWithPools: Round = { 
+            ...updatedRoundPersist, 
+            teamPools: [poolResult.pools[0], poolResult.pools[1]],
+            recycledClubIds: Array.from(poolResult.recycledClubIds)
+          } as Round;
           const evWithPools: Evening = {
             ...updatedEveningPersist,
             rounds: [
@@ -249,8 +265,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           };
           setCurrentEvening(evWithPools);
           onUpdateEvening(evWithPools);
-          setOriginalTeamPools([pools[0], pools[1]]);
-          setTeamPools([pools[0], pools[1]]);
+          setOriginalTeamPools([poolResult.pools[0], poolResult.pools[1]]);
+          setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
         }
       } else {
         // Filter original pools to remove clubs already used this evening or already used in this round
@@ -308,6 +324,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const basePools: [Club[], Club[]] | null = (round.teamPools as [Club[], Club[]] | undefined) ?? null;
     if (basePools) {
       setOriginalTeamPools([basePools[0], basePools[1]]);
+      // Restore recycled club IDs from round
+      setRecycledClubIds(new Set(round.recycledClubIds ?? []));
       // Filter for already-used clubs in the evening and this round
       const filtered: [Club[], Club[]] = [
         basePools[0].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
@@ -319,11 +337,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-      const pools = currentEvening.winsToComplete === 4 
+      const poolResult = currentEvening.winsToComplete === 4 
         ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
         : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+      // Track recycled clubs
+      setRecycledClubIds(poolResult.recycledClubIds);
       // Persist pools on the round in evening state
-      const roundWithPools: Round = { ...round, teamPools: [pools[0], pools[1]] } as Round;
+      const roundWithPools: Round = { 
+        ...round, 
+        teamPools: [poolResult.pools[0], poolResult.pools[1]],
+        recycledClubIds: Array.from(poolResult.recycledClubIds)
+      } as Round;
       const evWithPools: Evening = {
         ...currentEvening,
         rounds: [
@@ -334,8 +358,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       };
       setCurrentEvening(evWithPools);
       onUpdateEvening(evWithPools);
-      setOriginalTeamPools([pools[0], pools[1]]);
-      setTeamPools([pools[0], pools[1]]);
+      setOriginalTeamPools([poolResult.pools[0], poolResult.pools[1]]);
+      setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
     }
     // Check if we have an incomplete match that was in progress
     const currentMatchInProgress = round.matches.find(m => !m.completed);
@@ -780,6 +804,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                             >
                               <span className="font-medium">{club.name}</span>
                               <div className="flex items-center gap-2">
+                                {recycledClubIds.has(club.id) && (
+                                  <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                    ♻️ חוזרת
+                                  </Badge>
+                                )}
                                 <Badge variant="secondary" className="text-xs ltr-numbers">
                                   {club.stars}★
                                 </Badge>
