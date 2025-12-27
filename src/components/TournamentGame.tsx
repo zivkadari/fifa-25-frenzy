@@ -287,10 +287,16 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
     setUsedClubCounts(counts);
 
-    // Build per-round usage so far (completed matches only)
+    // Build per-round usage so far (completed matches AND in-progress matches with selected clubs)
     const usedThisRound = new Set<string>();
     round.matches.forEach((match) => {
-      if (match.completed) {
+      // Include clubs from completed matches
+      if (match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
+        usedThisRound.add(match.clubs[0].id);
+        usedThisRound.add(match.clubs[1].id);
+      }
+      // Also include clubs from in-progress match (selected but not yet completed)
+      if (!match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
         usedThisRound.add(match.clubs[0].id);
         usedThisRound.add(match.clubs[1].id);
       }
