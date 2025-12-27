@@ -473,6 +473,14 @@ export type Database = {
     Functions: {
       cleanup_old_join_attempts: { Args: never; Returns: undefined }
       get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
+      is_evening_member: {
+        Args: { _evening_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_evening_by_code: {
         Args: { _code: string }
         Returns: {
@@ -480,6 +488,8 @@ export type Database = {
         }[]
       }
       trigger_stats_backfill: { Args: never; Returns: undefined }
+      user_evening_ids: { Args: { _user_id: string }; Returns: string[] }
+      user_team_ids: { Args: { _user_id: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
