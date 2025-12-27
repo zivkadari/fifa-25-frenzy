@@ -479,6 +479,7 @@ export type Database = {
           evening_id: string
         }[]
       }
+      trigger_stats_backfill: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
