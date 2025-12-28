@@ -193,6 +193,73 @@ export class TeamSelector {
   }
 
   /**
+   * Generate 11 clubs per pair for 6-win evening:
+   * - 1 Prime team (5 stars)
+   * - 3 clubs/national teams with 5 stars
+   * - 4 clubs/national teams with 4.5 stars
+   * - 3 clubs with 4 stars
+   * Total: 11 teams per pair, no repeats within the same round
+   * 
+   * Each club appears ONLY ONCE per evening, unless all clubs of that star rating are exhausted.
+   */
+  generateTeamPoolsFor6Rounds(pairs: Pair[], excludeClubIds: string[] = []): TeamPoolResult {
+    const pools: Club[][] = [];
+    const banned = new Set<string>(excludeClubIds);
+    const usedClubsMap = new Map<string, Club>();
+    const recycledClubIds = new Set<string>();
+    
+    // Track used clubs from excludeClubIds for fallback
+    excludeClubIds.forEach(id => {
+      const club = FIFA_CLUBS.find(c => c.id === id);
+      if (club) usedClubsMap.set(id, club);
+    });
+
+    const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
+      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars, pool);
+      if (result.club) {
+        banned.add(result.club.id);
+        usedClubsMap.set(result.club.id, result.club);
+        if (result.isRecycled) {
+          recycledClubIds.add(result.club.id);
+        }
+      }
+      return result.club;
+    };
+
+    pairs.forEach(() => {
+      const pool: Club[] = [];
+
+      // 1 Prime team (5 stars)
+      const prime = pickAndBan(pool, getPrimeTeams(), 5);
+      if (prime) pool.push(prime);
+
+      // 3 clubs/national teams with 5 stars
+      const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
+      for (let i = 0; i < 3; i++) {
+        const team5 = pickAndBan(pool, fiveStarPool, 5);
+        if (team5) pool.push(team5);
+      }
+
+      // 4 clubs/national teams with 4.5 stars
+      const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
+      for (let i = 0; i < 4; i++) {
+        const team45 = pickAndBan(pool, available45, 4.5);
+        if (team45) pool.push(team45);
+      }
+
+      // 3 clubs with 4 stars
+      for (let i = 0; i < 3; i++) {
+        const club4 = pickAndBan(pool, getClubsOnly(4), 4);
+        if (club4) pool.push(club4);
+      }
+
+      pools.push(pool);
+    });
+
+    return { pools, recycledClubIds };
+  }
+
+  /**
    * Generate team pools for pairs tournament.
    * Each club appears ONLY ONCE per evening, unless all clubs of that star rating are exhausted.
    */
