@@ -820,20 +820,28 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </div>
             )}
 
-            {/* Player Rankings Table */}
-            <Collapsible open={showRankings} onOpenChange={setShowRankings}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between mb-2">
-                  <span className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4" />
-                    דירוג שחקנים ({currentEvening.players.length})
-                  </span>
-                  {showRankings ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <Card className="bg-gaming-surface border-border p-4">
-                  <div className="overflow-x-auto">
+            {/* Player Rankings Button & Dialog */}
+            <Button 
+              variant="outline" 
+              className="w-full justify-between mb-2"
+              onClick={() => setShowRankings(true)}
+            >
+              <span className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                דירוג שחקנים ({currentEvening.players.length})
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            
+            <Dialog open={showRankings} onOpenChange={setShowRankings}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5" />
+                    דירוג שחקנים
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="overflow-x-auto">
                 {(() => {
                   // Define match info type
                   type MatchInfo = {
@@ -1006,10 +1014,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     </Table>
                   );
                 })()}
-                  </div>
-                </Card>
-              </CollapsibleContent>
-            </Collapsible>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 
