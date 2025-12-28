@@ -12,84 +12,84 @@ interface TournamentHomeProps {
 
 export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTeams }: TournamentHomeProps) => {
   return (
-    <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-3 mobile-optimized">
-      <div className="w-full max-w-md animate-scale-in">
-        {/* Logo Section */}
-        <Card className="bg-gradient-card border-neon-green/20 p-3 text-center mb-4 shadow-card">
-          {/* Hero Image */}
-          <div className="flex justify-center mb-2">
-            <img 
-              src={alphaChampionImage} 
-              alt="Alpha Champion" 
-              className="rounded-lg max-h-24 w-auto object-contain"
-            />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">EA FC 26</h1>
-          <h2 className="text-base font-semibold text-neon-green">Tournament Manager</h2>
-        </Card>
+    <div className="min-h-screen bg-gaming-bg flex flex-col p-4 mobile-optimized">
+      {/* Hero Section - fills top area */}
+      <div className="flex-1 flex flex-col items-center justify-center animate-scale-in">
+        {/* Hero Image - larger */}
+        <div className="w-full max-w-xs mb-4">
+          <img 
+            src={alphaChampionImage} 
+            alt="Alpha Champion" 
+            className="w-full rounded-xl shadow-lg border border-neon-green/30"
+          />
+        </div>
+        
+        {/* Titles */}
+        <h1 className="text-3xl font-bold text-foreground">EA FC 26</h1>
+        <h2 className="text-xl font-semibold text-neon-green">Tournament Manager</h2>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {onResume && (
-            <Button
-              variant="gaming"
-              size="lg"
-              onClick={onResume}
-              className="w-full"
-            >
-              <Gamepad2 className="h-4 w-4" />
-              Resume Evening
-            </Button>
-          )}
-
+      {/* Action Buttons - at bottom */}
+      <div className="w-full max-w-md mx-auto space-y-3 pb-4">
+        {onResume && (
           <Button
-            variant="hero"
+            variant="gaming"
             size="lg"
-            onClick={onStartNew}
+            onClick={onResume}
             className="w-full"
           >
-            <Trophy className="h-4 w-4" />
-            Start New Evening
+            <Gamepad2 className="h-4 w-4" />
+            Resume Evening
           </Button>
-          
-          {onManageTeams && (
-            <Button
-              variant="secondary"
-              onClick={onManageTeams}
-              className="w-full"
-            >
-              <Users className="h-4 w-4" />
-              Teams
-            </Button>
-          )}
-          
+        )}
+
+        <Button
+          variant="hero"
+          size="lg"
+          onClick={onStartNew}
+          className="w-full"
+        >
+          <Trophy className="h-4 w-4" />
+          Start New Evening
+        </Button>
+        
+        {onManageTeams && (
           <Button
             variant="secondary"
-            onClick={onViewHistory}
+            onClick={onManageTeams}
             className="w-full"
           >
-            <History className="h-4 w-4" />
-            History
+            <Users className="h-4 w-4" />
+            Teams
           </Button>
+        )}
+        
+        <Button
+          variant="secondary"
+          onClick={onViewHistory}
+          className="w-full"
+        >
+          <History className="h-4 w-4" />
+          History
+        </Button>
 
-          <Button
-            asChild
-            variant="secondary"
-            className="w-full"
-          >
-            <Link to="/profile">
-              <User className="h-4 w-4" />
-              Profile
-            </Link>
-          </Button>
-        </div>
+        <Button
+          asChild
+          variant="secondary"
+          className="w-full"
+        >
+          <Link to="/profile">
+            <User className="h-4 w-4" />
+            Profile
+          </Link>
+        </Button>
+      </div>
 
-        {/* Footer */}
-        <div className="mt-4 text-center">
-          <p className="text-muted-foreground text-xs">
-            EA FC 26 • Ranking Tracking • Bragging Rights
-          </p>
-        </div>
+      {/* Footer */}
+      <div className="text-center pb-2">
+        <p className="text-muted-foreground text-xs">
+          EA FC 26 • Ranking Tracking • Bragging Rights
+        </p>
       </div>
     </div>
   );
