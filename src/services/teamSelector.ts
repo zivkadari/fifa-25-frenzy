@@ -23,25 +23,35 @@ function pickClubWithFallback(
   sourceClubs: Club[],
   banned: Set<string>,
   usedClubsMap: Map<string, Club>,
-  preferredStars?: number
+  preferredStars?: number,
+  currentPool?: Club[]
 ): { club: Club | null; isRecycled: boolean } {
-  // First: try to find an unused club
-  const available = sourceClubs.filter(c => !banned.has(c.id));
+  // Helper to check if club is already in the current pool
+  const isInCurrentPool = (club: Club) => currentPool?.some(c => c.id === club.id) ?? false;
+  
+  // First: try to find an unused club not in current pool
+  const available = sourceClubs.filter(c => !banned.has(c.id) && !isInCurrentPool(c));
   if (available.length > 0) {
     const idx = Math.floor(Math.random() * available.length);
     return { club: available[idx], isRecycled: false };
   }
   
-  // Fallback: all clubs of this category are exhausted
-  // Allow reuse of clubs with the SAME star rating that were already used
+  // Second fallback: allow reuse of clubs with the SAME star rating that were already used
   if (preferredStars !== undefined) {
-    // CRITICAL: Also check !banned.has(c.id) to prevent duplicates within the same round
     const usedWithSameStars = Array.from(usedClubsMap.values())
-      .filter(c => c.stars === preferredStars && !banned.has(c.id));
+      .filter(c => c.stars === preferredStars && !banned.has(c.id) && !isInCurrentPool(c));
     if (usedWithSameStars.length > 0) {
       const idx = Math.floor(Math.random() * usedWithSameStars.length);
       return { club: usedWithSameStars[idx], isRecycled: true };
     }
+  }
+  
+  // Third fallback (CRITICAL FIX): recycle from sourceClubs even if banned, but not in current pool
+  // This handles the case where all clubs of this category are exhausted across the entire evening
+  const recycleFromSource = sourceClubs.filter(c => !isInCurrentPool(c));
+  if (recycleFromSource.length > 0) {
+    const idx = Math.floor(Math.random() * recycleFromSource.length);
+    return { club: recycleFromSource[idx], isRecycled: true };
   }
   
   return { club: null, isRecycled: false };
@@ -72,13 +82,8 @@ export class TeamSelector {
     });
 
     const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
-      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
+      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars, pool);
       if (result.club) {
-        // SAFETY CHECK: Prevent duplicate clubs in the same pool
-        if (pool.some(c => c.id === result.club!.id)) {
-          console.warn('Duplicate club prevented in pool:', result.club.name);
-          return null;
-        }
         banned.add(result.club.id);
         usedClubsMap.set(result.club.id, result.club);
         if (result.isRecycled) {
