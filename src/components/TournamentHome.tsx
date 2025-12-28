@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trophy, History, Gamepad2, User, Users } from "lucide-react";
+import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
 interface TournamentHomeProps {
   onStartNew: () => void;
@@ -14,15 +15,17 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTe
     <div className="min-h-screen bg-gaming-bg flex items-center justify-center p-3 mobile-optimized">
       <div className="w-full max-w-md animate-scale-in">
         {/* Logo Section */}
-        <Card className="bg-gradient-card border-neon-green/20 p-5 text-center mb-4 shadow-card">
+        <Card className="bg-gradient-card border-neon-green/20 p-3 text-center mb-4 shadow-card">
+          {/* Hero Image */}
           <div className="flex justify-center mb-2">
-            <div className="relative">
-              <Gamepad2 className="h-10 w-10 text-neon-green animate-glow-pulse" />
-              <Trophy className="h-5 w-5 text-neon-green absolute -top-1 -right-1" />
-            </div>
+            <img 
+              src={alphaChampionImage} 
+              alt="Alpha Champion" 
+              className="rounded-lg max-h-24 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">EA FC 26</h1>
-          <h2 className="text-lg font-semibold text-neon-green">Tournament Manager</h2>
+          <h1 className="text-xl font-bold text-foreground">EA FC 26</h1>
+          <h2 className="text-base font-semibold text-neon-green">Tournament Manager</h2>
         </Card>
 
         {/* Action Buttons */}
