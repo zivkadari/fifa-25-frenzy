@@ -8,6 +8,7 @@ export interface Club {
   name: string;
   stars: number;
   isNational?: boolean;
+  isPrime?: boolean;
   league: string;
 }
 
