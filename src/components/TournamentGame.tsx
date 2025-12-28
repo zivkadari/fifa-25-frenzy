@@ -147,7 +147,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const poolResult = currentEvening.winsToComplete === 4 
       ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, actuallyPlayedClubIds)
-      : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
+      : currentEvening.winsToComplete === 5
+        ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, actuallyPlayedClubIds)
+        : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
     console.log('Generated pools:', poolResult.pools);
 
     // Track recycled clubs for this round
@@ -248,7 +250,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
           const poolResult = currentEvening.winsToComplete === 4 
             ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, actuallyPlayedClubIds)
-            : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
+            : currentEvening.winsToComplete === 5
+              ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, actuallyPlayedClubIds)
+              : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
           // Track recycled clubs
           setRecycledClubIds(poolResult.recycledClubIds);
           // Persist these pools on the round
@@ -342,7 +346,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
       const poolResult = currentEvening.winsToComplete === 4 
         ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
-        : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+        : currentEvening.winsToComplete === 5
+          ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, excludeIds)
+          : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
       // Track recycled clubs
       setRecycledClubIds(poolResult.recycledClubIds);
       // Persist pools on the round in evening state
