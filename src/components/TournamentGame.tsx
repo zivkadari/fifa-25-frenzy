@@ -13,9 +13,10 @@ import {
   RotateCcw,
   Crown,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Home,
+  Copy
 } from "lucide-react";
-import { Home } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -667,6 +668,27 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             )}
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (!currentMatch || !teamPools[0]?.length || !teamPools[1]?.length) return;
+                const lines: string[] = [];
+                currentMatch.pairs.forEach((pair, index) => {
+                  const pairName = pair.players.map(p => p.name).join(' ו');
+                  lines.push(pairName);
+                  teamPools[index].forEach((club) => {
+                    lines.push(club.name);
+                  });
+                  lines.push('');
+                });
+                navigator.clipboard.writeText(lines.join('\n').trim());
+                toast({ title: "הועתק!", description: "רשימת הקבוצות הועתקה ללוח" });
+              }}
+              aria-label="Copy teams"
+            >
+              <Copy className="h-5 w-5" />
+            </Button>
             {shareCode && (
               <Button
                 variant="outline"
