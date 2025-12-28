@@ -120,17 +120,17 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'denmark', name: 'Denmark', stars: 4, league: 'International', isNational: true },
 
   // 🏆 Prime Teams
-  { id: 'serie-a-xi', name: 'Serie A XI', stars: 5, league: 'Prime' },
-  { id: 'soccer-aid', name: 'Soccer Aid', stars: 5, league: 'Prime' },
-  { id: 'classic-xi', name: 'Classic XI', stars: 5, league: 'Prime' },
-  { id: 'bundesliga-xi', name: 'Bundesliga XI', stars: 5, league: 'Prime' },
-  { id: 'chelsea-xi', name: 'Chelsea XI', stars: 5, league: 'Prime' },
-  { id: 'bayern-xi', name: 'Bayern XI', stars: 5, league: 'Prime' },
-  { id: 'juventus-xi', name: 'Juventus XI', stars: 5, league: 'Prime' },
-  { id: 'la-liga-xi', name: 'La Liga XI', stars: 5, league: 'Prime' },
-  { id: 'ligue-1-xi', name: 'Ligue 1 XI', stars: 5, league: 'Prime' },
-  { id: 'liverpool-xi', name: 'Liverpool XI', stars: 5, league: 'Prime' },
-  { id: 'premier-league-xi', name: 'Premier League XI', stars: 5, league: 'Prime' },
+  { id: 'serie-a-xi', name: 'Serie A XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'soccer-aid', name: 'Soccer Aid', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'classic-xi', name: 'Classic XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'bundesliga-xi', name: 'Bundesliga XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'chelsea-xi', name: 'Chelsea XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'bayern-xi', name: 'Bayern XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'juventus-xi', name: 'Juventus XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'la-liga-xi', name: 'La Liga XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'ligue-1-xi', name: 'Ligue 1 XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'liverpool-xi', name: 'Liverpool XI', stars: 5, league: 'Prime', isPrime: true },
+  { id: 'premier-league-xi', name: 'Premier League XI', stars: 5, league: 'Prime', isPrime: true },
 ];
 
 export const getClubsByStars = (stars: number): Club[] => {

@@ -764,7 +764,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                           <span className="font-medium text-foreground">{pairNames}</span>
                           {selectedClub ? (
                             <Badge variant="default" className="bg-neon-green text-background">
-                              {selectedClub.name} {selectedClub.stars}★
+                              {selectedClub.name} {selectedClub.isPrime ? 'Pr' : `${selectedClub.stars}★`}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-muted-foreground">
@@ -794,7 +794,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                                   </Badge>
                                 )}
                                 <Badge variant="secondary" className="text-xs ltr-numbers">
-                                  {club.stars}★
+                                  {club.isPrime ? 'Pr' : `${club.stars}★`}
                                 </Badge>
                                 {club.isNational && (
                                   <Badge variant="outline" className="text-xs">National</Badge>
@@ -991,10 +991,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                                         <div key={mIdx} className="flex items-center gap-2 text-muted-foreground">
                                           <Badge variant="outline" className="text-[10px] px-1">ס{m.roundNumber}</Badge>
                                           <span className="font-medium text-foreground">{stats.player.name}+{m.partnerName}</span>
-                                          <span className="text-muted-foreground">({m.myClub?.name} {m.myClub?.stars}★)</span>
+                                          <span className="text-muted-foreground">({m.myClub?.name} {m.myClub?.isPrime ? 'Pr' : `${m.myClub?.stars}★`})</span>
                                           <span className="text-muted-foreground">vs</span>
                                           <span>{m.opponentNames}</span>
-                                          <span className="text-muted-foreground">({m.opponentClub?.name} {m.opponentClub?.stars}★)</span>
+                                          <span className="text-muted-foreground">({m.opponentClub?.name} {m.opponentClub?.isPrime ? 'Pr' : `${m.opponentClub?.stars}★`})</span>
                                           <span className="font-bold ml-auto">
                                             {m.score[0]}:{m.score[1]}
                                           </span>

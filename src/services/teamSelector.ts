@@ -37,9 +37,10 @@ function pickClubWithFallback(
   }
   
   // Second fallback: allow reuse of clubs with the SAME star rating that were already used
+  // IMPORTANT: When looking for regular 5-star clubs, exclude Prime teams (they have their own category)
   if (preferredStars !== undefined) {
     const usedWithSameStars = Array.from(usedClubsMap.values())
-      .filter(c => c.stars === preferredStars && !banned.has(c.id) && !isInCurrentPool(c));
+      .filter(c => c.stars === preferredStars && !banned.has(c.id) && !isInCurrentPool(c) && !c.isPrime);
     if (usedWithSameStars.length > 0) {
       const idx = Math.floor(Math.random() * usedWithSameStars.length);
       return { club: usedWithSameStars[idx], isRecycled: true };
