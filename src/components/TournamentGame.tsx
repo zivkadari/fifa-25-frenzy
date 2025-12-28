@@ -646,33 +646,34 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const completedMatches = currentRoundData ? currentRoundData.matches.filter(m => m.completed).length : 0;
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
-      <div className="max-w-md mx-auto">
+    <div className="h-screen bg-gaming-bg p-3 flex flex-col overflow-hidden">
+      <div className="max-w-md mx-auto flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground">
+            <h1 className="text-lg font-bold text-foreground">
               Round {currentRoundData?.number || 1}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               First to {currentEvening.winsToComplete} wins
             </p>
             {currentRoundData && (
-              <p className="text-lg font-bold text-neon-green">
+              <p className="text-base font-bold text-neon-green">
                 {currentRoundScore[0]} - {currentRoundScore[1]}
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {shareCode && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => { navigator.clipboard.writeText(shareCode!); toast({ title: "העתקנו את הקוד", description: shareCode! }); }}
                 aria-label="Share code"
+                className="text-xs px-2 py-1 h-7"
               >
                 קוד: {shareCode}
               </Button>
@@ -684,33 +685,35 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         </div>
 
         {/* Progress - Compact */}
-        <div className="mb-3">
+        <div className="mb-2 flex-shrink-0">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>Round {currentRound + 1}/3</span>
             <span>{completedMatches}/{maxMatchesInRound} matches</span>
           </div>
           <Progress 
             value={currentRoundData ? (Math.max(...Object.values(currentRoundData.pairScores)) / currentEvening.winsToComplete) * 100 : 0} 
-            className="h-1.5" 
+            className="h-1" 
           />
         </div>
 
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto min-h-0">
         {/* Current Matchup - Single compact card */}
         {currentMatch && (
-          <Card className="bg-gradient-card border-neon-green/20 p-3 mb-3 shadow-card">
+          <Card className="bg-gradient-card border-neon-green/20 p-2 mb-2 shadow-card flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="text-center flex-1">
-                <p className="text-xs text-muted-foreground truncate max-w-[100px]">
+                <p className="text-xs text-muted-foreground truncate max-w-[90px]">
                   {currentMatch.pairs[0].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-xl font-bold text-neon-green">{currentRoundScore[0]}</p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[0]}</p>
               </div>
-              <div className="text-neon-green font-bold px-2">VS</div>
+              <div className="text-neon-green font-bold px-2 text-sm">VS</div>
               <div className="text-center flex-1">
-                <p className="text-xs text-muted-foreground truncate max-w-[100px]">
+                <p className="text-xs text-muted-foreground truncate max-w-[90px]">
                   {currentMatch.pairs[1].players.map(p => p.name).join(' + ')}
                 </p>
-                <p className="text-xl font-bold text-neon-green">{currentRoundScore[1]}</p>
+                <p className="text-lg font-bold text-neon-green">{currentRoundScore[1]}</p>
               </div>
             </div>
             {currentRoundData?.isDeciderMatch && (
@@ -1089,6 +1092,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             <DiceScoreInput onSubmit={submitResult} />
           </div>
         )}
+        </div>{/* End Scrollable Content Area */}
 
         {/* Share Code Dialog */}
         <Dialog open={showShareCodeDialog} onOpenChange={setShowShareCodeDialog}>

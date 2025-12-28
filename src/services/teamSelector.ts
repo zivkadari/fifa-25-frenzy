@@ -71,9 +71,14 @@ export class TeamSelector {
       if (club) usedClubsMap.set(id, club);
     });
 
-    const pickAndBan = (sourceClubs: Club[], stars?: number): Club | null => {
+    const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
       const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars);
       if (result.club) {
+        // SAFETY CHECK: Prevent duplicate clubs in the same pool
+        if (pool.some(c => c.id === result.club!.id)) {
+          console.warn('Duplicate club prevented in pool:', result.club.name);
+          return null;
+        }
         banned.add(result.club.id);
         usedClubsMap.set(result.club.id, result.club);
         if (result.isRecycled) {
@@ -87,28 +92,28 @@ export class TeamSelector {
       const pool: Club[] = [];
 
       // 1 Prime team (5 stars)
-      const prime = pickAndBan(getPrimeTeams(), 5);
+      const prime = pickAndBan(pool, getPrimeTeams(), 5);
       if (prime) pool.push(prime);
 
       // 2 clubs with 5 stars (not national, not prime)
       for (let i = 0; i < 2; i++) {
-        const club5 = pickAndBan(getClubsOnly(5), 5);
+        const club5 = pickAndBan(pool, getClubsOnly(5), 5);
         if (club5) pool.push(club5);
       }
 
       // 1 national team with 5 stars
-      const national5 = pickAndBan(getNationalTeamsByStars(5), 5);
+      const national5 = pickAndBan(pool, getNationalTeamsByStars(5), 5);
       if (national5) pool.push(national5);
 
       // 2 clubs/national teams with 4.5 stars
       const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
       for (let i = 0; i < 2; i++) {
-        const team45 = pickAndBan(available45, 4.5);
+        const team45 = pickAndBan(pool, available45, 4.5);
         if (team45) pool.push(team45);
       }
 
       // 1 club with 4 stars
-      const club4 = pickAndBan(getClubsOnly(4), 4);
+      const club4 = pickAndBan(pool, getClubsOnly(4), 4);
       if (club4) pool.push(club4);
 
       pools.push(pool);
