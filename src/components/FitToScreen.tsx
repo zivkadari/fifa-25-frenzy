@@ -63,7 +63,7 @@ export const FitToScreen: React.FC<FitToScreenProps> = ({ children, maxScale = 1
   }, [updateScale]);
 
   return (
-    <div className="w-full min-h-[100svh] overflow-auto flex items-start justify-center">
+    <div className="w-full min-h-[100svh] overflow-auto flex items-start justify-center pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div
         ref={contentRef}
         style={{
