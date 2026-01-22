@@ -21,6 +21,7 @@ import { TournamentEngine } from "@/services/tournamentEngine";
 import { SinglesClubAssignment } from "@/components/SinglesClubAssignment";
 import { SinglesMatchSchedule } from "@/components/SinglesMatchSchedule";
 import { SinglesGameLive } from "@/components/SinglesGameLive";
+import { useActiveEveningPersistence } from "@/hooks/useActiveEveningPersistence";
 
 type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams';
 
@@ -36,15 +37,27 @@ const Index = () => {
   const [selectedTournamentType, setSelectedTournamentType] = useState<'pairs' | 'singles' | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
-  const navigateTo = (next: AppState) => {
+  function goTo(next: AppState) {
     if (window.history.state?.appState !== next) {
-      window.history.pushState({ appState: next }, '', '');
+      window.history.pushState({ appState: next }, "", "");
     }
     setAppState(next);
-  };
+  }
+
+  const { persistNow: persistActiveEveningNow, clearActive: clearActiveEvening } = useActiveEveningPersistence({
+    currentEvening,
+  });
 
 useEffect(() => {
     let mounted = true;
+
+    // Auto-resume in-progress tournament (iOS may reload the page after backgrounding)
+    const active = StorageService.loadActiveEvening();
+    if (active && !active.completed) {
+      setCurrentEvening(active);
+      setAppState('game');
+      window.history.replaceState({ appState: 'game' }, '', '');
+    }
 
     const loadHistory = async () => {
       try {
@@ -100,13 +113,14 @@ useEffect(() => {
   }, [appState, currentEvening?.id]);
 
   const handleStartNewEvening = () => {
-    navigateTo('tournament-type');
+    clearActiveEvening();
+    goTo('tournament-type');
     setCurrentEvening(null);
     setSelectedTournamentType(null);
   };
 
   const handleViewHistory = () => {
-    navigateTo('history');
+    goTo('history');
   };
 
   const handleBackToHome = () => {
@@ -144,6 +158,9 @@ useEffect(() => {
       pairSchedule,
     };
 
+    // Persist immediately so iOS backgrounding won't reset an in-progress tournament
+    persistActiveEveningNow(newEvening);
+
     // Determine team automatically if not provided
     let effectiveTeamId = teamId ?? currentTeamId ?? null;
     if (!effectiveTeamId && RemoteStorageService.isEnabled()) {
@@ -157,12 +174,14 @@ useEffect(() => {
     // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
     await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
     
-    navigateTo('game');
+    goTo('game');
   };
 
   const handleCompleteEvening = (evening: Evening) => {
+    // Completed evenings should not auto-resume into game
+    clearActiveEvening();
     setCurrentEvening(evening);
-    navigateTo('summary');
+    goTo('summary');
   };
 
 const handleSaveToHistory = async (evening: Evening) => {
@@ -171,6 +190,7 @@ const handleSaveToHistory = async (evening: Evening) => {
         await RemoteStorageService.saveEveningWithTeam(evening, currentTeamId ?? null);
       }
       StorageService.saveEvening(evening);
+      clearActiveEvening();
     } finally {
       const updatedHistory = RemoteStorageService.isEnabled()
         ? await RemoteStorageService.loadEvenings()
@@ -197,11 +217,13 @@ const handleDeleteEvening = async (eveningId: string) => {
   };
 
 const handleGoHome = () => {
-    navigateTo('home');
+    goTo('home');
   };
 
   const handleUpdateEvening = (evening: Evening) => {
     setCurrentEvening(evening);
+    // Local persistence protects against iOS killing the Safari/PWA instance in background
+    if (!evening.completed) persistActiveEveningNow(evening);
     RemoteStorageService.upsertEveningLive(evening).catch(() => {});
   };
 
@@ -232,8 +254,8 @@ const handleGoHome = () => {
           <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
-            onResume={currentEvening && !currentEvening.completed ? () => navigateTo('game') : undefined}
-            onManageTeams={() => navigateTo('teams')}
+            onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
+            onManageTeams={() => goTo('teams')}
           />
         );
       
@@ -243,11 +265,11 @@ const handleGoHome = () => {
             onBack={() => window.history.back()}
             onSelectPairs={() => {
               setSelectedTournamentType('pairs');
-              navigateTo('setup');
+              goTo('setup');
             }}
             onSelectSingles={() => {
               setSelectedTournamentType('singles');
-              navigateTo('singles-setup');
+              goTo('singles-setup');
             }}
           />
         );
@@ -273,9 +295,10 @@ const handleGoHome = () => {
             onBack={() => window.history.back()}
             onStartSingles={(players: Player[], clubsPerPlayer: number) => {
               const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, currentTeamId ?? undefined);
+              persistActiveEveningNow(singlesEvening);
               setCurrentEvening(singlesEvening);
               setSinglesFlowState('club-assignment');
-              navigateTo('singles-clubs');
+              goTo('singles-clubs');
             }}
             savedPlayers={currentEvening?.players}
           />
@@ -287,7 +310,7 @@ const handleGoHome = () => {
             onBack={() => window.history.back()}
             onContinue={() => {
               setSinglesFlowState('match-schedule');
-              navigateTo('singles-schedule');
+              goTo('singles-schedule');
             }}
             players={currentEvening.players}
             playerClubs={currentEvening.playerClubs || {}}
@@ -304,7 +327,7 @@ const handleGoHome = () => {
               RemoteStorageService.upsertEveningLiveWithTeam(currentEvening, currentTeamId ?? null).catch(() => {});
               
               setSinglesFlowState('game');
-              navigateTo('game');
+              goTo('game');
             }}
             gameSequence={currentEvening.gameSequence || []}
           />
@@ -354,7 +377,7 @@ const handleGoHome = () => {
               onBack={() => window.history.back()}
               onStartEveningForTeam={(teamId) => {
                 setCurrentTeamId(teamId);
-                navigateTo('setup');
+                goTo('setup');
               }}
             />
           );
