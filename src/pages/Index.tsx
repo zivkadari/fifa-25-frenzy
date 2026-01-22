@@ -22,6 +22,7 @@ import { SinglesClubAssignment } from "@/components/SinglesClubAssignment";
 import { SinglesMatchSchedule } from "@/components/SinglesMatchSchedule";
 import { SinglesGameLive } from "@/components/SinglesGameLive";
 import { useActiveEveningPersistence } from "@/hooks/useActiveEveningPersistence";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams';
 
@@ -30,6 +31,7 @@ const Index = () => {
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
   const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isAuthed, setIsAuthed] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
@@ -184,22 +186,45 @@ useEffect(() => {
     goTo('summary');
   };
 
-const handleSaveToHistory = async (evening: Evening) => {
-    try {
-      if (RemoteStorageService.isEnabled()) {
-        await RemoteStorageService.saveEveningWithTeam(evening, currentTeamId ?? null);
-      }
-      StorageService.saveEvening(evening);
-      clearActiveEvening();
-    } finally {
-      const updatedHistory = RemoteStorageService.isEnabled()
-        ? await RemoteStorageService.loadEvenings()
-        : StorageService.loadEvenings();
-      setTournamentHistory(updatedHistory);
-    }
-  };
+ const handleSaveToHistory = async (evening: Evening) => {
+     // Ensure rankings are saved (TournamentHistory relies on `evening.rankings`)
+     const eveningToSave: Evening = evening.rankings
+       ? evening
+       : { ...evening, rankings: TournamentEngine.calculateRankings(TournamentEngine.calculatePlayerStats(evening)) };
 
-const handleDeleteEvening = async (eveningId: string) => {
+     try {
+       // Ensure we have a team id so team history + leaderboard work
+       let effectiveTeamId = currentTeamId ?? null;
+       if (!effectiveTeamId && RemoteStorageService.isEnabled()) {
+         try {
+           effectiveTeamId = await RemoteStorageService.ensureTeamForPlayers(eveningToSave.players);
+         } catch {}
+       }
+
+       if (RemoteStorageService.isEnabled()) {
+         await RemoteStorageService.saveEveningWithTeam(eveningToSave, effectiveTeamId);
+         // Trigger server-side stats calculation so Teams leaderboard updates
+         await RemoteStorageService.syncStats(eveningToSave.id);
+       }
+
+       StorageService.saveEvening(eveningToSave);
+       clearActiveEvening();
+     } finally {
+       // IMPORTANT: if user isn't authenticated, remote load returns [] – fallback to local.
+       const local = StorageService.loadEvenings();
+       let remote: Evening[] = [];
+       if (RemoteStorageService.isEnabled()) {
+         try {
+           remote = await RemoteStorageService.loadEvenings();
+         } catch {
+           remote = [];
+         }
+       }
+       setTournamentHistory(remote.length ? remote : local);
+     }
+   };
+
+ const handleDeleteEvening = async (eveningId: string) => {
     // Attempt remote delete (will be allowed only for admin via RLS)
     if (RemoteStorageService.isEnabled()) {
       try {
@@ -210,10 +235,16 @@ const handleDeleteEvening = async (eveningId: string) => {
     }
     // Keep local history in sync
     StorageService.deleteEvening(eveningId);
-    const updatedHistory = RemoteStorageService.isEnabled()
-      ? await RemoteStorageService.loadEvenings()
-      : StorageService.loadEvenings();
-    setTournamentHistory(updatedHistory);
+     const local = StorageService.loadEvenings();
+     let remote: Evening[] = [];
+     if (RemoteStorageService.isEnabled()) {
+       try {
+         remote = await RemoteStorageService.loadEvenings();
+       } catch {
+         remote = [];
+       }
+     }
+     setTournamentHistory(remote.length ? remote : local);
   };
 
 const handleGoHome = () => {
@@ -400,9 +431,15 @@ const handleGoHome = () => {
           <Button asChild variant="secondary" size="sm"><Link to="/auth">Log in / Sign up</Link></Button>
         )}
       </header>
-      <FitToScreen>
-        {renderCurrentState()}
-      </FitToScreen>
+      {isMobile ? (
+        <FitToScreen minScale={0.62} maxScale={1}>
+          {renderCurrentState()}
+        </FitToScreen>
+      ) : (
+        <div className="w-full flex items-start justify-center">
+          {renderCurrentState()}
+        </div>
+      )}
     </div>
   );
 };
