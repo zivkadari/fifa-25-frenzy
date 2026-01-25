@@ -60,11 +60,10 @@ function pickClubWithFallback(
 
 export class TeamSelector {
   /**
-   * Generate 7 clubs per pair for 4-round evening:
-   * - 1 Prime team (5 stars)
+   * Generate 7 clubs per pair for 4-win evening:
    * - 2 clubs/national teams with 5 stars
    * - 3 clubs/national teams with 4.5 stars
-   * - 1 club with 4 stars
+   * - 2 clubs/national teams with 4 stars
    * Total: 7 teams per pair, no repeats between pairs
    * 
    * Each club appears ONLY ONCE per evening, unless all clubs of that star rating are exhausted.
@@ -96,10 +95,6 @@ export class TeamSelector {
     pairs.forEach(() => {
       const pool: Club[] = [];
 
-      // 1 Prime team (5 stars)
-      const prime = pickAndBan(pool, getPrimeTeams(), 5);
-      if (prime) pool.push(prime);
-
       // 2 clubs/national teams with 5 stars
       const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
       for (let i = 0; i < 2; i++) {
@@ -114,9 +109,12 @@ export class TeamSelector {
         if (team45) pool.push(team45);
       }
 
-      // 1 club with 4 stars
-      const club4 = pickAndBan(pool, getClubsOnly(4), 4);
-      if (club4) pool.push(club4);
+      // 2 clubs/national teams with 4 stars
+      const fourStarPool = [...getClubsOnly(4), ...getNationalTeamsByStars(4)];
+      for (let i = 0; i < 2; i++) {
+        const club4 = pickAndBan(pool, fourStarPool, 4);
+        if (club4) pool.push(club4);
+      }
 
       pools.push(pool);
     });
