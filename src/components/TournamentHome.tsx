@@ -1,12 +1,24 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, History, Gamepad2, User, Users } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users, X } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
   onResume?: () => void;
+  onCloseTournament?: () => void;
   onManageTeams?: () => void;
   isAuthed?: boolean;
   userEmail?: string | null;
@@ -17,6 +29,7 @@ export const TournamentHome = ({
   onStartNew, 
   onViewHistory, 
   onResume, 
+  onCloseTournament,
   onManageTeams,
   isAuthed,
   userEmail,
@@ -57,15 +70,49 @@ export const TournamentHome = ({
       {/* Action Buttons - at bottom */}
       <div className="w-full max-w-md mx-auto space-y-3 pb-2">
         {onResume && (
-          <Button
-            variant="gaming"
-            size="lg"
-            onClick={onResume}
-            className="w-full"
-          >
-            <Gamepad2 className="h-5 w-5" />
-            Resume Evening
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="gaming"
+              size="lg"
+              onClick={onResume}
+              className="flex-1"
+            >
+              <Gamepad2 className="h-5 w-5" />
+              Resume Evening
+            </Button>
+            
+            {onCloseTournament && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>לסגור את הטורניר?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      הנתונים של הטורניר הנוכחי לא יישמרו להיסטוריה.
+                      פעולה זו לא ניתנת לביטול.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={onCloseTournament}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      סגור טורניר
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         )}
 
         <Button
