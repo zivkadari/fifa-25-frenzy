@@ -53,12 +53,11 @@ const Index = () => {
 useEffect(() => {
     let mounted = true;
 
-    // Auto-resume in-progress tournament (iOS may reload the page after backgrounding)
+    // Load active tournament but stay on home screen (user can choose to resume)
     const active = StorageService.loadActiveEvening();
     if (active && !active.completed) {
       setCurrentEvening(active);
-      setAppState('game');
-      window.history.replaceState({ appState: 'game' }, '', '');
+      // Don't auto-navigate to game - let user click "Resume Evening"
     }
 
     const loadHistory = async () => {
@@ -278,6 +277,12 @@ const handleGoHome = () => {
       window.location.href = "/auth";
     }
   };
+
+  const handleCloseTournament = () => {
+    clearActiveEvening();
+    setCurrentEvening(null);
+  };
+
   const renderCurrentState = () => {
     switch (appState) {
       case 'home':
@@ -286,6 +291,7 @@ const handleGoHome = () => {
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
+            onCloseTournament={currentEvening && !currentEvening.completed ? handleCloseTournament : undefined}
             onManageTeams={() => goTo('teams')}
             isAuthed={isAuthed}
             userEmail={userEmail}
