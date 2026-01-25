@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users } from
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 import { RemoteStorageService } from "@/services/remoteStorageService";
+import { EveningMatchDetails } from "@/components/EveningMatchDetails";
 
 interface TournamentHistoryProps {
   evenings: Evening[];
@@ -341,6 +342,13 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Match Details - Expandable */}
+              {evening.rounds && evening.rounds.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border/30">
+                  <EveningMatchDetails evening={evening} />
                 </div>
               )}
 
