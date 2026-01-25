@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
-import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus } from "lucide-react";
 import { validateTeamName, validatePlayerName } from "@/lib/validation";
+import { SelectExistingPlayerDialog } from "./SelectExistingPlayerDialog";
 
 interface TeamLeaderboardEntry {
   player_id: string;
@@ -38,6 +39,7 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [leaderboard, setLeaderboard] = useState<TeamLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [selectPlayerOpen, setSelectPlayerOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -133,6 +135,22 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
         setNewPlayerName("");
         const players = await RemoteStorageService.listTeamPlayers(selectedTeamId);
         setTeamPlayers(players);
+      } else {
+        toast({ title: "שגיאה בהוספת שחקן", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "שגיאה בהוספת שחקן", description: error instanceof Error ? error.message : "שגיאה לא ידועה", variant: "destructive" });
+    }
+  };
+
+  const handleSelectExistingPlayer = async (playerId: string, playerName: string) => {
+    if (!selectedTeamId) return;
+    try {
+      const ok = await RemoteStorageService.addExistingPlayerToTeam(selectedTeamId, playerId);
+      if (ok) {
+        const players = await RemoteStorageService.listTeamPlayers(selectedTeamId);
+        setTeamPlayers(players);
+        toast({ title: "שחקן נוסף", description: playerName });
       } else {
         toast({ title: "שגיאה בהוספת שחקן", variant: "destructive" });
       }
@@ -239,14 +257,20 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
               </div>
               <div className="flex gap-2 mb-3">
                 <Input
-                  placeholder="שם שחקן להוספה"
+                  placeholder="שם שחקן חדש"
                   value={newPlayerName}
                   onChange={(e) => setNewPlayerName(e.target.value)}
-                  className="bg-gaming-surface border-border"
+                  className="bg-gaming-surface border-border flex-1"
                 />
-                <Button variant="outline" onClick={addPlayer}>
+                <Button variant="outline" onClick={addPlayer} title="הוסף שחקן חדש">
                   <Plus className="h-4 w-4" />
-                  הוסף
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectPlayerOpen(true)}
+                  title="בחר שחקן קיים"
+                >
+                  <UserPlus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -305,6 +329,15 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
             </Card>
           </>
         )}
+
+        {/* Select existing player dialog */}
+        <SelectExistingPlayerDialog
+          open={selectPlayerOpen}
+          onOpenChange={setSelectPlayerOpen}
+          currentTeamId={selectedTeamId || ""}
+          currentTeamPlayers={teamPlayers}
+          onPlayerSelected={handleSelectExistingPlayer}
+        />
       </div>
     </div>
   );
