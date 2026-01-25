@@ -410,6 +410,94 @@ export class RemoteStorageService {
     return true;
   }
 
+  // List all players the user has access to, with their team memberships
+  static async listAllMyPlayers(): Promise<Array<{ id: string; name: string; teams: Array<{ id: string; name: string }> }>> {
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    // Get all players the user can see (via RLS - created by them or in their teams)
+    const { data: players, error: playersErr } = await supabase
+      .from(PLAYERS_TABLE)
+      .select("id, display_name")
+      .order("display_name", { ascending: true });
+    
+    if (playersErr || !players || players.length === 0) {
+      if (playersErr) console.error("listAllMyPlayers players error:", playersErr.message);
+      return [];
+    }
+
+    // Get all team_players links for these players
+    const playerIds = players.map((p: any) => p.id);
+    const { data: links, error: linksErr } = await supabase
+      .from(TEAM_PLAYERS_TABLE)
+      .select("player_id, team_id")
+      .in("player_id", playerIds);
+    
+    if (linksErr) {
+      console.error("listAllMyPlayers links error:", linksErr.message);
+    }
+
+    // Get team names for the linked teams
+    const teamIds = [...new Set((links || []).map((l: any) => l.team_id))] as string[];
+    let teamMap: Record<string, string> = {};
+    
+    if (teamIds.length > 0) {
+      const { data: teams } = await supabase
+        .from(TEAMS_TABLE)
+        .select("id, name")
+        .in("id", teamIds);
+      if (teams) {
+        teamMap = Object.fromEntries(teams.map((t: any) => [t.id, t.name]));
+      }
+    }
+
+    // Build player list with teams
+    const linksByPlayer: Record<string, Array<{ id: string; name: string }>> = {};
+    for (const link of (links || []) as any[]) {
+      if (!linksByPlayer[link.player_id]) {
+        linksByPlayer[link.player_id] = [];
+      }
+      if (teamMap[link.team_id]) {
+        linksByPlayer[link.player_id].push({ id: link.team_id, name: teamMap[link.team_id] });
+      }
+    }
+
+    return players.map((p: any) => ({
+      id: p.id as string,
+      name: p.display_name as string,
+      teams: linksByPlayer[p.id] || [],
+    }));
+  }
+
+  // Add existing player to a team (by player ID)
+  static async addExistingPlayerToTeam(teamId: string, playerId: string): Promise<boolean> {
+    if (!supabase) return false;
+    
+    // Check if already in team
+    const { data: existing } = await supabase
+      .from(TEAM_PLAYERS_TABLE)
+      .select("player_id")
+      .eq("team_id", teamId)
+      .eq("player_id", playerId)
+      .maybeSingle();
+    
+    if (existing) {
+      // Already in team
+      return true;
+    }
+
+    const { error } = await supabase
+      .from(TEAM_PLAYERS_TABLE)
+      .insert({ team_id: teamId, player_id: playerId });
+    
+    if (error) {
+      console.error("addExistingPlayerToTeam error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
   // Ensure a reusable team exists for the given 4 players; return team_id
   static async ensureTeamForPlayers(players: Player[]): Promise<string | null> {
     if (!supabase || players.length !== 4) return null;
