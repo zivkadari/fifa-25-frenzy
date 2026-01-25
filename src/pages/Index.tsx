@@ -5,7 +5,7 @@ import { TournamentTypeSelection } from "@/components/TournamentTypeSelection";
 import { SinglesSetup } from "@/components/SinglesSetup";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
-import { TournamentHistory } from "@/components/TournamentHistory";
+import { TournamentHistory, EveningWithTeam } from "@/components/TournamentHistory";
 import { Evening, Player } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
@@ -29,7 +29,7 @@ type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'single
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
-  const [tournamentHistory, setTournamentHistory] = useState<Evening[]>([]);
+  const [tournamentHistory, setTournamentHistory] = useState<EveningWithTeam[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isAuthed, setIsAuthed] = useState(false);
@@ -63,9 +63,9 @@ useEffect(() => {
     const loadHistory = async () => {
       try {
         const local = StorageService.loadEvenings();
-        let remote: Evening[] = [];
+        let remote: EveningWithTeam[] = [];
         if (RemoteStorageService.isEnabled()) {
-          remote = await RemoteStorageService.loadEvenings();
+          remote = await RemoteStorageService.loadEveningsWithTeams();
         }
         if (!mounted) return;
         setTournamentHistory(remote.length ? remote : local);
@@ -409,6 +409,11 @@ const handleGoHome = () => {
             evenings={tournamentHistory}
             onBack={() => window.history.back()}
             onDeleteEvening={handleDeleteEvening}
+            onRefresh={async () => {
+              const updated = await RemoteStorageService.loadEveningsWithTeams();
+              setTournamentHistory(updated);
+              toast({ title: "הטורניר שויך לקבוצה בהצלחה" });
+            }}
           />
         );
         case 'teams':

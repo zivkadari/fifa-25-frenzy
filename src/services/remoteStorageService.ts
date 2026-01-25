@@ -123,6 +123,42 @@ export class RemoteStorageService {
     if (error) console.error("Supabase deleteEvening error:", error.message);
   }
 
+  // Link an existing evening to a team and recalculate stats
+  static async linkEveningToTeam(eveningId: string, teamId: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { error } = await supabase
+      .from(EVENINGS_TABLE)
+      .update({ team_id: teamId })
+      .eq("id", eveningId);
+    if (error) {
+      console.error("linkEveningToTeam error:", error.message);
+      return false;
+    }
+    // Trigger stats recalculation for the newly linked team
+    await this.syncStats(eveningId);
+    return true;
+  }
+
+  // Load evenings with their team info
+  static async loadEveningsWithTeams(): Promise<Array<Evening & { teamId?: string; teamName?: string }>> {
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from(EVENINGS_TABLE)
+      .select("data, team_id, teams(name)")
+      .order("updated_at", { ascending: false });
+    if (error) {
+      console.error("Supabase loadEveningsWithTeams error:", error.message);
+      return [];
+    }
+    return (data || []).map((r: any) => ({
+      ...(r.data as Evening),
+      teamId: r.team_id || undefined,
+      teamName: r.teams?.name || undefined,
+    }));
+  }
+
   // Subscribe to realtime changes for a specific evening id
   static subscribeToEvening(eveningId: string, onChange: (evening: Evening) => void) {
     if (!this.isEnabled() || !supabase) return () => {};
