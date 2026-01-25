@@ -23,25 +23,25 @@ export const TournamentHome = ({
   onSignOut
 }: TournamentHomeProps) => {
   return (
-    <div className="bg-gaming-bg flex flex-col p-3 mobile-optimized">
-      {/* Auth Header - integrated into content */}
+    <div className="min-h-[100svh] bg-gaming-bg flex flex-col p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Auth Header - stays at top */}
       {isAuthed && (
-        <div className="flex items-center justify-end gap-2 mb-2">
+        <div className="flex items-center justify-end gap-2">
           {userEmail && <span className="text-muted-foreground text-xs hidden sm:inline">{userEmail}</span>}
           <Button variant="ghost" size="sm" onClick={onSignOut}>Logout</Button>
           <Button asChild variant="secondary" size="sm"><Link to="/profile">Profile</Link></Button>
         </div>
       )}
       {!isAuthed && (
-        <div className="flex items-center justify-end mb-2">
+        <div className="flex items-center justify-end">
           <Button asChild variant="secondary" size="sm"><Link to="/auth">Log in / Sign up</Link></Button>
         </div>
       )}
 
-      {/* Hero Section - compact, no flex-1 */}
-      <div className="flex flex-col items-center justify-center py-2 animate-scale-in">
-        {/* Hero Image - smaller */}
-        <div className="w-full max-w-[200px] mb-2">
+      {/* Hero Section - flex-1 to fill available space and center content */}
+      <div className="flex-1 flex flex-col items-center justify-center animate-scale-in">
+        {/* Hero Image - larger */}
+        <div className="w-full max-w-[280px] mb-4">
           <img 
             src={alphaChampionImage} 
             alt="Alpha Champion" 
@@ -49,13 +49,13 @@ export const TournamentHome = ({
           />
         </div>
         
-        {/* Titles - tighter spacing */}
-        <h1 className="text-2xl font-bold text-foreground">EA FC 26</h1>
-        <h2 className="text-lg font-semibold text-neon-green">Tournament Manager</h2>
+        {/* Titles */}
+        <h1 className="text-3xl font-bold text-foreground">EA FC 26</h1>
+        <h2 className="text-xl font-semibold text-neon-green">Tournament Manager</h2>
       </div>
 
-      {/* Action Buttons - reduced spacing */}
-      <div className="w-full max-w-md mx-auto space-y-2 pb-2 mt-2">
+      {/* Action Buttons - at bottom */}
+      <div className="w-full max-w-md mx-auto space-y-3 pb-2">
         {onResume && (
           <Button
             variant="gaming"
@@ -63,7 +63,7 @@ export const TournamentHome = ({
             onClick={onResume}
             className="w-full"
           >
-            <Gamepad2 className="h-4 w-4" />
+            <Gamepad2 className="h-5 w-5" />
             Resume Evening
           </Button>
         )}
@@ -74,45 +74,48 @@ export const TournamentHome = ({
           onClick={onStartNew}
           className="w-full"
         >
-          <Trophy className="h-4 w-4" />
+          <Trophy className="h-5 w-5" />
           Start New Evening
         </Button>
         
         {onManageTeams && (
           <Button
             variant="secondary"
+            size="lg"
             onClick={onManageTeams}
             className="w-full"
           >
-            <Users className="h-4 w-4" />
+            <Users className="h-5 w-5" />
             Teams
           </Button>
         )}
         
         <Button
           variant="secondary"
+          size="lg"
           onClick={onViewHistory}
           className="w-full"
         >
-          <History className="h-4 w-4" />
+          <History className="h-5 w-5" />
           History
         </Button>
 
         <Button
           asChild
           variant="secondary"
+          size="lg"
           className="w-full"
         >
           <Link to="/profile">
-            <User className="h-4 w-4" />
+            <User className="h-5 w-5" />
             Profile
           </Link>
         </Button>
       </div>
 
-      {/* Footer - minimal */}
-      <div className="text-center py-1">
-        <p className="text-muted-foreground text-xs">
+      {/* Footer */}
+      <div className="text-center py-2">
+        <p className="text-muted-foreground text-sm">
           EA FC 26 • Ranking Tracking • Bragging Rights
         </p>
       </div>

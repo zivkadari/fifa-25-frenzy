@@ -423,7 +423,10 @@ const handleGoHome = () => {
 
   return (
     <div className="font-sans antialiased">
-      {isMobile ? (
+      {appState === 'home' ? (
+        // Home page handles its own full-screen layout
+        renderCurrentState()
+      ) : isMobile ? (
         <FitToScreen minScale={0.62} maxScale={1}>
           {renderCurrentState()}
         </FitToScreen>
