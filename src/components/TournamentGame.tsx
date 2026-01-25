@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronRight,
   Home,
-  Copy
+  Copy,
+  RefreshCw
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,6 +30,7 @@ import { TournamentEngine } from "@/services/tournamentEngine";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
+import { ClubSwapDialog } from "@/components/ClubSwapDialog";
 
 interface TournamentGameProps {
   evening: Evening;
@@ -76,6 +78,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
   const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
   const [showRankings, setShowRankings] = useState(false);
+  
+  // Club swap dialog state
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [clubToSwap, setClubToSwap] = useState<{ club: Club; pairIndex: 0 | 1; clubIndex: number } | null>(null);
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
@@ -461,6 +467,62 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
   };
 
+  // Handle swapping a club in the pool
+  const handleSwapClub = (newClub: Club) => {
+    if (!clubToSwap) return;
+    
+    const { pairIndex, clubIndex } = clubToSwap;
+    
+    // Update original team pools
+    const newOriginalPools: [Club[], Club[]] = [
+      [...originalTeamPools[0]],
+      [...originalTeamPools[1]]
+    ];
+    newOriginalPools[pairIndex][clubIndex] = newClub;
+    setOriginalTeamPools(newOriginalPools);
+    
+    // Update current team pools
+    const newTeamPools: [Club[], Club[]] = [
+      [...teamPools[0]],
+      [...teamPools[1]]
+    ];
+    // Find and replace in filtered pool
+    const oldClubId = clubToSwap.club.id;
+    const filteredIndex = newTeamPools[pairIndex].findIndex(c => c.id === oldClubId);
+    if (filteredIndex >= 0) {
+      newTeamPools[pairIndex][filteredIndex] = newClub;
+    }
+    setTeamPools(newTeamPools);
+    
+    // Also update the round's persisted teamPools
+    const round = currentEvening.rounds[currentRound];
+    if (round?.teamPools) {
+      const updatedRoundPools = [...round.teamPools] as [Club[], Club[]];
+      const roundPoolIndex = updatedRoundPools[pairIndex].findIndex(c => c.id === oldClubId);
+      if (roundPoolIndex >= 0) {
+        updatedRoundPools[pairIndex][roundPoolIndex] = newClub;
+      }
+      const updatedRound = { ...round, teamPools: updatedRoundPools };
+      const updatedEvening = {
+        ...currentEvening,
+        rounds: [
+          ...currentEvening.rounds.slice(0, currentRound),
+          updatedRound,
+          ...currentEvening.rounds.slice(currentRound + 1)
+        ]
+      };
+      setCurrentEvening(updatedEvening);
+      onUpdateEvening(updatedEvening);
+    }
+    
+    toast({
+      title: "הקבוצה הוחלפה",
+      description: `${clubToSwap.club.name} → ${newClub.name}`,
+    });
+    
+    setClubToSwap(null);
+  };
+
   const toggleCountdown = () => {
     setIsCountdownActive(!isCountdownActive);
   };
@@ -809,33 +871,52 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                       </AccordionTrigger>
                       <AccordionContent className="px-2 pb-2">
                         <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
-                          {filtered.map((club) => (
-                            <Button
-                              key={club.id}
-                              variant={selectedClub?.id === club.id ? "gaming" : "ghost"}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                selectClub(pairIndex as 0 | 1, club);
-                              }}
-                              className="justify-between h-auto py-2 px-3"
-                            >
-                              <span className="font-medium">{club.name}</span>
-                              <div className="flex items-center gap-2">
-                                {recycledClubIds.has(club.id) && (
-                                  <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
-                                    ♻️ חוזרת
+                          {filtered.map((club, clubIdx) => {
+                            // Find original index in the full pool for swap
+                            const originalIndex = originalTeamPools[pairIndex].findIndex(c => c.id === club.id);
+                            return (
+                            <div key={club.id} className="flex items-center gap-1">
+                              <Button
+                                variant={selectedClub?.id === club.id ? "gaming" : "ghost"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  selectClub(pairIndex as 0 | 1, club);
+                                }}
+                                className="justify-between h-auto py-2 px-3 flex-1"
+                              >
+                                <span className="font-medium truncate">{club.name}</span>
+                                <div className="flex items-center gap-2">
+                                  {recycledClubIds.has(club.id) && (
+                                    <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                      ♻️
+                                    </Badge>
+                                  )}
+                                  <Badge variant="secondary" className="text-xs ltr-numbers">
+                                    {club.isPrime ? 'Pr' : `${club.stars}★`}
                                   </Badge>
-                                )}
-                                <Badge variant="secondary" className="text-xs ltr-numbers">
-                                  {club.isPrime ? 'Pr' : `${club.stars}★`}
-                                </Badge>
-                                {club.isNational && (
-                                  <Badge variant="outline" className="text-xs">National</Badge>
-                                )}
-                              </div>
-                            </Button>
-                          ))}
+                                  {club.isNational && (
+                                    <Badge variant="outline" className="text-xs">נבח׳</Badge>
+                                  )}
+                                </div>
+                              </Button>
+                              {/* Swap button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  setClubToSwap({ club, pairIndex: pairIndex as 0 | 1, clubIndex: originalIndex >= 0 ? originalIndex : clubIdx });
+                                  setShowSwapDialog(true);
+                                }}
+                                title="החלף קבוצה"
+                              >
+                                <RefreshCw className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
+                            </div>
+                          )})}
                           {filtered.length === 0 && (
                             <p className="text-xs text-muted-foreground text-center py-2">אין קבוצות זמינות</p>
                           )}
@@ -1179,6 +1260,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Club Swap Dialog */}
+        {clubToSwap && (
+          <ClubSwapDialog
+            open={showSwapDialog}
+            onOpenChange={(open) => {
+              setShowSwapDialog(open);
+              if (!open) setClubToSwap(null);
+            }}
+            clubToSwap={clubToSwap.club}
+            currentPoolClubIds={originalTeamPools[clubToSwap.pairIndex].map(c => c.id)}
+            otherPoolClubIds={originalTeamPools[clubToSwap.pairIndex === 0 ? 1 : 0].map(c => c.id)}
+            usedClubIdsThisEvening={Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1)}
+            onSwap={handleSwapClub}
+          />
+        )}
       </div>
     </div>
   );
