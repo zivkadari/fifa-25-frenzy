@@ -126,16 +126,31 @@ export class RemoteStorageService {
   // Link an existing evening to a team and recalculate stats
   static async linkEveningToTeam(eveningId: string, teamId: string): Promise<boolean> {
     if (!supabase) return false;
-    const { error } = await supabase
+    
+    const { data, error } = await supabase
       .from(EVENINGS_TABLE)
       .update({ team_id: teamId })
-      .eq("id", eveningId);
+      .eq("id", eveningId)
+      .select("id")
+      .maybeSingle();
+    
     if (error) {
       console.error("linkEveningToTeam error:", error.message);
       return false;
     }
-    // Trigger stats recalculation for the newly linked team
-    await this.syncStats(eveningId);
+    
+    if (!data) {
+      console.error("linkEveningToTeam: evening not found or no permission");
+      return false;
+    }
+    
+    // Trigger stats recalculation - don't fail if this errors
+    try {
+      await this.syncStats(eveningId);
+    } catch (e) {
+      console.warn("syncStats after link failed:", e);
+    }
+    
     return true;
   }
 
@@ -144,18 +159,56 @@ export class RemoteStorageService {
     if (!supabase) return [];
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
+    
+    // Try with JOIN first
     const { data, error } = await supabase
       .from(EVENINGS_TABLE)
       .select("data, team_id, teams(name)")
       .order("updated_at", { ascending: false });
+    
+    if (!error && data && data.length > 0) {
+      return data.map((r: any) => ({
+        ...(r.data as Evening),
+        teamId: r.team_id || undefined,
+        teamName: r.teams?.name || undefined,
+      }));
+    }
+    
+    // Fallback: load evenings without JOIN (if JOIN failed or no data)
     if (error) {
-      console.error("Supabase loadEveningsWithTeams error:", error.message);
+      console.warn("loadEveningsWithTeams JOIN failed, falling back:", error.message);
+    }
+    
+    const { data: simpleData, error: simpleError } = await supabase
+      .from(EVENINGS_TABLE)
+      .select("data, team_id")
+      .order("updated_at", { ascending: false });
+    
+    if (simpleError || !simpleData || simpleData.length === 0) {
+      if (simpleError) {
+        console.error("loadEveningsWithTeams fallback also failed:", simpleError.message);
+      }
       return [];
     }
-    return (data || []).map((r: any) => ({
+    
+    // Fetch team names separately if needed
+    const teamIds = [...new Set(simpleData.map((r: any) => r.team_id).filter(Boolean))] as string[];
+    let teamMap: Record<string, string> = {};
+    
+    if (teamIds.length > 0) {
+      const { data: teams } = await supabase
+        .from(TEAMS_TABLE)
+        .select("id, name")
+        .in("id", teamIds);
+      if (teams) {
+        teamMap = Object.fromEntries(teams.map((t: any) => [t.id, t.name]));
+      }
+    }
+    
+    return simpleData.map((r: any) => ({
       ...(r.data as Evening),
       teamId: r.team_id || undefined,
-      teamName: r.teams?.name || undefined,
+      teamName: r.team_id ? teamMap[r.team_id] : undefined,
     }));
   }
 
