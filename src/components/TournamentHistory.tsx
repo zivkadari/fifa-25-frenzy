@@ -4,19 +4,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users, Link2 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { EveningMatchDetails } from "@/components/EveningMatchDetails";
+import { LinkToTeamDialog } from "@/components/LinkToTeamDialog";
+
+export type EveningWithTeam = Evening & { teamId?: string; teamName?: string };
 
 interface TournamentHistoryProps {
-  evenings: Evening[];
+  evenings: EveningWithTeam[];
   onBack: () => void;
   onDeleteEvening?: (eveningId: string) => void;
+  onRefresh?: () => void;
 }
 
-export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: TournamentHistoryProps) => {
+export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh }: TournamentHistoryProps) => {
   const sortedEvenings = [...evenings].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
@@ -24,7 +28,8 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
   // Teams filter and per-team evenings
   const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | 'all'>('all');
-  const [teamEvenings, setTeamEvenings] = useState<Evening[]>([]);
+  const [teamEvenings, setTeamEvenings] = useState<EveningWithTeam[]>([]);
+  
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -270,6 +275,13 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
                   <Badge variant="outline" className="text-xs">
                     {evening.rounds.length} rounds
                   </Badge>
+                  {/* Link to team button */}
+                  <LinkToTeamDialog
+                    eveningId={evening.id}
+                    currentTeamId={evening.teamId}
+                    currentTeamName={evening.teamName}
+                    onLinked={() => onRefresh?.()}
+                  />
                   {onDeleteEvening && (
                     <Button
                       variant="ghost"
@@ -349,6 +361,18 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening }: Tournam
               {evening.rounds && evening.rounds.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-border/30">
                   <EveningMatchDetails evening={evening} />
+                </div>
+              )}
+
+              {/* Team badge */}
+              {evening.teamName && (
+                <div className="mt-3 pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="h-3 w-3 text-neon-green" />
+                    <span className="text-xs text-neon-green font-medium">
+                      קבוצה: {evening.teamName}
+                    </span>
+                  </div>
                 </div>
               )}
 
