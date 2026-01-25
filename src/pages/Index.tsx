@@ -287,6 +287,9 @@ const handleGoHome = () => {
             onViewHistory={handleViewHistory}
             onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
             onManageTeams={() => goTo('teams')}
+            isAuthed={isAuthed}
+            userEmail={userEmail}
+            onSignOut={handleSignOut}
           />
         );
       
@@ -420,17 +423,6 @@ const handleGoHome = () => {
 
   return (
     <div className="font-sans antialiased">
-      <header className="w-full flex items-center justify-end p-3">
-        {isAuthed ? (
-          <div className="flex items-center gap-2 text-sm">
-            {userEmail && <span className="text-muted-foreground hidden sm:inline">{userEmail}</span>}
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>Logout</Button>
-            <Button asChild variant="secondary" size="sm"><Link to="/profile">Profile</Link></Button>
-          </div>
-        ) : (
-          <Button asChild variant="secondary" size="sm"><Link to="/auth">Log in / Sign up</Link></Button>
-        )}
-      </header>
       {isMobile ? (
         <FitToScreen minScale={0.62} maxScale={1}>
           {renderCurrentState()}

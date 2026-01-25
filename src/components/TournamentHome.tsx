@@ -1,22 +1,47 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Trophy, History, Gamepad2, User, Users } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
+
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
   onResume?: () => void;
   onManageTeams?: () => void;
+  isAuthed?: boolean;
+  userEmail?: string | null;
+  onSignOut?: () => void;
 }
 
-export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTeams }: TournamentHomeProps) => {
+export const TournamentHome = ({ 
+  onStartNew, 
+  onViewHistory, 
+  onResume, 
+  onManageTeams,
+  isAuthed,
+  userEmail,
+  onSignOut
+}: TournamentHomeProps) => {
   return (
-    <div className="min-h-screen bg-gaming-bg flex flex-col p-4 mobile-optimized">
-      {/* Hero Section - fills top area */}
-      <div className="flex-1 flex flex-col items-center justify-center animate-scale-in">
-        {/* Hero Image - larger */}
-        <div className="w-full max-w-xs mb-4">
+    <div className="bg-gaming-bg flex flex-col p-3 mobile-optimized">
+      {/* Auth Header - integrated into content */}
+      {isAuthed && (
+        <div className="flex items-center justify-end gap-2 mb-2">
+          {userEmail && <span className="text-muted-foreground text-xs hidden sm:inline">{userEmail}</span>}
+          <Button variant="ghost" size="sm" onClick={onSignOut}>Logout</Button>
+          <Button asChild variant="secondary" size="sm"><Link to="/profile">Profile</Link></Button>
+        </div>
+      )}
+      {!isAuthed && (
+        <div className="flex items-center justify-end mb-2">
+          <Button asChild variant="secondary" size="sm"><Link to="/auth">Log in / Sign up</Link></Button>
+        </div>
+      )}
+
+      {/* Hero Section - compact, no flex-1 */}
+      <div className="flex flex-col items-center justify-center py-2 animate-scale-in">
+        {/* Hero Image - smaller */}
+        <div className="w-full max-w-[200px] mb-2">
           <img 
             src={alphaChampionImage} 
             alt="Alpha Champion" 
@@ -24,13 +49,13 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTe
           />
         </div>
         
-        {/* Titles */}
-        <h1 className="text-3xl font-bold text-foreground">EA FC 26</h1>
-        <h2 className="text-xl font-semibold text-neon-green">Tournament Manager</h2>
+        {/* Titles - tighter spacing */}
+        <h1 className="text-2xl font-bold text-foreground">EA FC 26</h1>
+        <h2 className="text-lg font-semibold text-neon-green">Tournament Manager</h2>
       </div>
 
-      {/* Action Buttons - at bottom */}
-      <div className="w-full max-w-md mx-auto space-y-3 pb-4">
+      {/* Action Buttons - reduced spacing */}
+      <div className="w-full max-w-md mx-auto space-y-2 pb-2 mt-2">
         {onResume && (
           <Button
             variant="gaming"
@@ -85,8 +110,8 @@ export const TournamentHome = ({ onStartNew, onViewHistory, onResume, onManageTe
         </Button>
       </div>
 
-      {/* Footer */}
-      <div className="text-center pb-2">
+      {/* Footer - minimal */}
+      <div className="text-center py-1">
         <p className="text-muted-foreground text-xs">
           EA FC 26 • Ranking Tracking • Bragging Rights
         </p>
