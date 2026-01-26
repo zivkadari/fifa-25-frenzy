@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, History, Gamepad2, User, Users, X } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users, X, UserPlus } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ interface TournamentHomeProps {
   onResume?: () => void;
   onCloseTournament?: () => void;
   onManageTeams?: () => void;
+  onJoinEvening?: () => void;
   isAuthed?: boolean;
   userEmail?: string | null;
   onSignOut?: () => void;
@@ -31,6 +32,7 @@ export const TournamentHome = ({
   onResume, 
   onCloseTournament,
   onManageTeams,
+  onJoinEvening,
   isAuthed,
   userEmail,
   onSignOut
@@ -134,6 +136,18 @@ export const TournamentHome = ({
           >
             <Users className="h-5 w-5" />
             Teams
+          </Button>
+        )}
+        
+        {onJoinEvening && isAuthed && (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onJoinEvening}
+            className="w-full border-neon-green/30 hover:bg-neon-green/10"
+          >
+            <UserPlus className="h-5 w-5" />
+            הצטרף לערב
           </Button>
         )}
         
