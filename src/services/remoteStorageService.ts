@@ -99,15 +99,21 @@ export class RemoteStorageService {
       return (data || []).map((r: any) => r.data as Evening);
     }
 
-    // Fallback: derive by matching evening's 4 player ids as subset of the team's players (supports teams with >4)
+    // Fallback: derive by matching majority of evening's players to team players
     try {
       const teamPlayers = await this.listTeamPlayers(teamId);
       if (teamPlayers.length === 0) return [];
-      const ids = new Set(teamPlayers.map((p) => p.id));
+      const teamPlayerIds = new Set(teamPlayers.map((p) => p.id));
       const all = await this.loadEvenings();
-      const filtered = all.filter(
-        (e) => e.players.length === 4 && e.players.every((p) => ids.has(p.id))
-      );
+      
+      const filtered = all.filter((e) => {
+        if (e.players.length === 0) return false;
+        const matchingPlayers = e.players.filter((p) => teamPlayerIds.has(p.id));
+        // Require at least 50% of players OR at least 2 players (whichever is higher)
+        const minRequired = Math.max(2, Math.ceil(e.players.length / 2));
+        return matchingPlayers.length >= minRequired;
+      });
+      
       return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch {
       return [];

@@ -49,6 +49,15 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
       setTeamEvenings([]);
       return () => { mounted = false; };
     }
+    
+    // First check if we have direct matches in already-loaded evenings
+    const directMatch = sortedEvenings.filter(e => e.teamId === selectedTeamId);
+    if (directMatch.length > 0) {
+      setTeamEvenings(directMatch);
+      return () => { mounted = false; };
+    }
+    
+    // Fallback: load from server with player-based matching
     setLoading(true);
     (async () => {
       const evs = await RemoteStorageService.loadEveningsByTeam(selectedTeamId);
@@ -56,7 +65,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
       if (mounted) setLoading(false);
     })();
     return () => { mounted = false; };
-  }, [selectedTeamId]);
+  }, [selectedTeamId, sortedEvenings]);
 
   const activeEvenings = selectedTeamId === 'all'
     ? sortedEvenings
