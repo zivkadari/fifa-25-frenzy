@@ -227,10 +227,6 @@ export class TeamSelector {
     pairs.forEach(() => {
       const pool: Club[] = [];
 
-      // 1 Prime team (5 stars)
-      const prime = pickAndBan(pool, getPrimeTeams(), 5);
-      if (prime) pool.push(prime);
-
       // 3 clubs/national teams with 5 stars
       const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
       for (let i = 0; i < 3; i++) {
@@ -245,8 +241,8 @@ export class TeamSelector {
         if (team45) pool.push(team45);
       }
 
-      // 3 clubs with 4 stars
-      for (let i = 0; i < 3; i++) {
+      // 4 clubs with 4 stars
+      for (let i = 0; i < 4; i++) {
         const club4 = pickAndBan(pool, getClubsOnly(4), 4);
         if (club4) pool.push(club4);
       }
