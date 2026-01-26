@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Home,
   Copy,
-  RefreshCw
+  RefreshCw,
+  Share2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -92,6 +93,28 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     };
     saveCurrentState();
   }, [currentEvening, onUpdateEvening]);
+
+  // Fetch share code for sharing via WhatsApp
+  useEffect(() => {
+    const fetchShareCode = async () => {
+      const code = await RemoteStorageService.getShareCode(currentEvening.id);
+      setShareCode(code);
+    };
+    fetchShareCode();
+  }, [currentEvening.id]);
+
+  // Generate WhatsApp share link
+  const shareViaWhatsApp = () => {
+    if (!shareCode) {
+      toast({ title: "טוען קוד שיתוף...", description: "נסה שוב בעוד רגע" });
+      return;
+    }
+    const appUrl = window.location.origin;
+    const joinUrl = `${appUrl}/join/${shareCode}`;
+    const message = `🎮 הצטרף לטורניר שלנו!\n\nלחץ כאן להצטרפות:\n${joinUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
 
   // Initialize first round
@@ -742,6 +765,15 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             )}
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={shareViaWhatsApp}
+              aria-label="Share via WhatsApp"
+              className="text-neon-green"
+            >
+              <Share2 className="h-5 w-5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

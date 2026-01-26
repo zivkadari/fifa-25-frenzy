@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { TournamentHome } from "@/components/TournamentHome";
 import { EveningSetup } from "@/components/EveningSetup";
 import { TournamentTypeSelection } from "@/components/TournamentTypeSelection";
@@ -6,6 +7,7 @@ import { SinglesSetup } from "@/components/SinglesSetup";
 import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory, EveningWithTeam } from "@/components/TournamentHistory";
+import { JoinEvening } from "@/components/JoinEvening";
 import { Evening, Player } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
@@ -24,9 +26,10 @@ import { SinglesGameLive } from "@/components/SinglesGameLive";
 import { useActiveEveningPersistence } from "@/hooks/useActiveEveningPersistence";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join';
 
 const Index = () => {
+  const location = useLocation();
   const [appState, setAppState] = useState<AppState>('home');
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
   const [tournamentHistory, setTournamentHistory] = useState<EveningWithTeam[]>([]);
@@ -112,6 +115,40 @@ useEffect(() => {
     });
     return () => unsubscribe && unsubscribe();
   }, [appState, currentEvening?.id]);
+
+  // Handle joined evening from deep link navigation
+  useEffect(() => {
+    const state = location.state as { joinedEveningId?: string } | null;
+    if (state?.joinedEveningId) {
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, '', location.pathname);
+      
+      // Load the joined evening and navigate to game
+      const loadJoinedEvening = async () => {
+        try {
+          const evenings = await RemoteStorageService.loadEvenings();
+          const joinedEvening = evenings.find(e => e.id === state.joinedEveningId);
+          if (joinedEvening && !joinedEvening.completed) {
+            setCurrentEvening(joinedEvening);
+            goTo('game');
+            toast({
+              title: "הצטרפת לטורניר!",
+              description: "אתה יכול לראות ולעדכן ציונים בזמן אמת",
+            });
+          } else if (joinedEvening?.completed) {
+            toast({
+              title: "הטורניר הסתיים",
+              description: "הטורניר שהצטרפת אליו כבר הסתיים",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error loading joined evening:', error);
+        }
+      };
+      loadJoinedEvening();
+    }
+  }, [location.state]);
 
   const handleStartNewEvening = () => {
     clearActiveEvening();
@@ -283,6 +320,32 @@ const handleGoHome = () => {
     setCurrentEvening(null);
   };
 
+  // Handle successful join from JoinEvening component
+  const handleJoinSuccess = async (eveningId: string) => {
+    try {
+      const evenings = await RemoteStorageService.loadEvenings();
+      const joinedEvening = evenings.find(e => e.id === eveningId);
+      if (joinedEvening && !joinedEvening.completed) {
+        setCurrentEvening(joinedEvening);
+        goTo('game');
+        toast({
+          title: "הצטרפת לטורניר!",
+          description: "אתה יכול לראות ולעדכן ציונים בזמן אמת",
+        });
+      } else {
+        toast({
+          title: "הטורניר הסתיים",
+          description: "הטורניר שהצטרפת אליו כבר הסתיים",
+          variant: "destructive",
+        });
+        goTo('home');
+      }
+    } catch (error) {
+      console.error('Error loading joined evening:', error);
+      goTo('home');
+    }
+  };
+
   const renderCurrentState = () => {
     switch (appState) {
       case 'home':
@@ -293,6 +356,7 @@ const handleGoHome = () => {
             onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
             onCloseTournament={currentEvening && !currentEvening.completed ? handleCloseTournament : undefined}
             onManageTeams={() => goTo('teams')}
+            onJoinEvening={isAuthed ? () => goTo('join') : undefined}
             isAuthed={isAuthed}
             userEmail={userEmail}
             onSignOut={handleSignOut}
@@ -424,6 +488,14 @@ const handleGoHome = () => {
                 setCurrentTeamId(teamId);
                 goTo('setup');
               }}
+            />
+          );
+        
+        case 'join':
+          return (
+            <JoinEvening
+              onBack={() => window.history.back()}
+              onJoinSuccess={handleJoinSuccess}
             />
           );
         

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,8 @@ const cleanupAuthState = () => {
 
 const Auth = () => {
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,9 +51,10 @@ const Auth = () => {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = "/";
+        // Redirect to the stored path (could be /join/:code)
+        window.location.href = redirectPath;
       } else {
-        const redirectUrl = `${window.location.origin}/`;
+        const redirectUrl = `${window.location.origin}${redirectPath}`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -80,11 +84,19 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <Card className={`bg-gradient-card border-neon-green/20 p-8 shadow-card ${mode === "signup" ? "ring-2 ring-primary/40" : ""}`}>
           <h1 className="text-2xl font-bold text-foreground mb-2 text-center">{mode === "signin" ? "Sign in" : "Create account"}</h1>
+          
+          {redirectPath !== "/" && (
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              התחבר כדי להצטרף לטורניר
+            </p>
+          )}
 
           {isAuthed ? (
             <div className="space-y-4 text-center"> 
               <p className="text-muted-foreground">You are signed in. You can start and save history to the cloud.</p>
-              <Button variant="secondary" onClick={() => (window.location.href = "/")}>Back to Home</Button>
+              <Button variant="secondary" onClick={() => (window.location.href = redirectPath)}>
+                {redirectPath !== "/" ? "המשך להצטרפות" : "Back to Home"}
+              </Button>
               <Button variant="destructive" onClick={handleSignOut}>Sign out</Button>
             </div>
           ) : (
