@@ -4,22 +4,13 @@
 
 ### הבעיה
 
-ה-RLS policies הנוכחיות מנסות לגשת לטבלת `auth.users` ישירות:
-```sql
-EXISTS (
-  SELECT 1 FROM auth.users 
-  WHERE id = auth.uid() 
-  AND email = 'zivkad12@gmail.com'
-)
-```
-
-זה לא מותר מהקליינט ולכן מקבלים שגיאת "permission denied for table users".
+ה-RLS policies הנוכחיות מנסות לגשת לטבלת `auth.users` ישירות מהקליינט, וזה לא מותר - לכן מקבלים שגיאת "permission denied for table users".
 
 ---
 
 ### הפתרון
 
-ליצור **פונקציית SECURITY DEFINER** שרצה עם הרשאות גבוהות ויכולה לגשת לטבלת `auth.users`, ואז לעדכן את ה-RLS policies להשתמש בפונקציה הזו.
+ליצור פונקציית `SECURITY DEFINER` שרצה עם הרשאות גבוהות ויכולה לגשת לטבלת `auth.users`, ואז לעדכן את ה-RLS policies להשתמש בפונקציה הזו.
 
 ---
 
@@ -65,26 +56,19 @@ USING (public.is_clubs_admin(auth.uid()));
 ### איך זה עובד
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│                    Before (Broken)                       │
-├─────────────────────────────────────────────────────────┤
-│  RLS Policy ──► auth.users ──► Permission Denied!        │
-│  (runs as user)    (protected)                           │
-└─────────────────────────────────────────────────────────┘
+Before (Broken):
+RLS Policy --> auth.users --> Permission Denied!
 
-┌─────────────────────────────────────────────────────────┐
-│                    After (Fixed)                         │
-├─────────────────────────────────────────────────────────┤
-│  RLS Policy ──► is_clubs_admin() ──► auth.users ──► OK  │
-│  (runs as user)  (SECURITY DEFINER)   (accessed as owner)│
-└─────────────────────────────────────────────────────────┘
+After (Fixed):
+RLS Policy --> is_clubs_admin() --> auth.users --> OK
+              (SECURITY DEFINER)
 ```
 
-הפונקציה `is_clubs_admin` מוגדרת כ-`SECURITY DEFINER` - זה אומר שהיא רצה עם ההרשאות של מי שיצר אותה (בעל הדאטאבייס) ולא עם ההרשאות של המשתמש שקורא לה. זה מאפשר לה לגשת לטבלת `auth.users` בבטחה.
+הפונקציה `is_clubs_admin` מוגדרת כ-`SECURITY DEFINER` - היא רצה עם ההרשאות של בעל הדאטאבייס ולא של המשתמש הרגיל, מה שמאפשר לה לגשת ל-`auth.users`.
 
 ---
 
-### סיכום השינויים
+### סיכום
 
 | קובץ | פעולה |
 |------|-------|
