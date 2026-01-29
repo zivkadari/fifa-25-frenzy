@@ -1,88 +1,119 @@
 
 
-## מניעת שמירת טורנירים ריקים להיסטוריה
+## תיקון: אפשור מחיקת טורנירים מההיסטוריה
 
 ### הבעיה
 
-בצילום המסך רואים טורנירים רבים עם "1 rounds" אבל ללא משחקים שהושלמו. אלה טורנירים שנסגרו לפני שבוצע אפילו משחק אחד, אבל עדיין נשמרו להיסטוריה וסטטיסטיקה.
+מדיניות RLS (Row Level Security) בטבלת `evenings` חוסמת מחיקה לחלוטין:
+
+```sql
+Policy Name: Evenings: restrict delete
+Using Expression: false  -- חוסם כל מחיקות!
+```
+
+זה אומר שאף אחד - כולל הבעלים של הטורניר - לא יכול למחוק טורנירים מהדאטאבייס.
 
 ---
 
 ### הפתרון
 
-להוסיף פונקציית בדיקה `hasCompletedGames(evening)` ולמנוע שמירה אם אין משחקים שהושלמו:
+ליצור מדיניות RLS חדשה שמאפשרת לבעלים של טורניר למחוק אותו:
 
-**לוגיקת הבדיקה:**
-- **טורניר זוגות**: בדוק אם יש לפחות משחק אחד עם `completed: true` ב-`rounds`
-- **טורניר יחידים**: בדוק אם יש לפחות משחק אחד עם `completed: true` ב-`gameSequence`
+```sql
+-- מחיקת המדיניות הישנה שחוסמת הכל
+DROP POLICY IF EXISTS "Evenings: restrict delete" ON public.evenings;
+
+-- יצירת מדיניות חדשה - רק הבעלים יכול למחוק
+CREATE POLICY "Evenings: owner can delete"
+  ON public.evenings
+  FOR DELETE
+  TO authenticated
+  USING (owner_id = auth.uid());
+```
 
 ---
 
-### שינויים לביצוע
+### שינויים נוספים בקוד
 
-#### 1. `src/services/tournamentEngine.ts`
+צריך גם לעדכן את הקוד כדי לתת משוב למשתמש כשהמחיקה מצליחה/נכשלת:
 
-הוספת פונקציה סטטית חדשה:
+#### `src/services/remoteStorageService.ts`
+
+עדכון הפונקציה `deleteEvening` להחזיר תוצאה ולזרוק שגיאה:
 
 ```typescript
-static hasCompletedGames(evening: Evening): boolean {
-  if (evening.type === 'singles') {
-    // Singles: check gameSequence
-    return evening.gameSequence?.some(game => game.completed) ?? false;
-  } else {
-    // Pairs: check rounds → matches
-    return evening.rounds.some(round => 
-      round.matches.some(match => match.completed)
-    );
+static async deleteEvening(eveningId: string): Promise<boolean> {
+  if (!this.isEnabled() || !supabase) return false;
+  const { error, count } = await supabase
+    .from(EVENINGS_TABLE)
+    .delete()
+    .eq("id", eveningId);
+  
+  if (error) {
+    console.error("Supabase deleteEvening error:", error.message);
+    throw new Error(error.message);
   }
+  return true;
 }
 ```
 
-#### 2. `src/components/EveningSummary.tsx`
+#### `src/pages/Index.tsx`
 
-שינוי כפתור השמירה להיות מושבת אם אין משחקים:
+עדכון handler המחיקה לתת משוב למשתמש:
 
-| מיקום | שינוי |
-|-------|-------|
-| Import | הוספת `TournamentEngine` (כבר קיים) |
-| לפני כפתור Save | בדיקת `hasCompletedGames` |
-| כפתור Save | הוספת `disabled` + הודעה למשתמש |
-
-קוד לדוגמא:
-
-```tsx
-const hasGames = TournamentEngine.hasCompletedGames(evening);
-
-// בכפתור:
-{!saved && (
-  <Button
-    variant="gaming"
-    size="lg"
-    onClick={handleSaveToHistory}
-    disabled={!hasGames}
-    className="w-full"
-  >
-    <Save className="h-4 w-4" />
-    {hasGames ? "Save to History" : "No Games to Save"}
-  </Button>
-)}
+```typescript
+const handleDeleteEvening = async (eveningId: string) => {
+  if (RemoteStorageService.isEnabled()) {
+    try {
+      await RemoteStorageService.deleteEvening(eveningId);
+      toast({ title: "הטורניר נמחק בהצלחה" });
+    } catch (e: any) {
+      toast({ 
+        title: "שגיאה במחיקה", 
+        description: e.message || "לא ניתן למחוק את הטורניר",
+        variant: "destructive" 
+      });
+      return; // Don't update local state if remote delete failed
+    }
+  }
+  // Rest of the function...
+};
 ```
 
 ---
 
 ### התנהגות לאחר התיקון
 
-| מצב | תוצאה |
-|-----|-------|
-| טורניר עם משחקים | כפתור "Save to History" פעיל |
-| טורניר ללא משחקים | כפתור מושבת עם טקסט "No Games to Save" |
+| משתמש | תוצאה |
+|-------|-------|
+| בעלים של הטורניר | יכול למחוק את הטורניר שלו |
+| משתתף (לא בעלים) | לא יכול למחוק |
+| משתמש לא מחובר | לא יכול למחוק |
 
 ---
 
-### סיכום קבצים לעדכון
+### אופציונלי: דיאלוג אישור מחיקה
 
-| קובץ | פעולה |
-|------|-------|
-| `src/services/tournamentEngine.ts` | הוספת `hasCompletedGames()` |
-| `src/components/EveningSummary.tsx` | שימוש בפונקציה להשבתת כפתור |
+מומלץ גם להוסיף דיאלוג אישור לפני מחיקה כדי למנוע מחיקות בטעות:
+
+```typescript
+// בתוך TournamentHistory.tsx
+const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+// במקום onClick ישיר:
+onClick={() => setDeleteConfirmId(evening.id)}
+
+// ואז AlertDialog שמבקש אישור
+```
+
+---
+
+### סיכום שינויים
+
+| קובץ/משאב | פעולה |
+|-----------|-------|
+| מדיניות RLS | מחיקת "restrict delete" והוספת "owner can delete" |
+| `src/services/remoteStorageService.ts` | עדכון `deleteEvening` לזרוק שגיאה |
+| `src/pages/Index.tsx` | עדכון handler עם משוב למשתמש |
+| `src/components/TournamentHistory.tsx` | (אופציונלי) דיאלוג אישור מחיקה |
 
