@@ -195,10 +195,10 @@ export const SinglesClubAssignment = ({
                       </TooltipProvider>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
+                          {Array.from({ length: Math.floor(getDisplayStars(club)) }).map((_, i) => (
                             <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
                           ))}
-                          {club.stars % 1 !== 0 && (
+                          {getDisplayStars(club) % 1 !== 0 && (
                             <div className="relative h-3 w-3">
                               <Star className="h-3 w-3 text-neon-green absolute" />
                               <Star className="h-3 w-3 fill-neon-green text-neon-green absolute" style={{ clipPath: 'inset(0 50% 0 0)' }} />
