@@ -453,6 +453,7 @@ const handleGoHome = () => {
               onComplete={handleCompleteEvening}
               onGoHome={handleGoHome}
               onUpdateEvening={handleUpdateEvening}
+              clubsWithOverrides={clubsWithOverrides}
             />
           ) : (
             <TournamentGame
