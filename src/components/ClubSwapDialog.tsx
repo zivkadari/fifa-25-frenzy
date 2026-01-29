@@ -21,6 +21,7 @@ interface ClubSwapDialogProps {
   otherPoolClubIds: string[];
   usedClubIdsThisEvening: string[];
   onSwap: (newClub: Club) => void;
+  clubsWithOverrides: Club[];
 }
 
 export const ClubSwapDialog = ({
