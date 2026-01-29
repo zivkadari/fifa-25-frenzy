@@ -907,7 +907,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                           <span className="font-medium text-foreground">{pairNames}</span>
                           {selectedClub ? (
                             <Badge variant="default" className="bg-neon-green text-background">
-                              {selectedClub.name} {selectedClub.isPrime ? 'Pr' : `${selectedClub.stars}★`}
+                              {selectedClub.name} {selectedClub.isPrime ? 'Pr' : `${getDisplayStars(selectedClub)}★`}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-muted-foreground">
