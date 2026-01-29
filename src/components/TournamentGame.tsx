@@ -135,15 +135,15 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
   }, []);
 
-  // Initialize first round (wait for clubs to load)
+  // Initialize first round (wait for overrides to load from database)
   useEffect(() => {
-    if (clubsWithOverrides.length === 0) return;
+    if (!overridesLoaded) return;
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
       loadCurrentRound();
     }
-  }, [clubsWithOverrides]);
+  }, [overridesLoaded]);
 
   // Countdown timer
   useEffect(() => {
