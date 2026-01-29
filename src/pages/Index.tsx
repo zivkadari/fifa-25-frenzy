@@ -96,6 +96,11 @@ useEffect(() => {
     };
   }, []);
 
+  // Load clubs with database overrides on mount
+  useEffect(() => {
+    getClubsWithOverrides().then(setClubsWithOverrides);
+  }, []);
+
   // Auth state listener for header logout/login
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
