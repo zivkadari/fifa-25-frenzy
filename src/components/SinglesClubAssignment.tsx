@@ -15,6 +15,7 @@ interface SinglesClubAssignmentProps {
   players: Player[];
   playerClubs: { [playerId: string]: Club[] };
   clubsPerPlayer: number;
+  clubsWithOverrides: Club[];
 }
 
 export const SinglesClubAssignment = ({ 
