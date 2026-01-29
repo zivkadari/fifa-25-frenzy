@@ -418,12 +418,12 @@ export class TeamSelector {
     
     // Track used clubs for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
     
     // First try: unused clubs with minStars or higher
-    let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= minStars);
+    let available = this.clubs.filter(c => !banned.has(c.id) && c.stars >= minStars);
 
     // Fallback: if less than 2 unused clubs, allow reuse of clubs with same star rating
     if (available.length < 2) {
@@ -435,7 +435,7 @@ export class TeamSelector {
         available = [...available, ...usedWithMinStars.filter(c => c.id !== available[0].id)];
       } else {
         // Ultimate fallback: just get any clubs with minStars
-        available = FIFA_CLUBS.filter(c => c.stars >= minStars);
+        available = this.clubs.filter(c => c.stars >= minStars);
       }
     }
 
