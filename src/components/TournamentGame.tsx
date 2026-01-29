@@ -32,6 +32,7 @@ import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { ClubSwapDialog } from "@/components/ClubSwapDialog";
+import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
 
 interface TournamentGameProps {
   evening: Evening;
