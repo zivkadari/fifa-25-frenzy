@@ -41,6 +41,7 @@ const Index = () => {
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [singlesFlowState, setSinglesFlowState] = useState<'club-assignment' | 'match-schedule' | 'game'>('club-assignment');
   const [selectedTournamentType, setSelectedTournamentType] = useState<'pairs' | 'singles' | null>(null);
+  const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
