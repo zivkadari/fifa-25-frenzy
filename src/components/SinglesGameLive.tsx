@@ -24,6 +24,7 @@ import { TournamentEngine } from "@/services/tournamentEngine";
 import { useToast } from "@/hooks/use-toast";
 
 interface SinglesGameLiveProps {
+  clubsWithOverrides: Club[];
   evening: Evening;
   onBack: () => void;
   onComplete: (evening: Evening) => void;
@@ -31,7 +32,7 @@ interface SinglesGameLiveProps {
   onUpdateEvening: (evening: Evening) => void;
 }
 
-export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening }: SinglesGameLiveProps) => {
+export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening, clubsWithOverrides }: SinglesGameLiveProps) => {
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentGame, setCurrentGame] = useState<SinglesGame | null>(null);
@@ -42,6 +43,12 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [showGamesHistory, setShowGamesHistory] = useState(false);
+
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
 
   useEffect(() => {
     setCurrentEvening(evening);
@@ -294,7 +301,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
                           <div className="flex items-center gap-2">
                             <span>{club.name}</span>
                             <div className="flex">
-                              {Array.from({ length: club.stars }).map((_, i) => (
+                              {Array.from({ length: getDisplayStars(club) }).map((_, i) => (
                                 <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
                               ))}
                             </div>
@@ -349,7 +356,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
                           <div className="flex items-center gap-2">
                             <span>{club.name}</span>
                             <div className="flex">
-                              {Array.from({ length: club.stars }).map((_, i) => (
+                              {Array.from({ length: getDisplayStars(club) }).map((_, i) => (
                                 <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
                               ))}
                             </div>

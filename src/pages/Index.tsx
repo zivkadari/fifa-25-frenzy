@@ -426,6 +426,7 @@ const handleGoHome = () => {
             players={currentEvening.players}
             playerClubs={currentEvening.playerClubs || {}}
             clubsPerPlayer={currentEvening.clubsPerPlayer || 0}
+            clubsWithOverrides={clubsWithOverrides}
           />
         ) : null;
       
@@ -453,6 +454,7 @@ const handleGoHome = () => {
               onComplete={handleCompleteEvening}
               onGoHome={handleGoHome}
               onUpdateEvening={handleUpdateEvening}
+              clubsWithOverrides={clubsWithOverrides}
             />
           ) : (
             <TournamentGame

@@ -21,6 +21,7 @@ interface ClubSwapDialogProps {
   otherPoolClubIds: string[];
   usedClubIdsThisEvening: string[];
   onSwap: (newClub: Club) => void;
+  clubsWithOverrides: Club[];
 }
 
 export const ClubSwapDialog = ({
@@ -31,8 +32,15 @@ export const ClubSwapDialog = ({
   otherPoolClubIds,
   usedClubIdsThisEvening,
   onSwap,
+  clubsWithOverrides,
 }: ClubSwapDialogProps) => {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
 
   // Get available clubs for swap
   const availableClubs = useMemo(() => {
@@ -96,7 +104,7 @@ export const ClubSwapDialog = ({
             החלף קבוצה
           </DialogTitle>
           <DialogDescription>
-            במקום: <strong>{clubToSwap.name}</strong> {clubToSwap.isPrime ? '(Prime)' : `${clubToSwap.stars}★`}
+            במקום: <strong>{clubToSwap.name}</strong> {clubToSwap.isPrime ? '(Prime)' : `${getDisplayStars(clubToSwap)}★`}
           </DialogDescription>
         </DialogHeader>
 
@@ -109,7 +117,7 @@ export const ClubSwapDialog = ({
             disabled={availableClubs.length === 0}
           >
             <Shuffle className="h-4 w-4 mr-2" />
-            הגרל קבוצה רנדומלית ({clubToSwap.stars}★)
+            הגרל קבוצה רנדומלית ({getDisplayStars(clubToSwap)}★)
           </Button>
 
           {/* Divider */}
@@ -132,7 +140,7 @@ export const ClubSwapDialog = ({
                   <span className="font-medium truncate">{club.name}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant="secondary" className="text-xs">
-                      {club.isPrime ? 'Prime' : `${club.stars}★`}
+                      {club.isPrime ? 'Prime' : `${getDisplayStars(club)}★`}
                     </Badge>
                     {club.isNational && (
                       <Badge variant="outline" className="text-xs">נבחרת</Badge>

@@ -88,6 +88,12 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Clubs with overrides from database
   const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
+
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
     const saveCurrentState = () => {
@@ -901,7 +907,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                           <span className="font-medium text-foreground">{pairNames}</span>
                           {selectedClub ? (
                             <Badge variant="default" className="bg-neon-green text-background">
-                              {selectedClub.name} {selectedClub.isPrime ? 'Pr' : `${selectedClub.stars}★`}
+                              {selectedClub.name} {selectedClub.isPrime ? 'Pr' : `${getDisplayStars(selectedClub)}★`}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-muted-foreground">
@@ -934,7 +940,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                                     </Badge>
                                   )}
                                   <Badge variant="secondary" className="text-xs ltr-numbers">
-                                    {club.isPrime ? 'Pr' : `${club.stars}★`}
+                                    {club.isPrime ? 'Pr' : `${getDisplayStars(club)}★`}
                                   </Badge>
                                   {club.isNational && (
                                     <Badge variant="outline" className="text-xs">נבח׳</Badge>
@@ -1315,6 +1321,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             otherPoolClubIds={originalTeamPools[clubToSwap.pairIndex === 0 ? 1 : 0].map(c => c.id)}
             usedClubIdsThisEvening={Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1)}
             onSwap={handleSwapClub}
+            clubsWithOverrides={clubsWithOverrides}
           />
         )}
       </div>
