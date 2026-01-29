@@ -322,7 +322,7 @@ export const SinglesClubAssignment = ({
                               <div className="flex items-center gap-2">
                                 <span>{club.name}</span>
                                 <div className="flex items-center gap-1">
-                                  {Array.from({ length: Math.floor(club.stars) }).map((_, i) => (
+                                  {Array.from({ length: Math.floor(getDisplayStars(club)) }).map((_, i) => (
                                     <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
                                   ))}
                                 </div>
