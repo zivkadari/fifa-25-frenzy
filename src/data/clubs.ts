@@ -1,4 +1,10 @@
 import { Club } from '@/types/tournament';
+import { supabase } from '@/integrations/supabase/client';
+
+// Club overrides cache
+let clubOverridesCache: Record<string, number> | null = null;
+let lastOverridesFetch = 0;
+const OVERRIDES_CACHE_TTL = 60000; // 1 minute
 
 export const FIFA_CLUBS: Club[] = [
   // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (England)
