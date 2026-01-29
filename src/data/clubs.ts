@@ -195,6 +195,8 @@ export const getClubsByStars = (stars: number): Club[] => {
 export const getNationalTeams = (): Club[] => {
   return FIFA_CLUBS.filter(club => club.isNational);
 };
+
+export const getPrimeTeams = (): Club[] => {
   return FIFA_CLUBS.filter(club => club.league === 'Prime');
 };
 
