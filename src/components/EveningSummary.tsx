@@ -29,6 +29,7 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
   
   const playerStats = TournamentEngine.calculatePlayerStats(evening);
   const rankings = evening.rankings || TournamentEngine.calculateRankings(playerStats);
+  const hasGames = TournamentEngine.hasCompletedGames(evening);
 
   const handleSaveToHistory = async () => {
     await onSaveToHistory(evening);
@@ -159,10 +160,11 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
               variant="gaming"
               size="lg"
               onClick={handleSaveToHistory}
+              disabled={!hasGames}
               className="w-full"
             >
               <Save className="h-4 w-4" />
-              Save to History
+              {hasGames ? "Save to History" : "No Games to Save"}
             </Button>
           )}
           
