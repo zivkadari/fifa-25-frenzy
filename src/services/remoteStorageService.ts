@@ -120,13 +120,18 @@ export class RemoteStorageService {
     }
   }
 
-  static async deleteEvening(eveningId: string): Promise<void> {
-    if (!this.isEnabled() || !supabase) return;
+  static async deleteEvening(eveningId: string): Promise<boolean> {
+    if (!this.isEnabled() || !supabase) return false;
     const { error } = await supabase
       .from(EVENINGS_TABLE)
       .delete()
       .eq("id", eveningId);
-    if (error) console.error("Supabase deleteEvening error:", error.message);
+    
+    if (error) {
+      console.error("Supabase deleteEvening error:", error.message);
+      throw new Error(error.message);
+    }
+    return true;
   }
 
   // Link an existing evening to a team and recalculate stats
