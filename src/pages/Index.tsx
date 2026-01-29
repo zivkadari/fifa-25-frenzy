@@ -267,27 +267,32 @@ useEffect(() => {
      }
    };
 
- const handleDeleteEvening = async (eveningId: string) => {
-    // Attempt remote delete (will be allowed only for admin via RLS)
+  const handleDeleteEvening = async (eveningId: string) => {
     if (RemoteStorageService.isEnabled()) {
       try {
         await RemoteStorageService.deleteEvening(eveningId);
-      } catch (e) {
-        toast({ title: "אין הרשאה למחיקה", description: "רק המנהל יכול למחוק", variant: "destructive" });
+        toast({ title: "הטורניר נמחק בהצלחה" });
+      } catch (e: any) {
+        toast({ 
+          title: "שגיאה במחיקה", 
+          description: e.message || "לא ניתן למחוק את הטורניר",
+          variant: "destructive" 
+        });
+        return; // Don't update local state if remote delete failed
       }
     }
     // Keep local history in sync
     StorageService.deleteEvening(eveningId);
-     const local = StorageService.loadEvenings();
-     let remote: Evening[] = [];
-     if (RemoteStorageService.isEnabled()) {
-       try {
-         remote = await RemoteStorageService.loadEvenings();
-       } catch {
-         remote = [];
-       }
-     }
-     setTournamentHistory(remote.length ? remote : local);
+    const local = StorageService.loadEvenings();
+    let remote: Evening[] = [];
+    if (RemoteStorageService.isEnabled()) {
+      try {
+        remote = await RemoteStorageService.loadEvenings();
+      } catch {
+        remote = [];
+      }
+    }
+    setTournamentHistory(remote.length ? remote : local);
   };
 
 const handleGoHome = () => {
