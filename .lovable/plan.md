@@ -4,91 +4,86 @@
 
 ### הבעיה שזוהתה
 
-כשהקבוצות נשמרות בטורניר (`round.teamPools`), הן נשמרות **עם הכוכבים שהיו להן באותו רגע**. כשאתה מעדכן כוכבים ב-Admin, הקבוצות שכבר קיימות בטורניר לא מתעדכנות.
+בצילומי המסך רואים שבנפיקה מופיעה עם 4 כוכבים בטורניר, אבל ב-Admin עדכנת אותה ל-4.5 כוכבים.
 
-לדוגמא:
-- בנפיקה הייתה 4 כוכבים כשהטורניר נוצר
-- עדכנת אותה ל-4.5 ב-Admin
-- הטורניר עדיין מציג 4 כוכבים כי זה מה שנשמר ב-`round.teamPools`
+הסיבה: כשקבוצות נשמרות ב-`teamPools` או `playerClubs`, הן נשמרות **עם הכוכבים שהיו להן באותו רגע**. התצוגה ב-UI משתמשת ב-`club.stars` ישירות במקום לבדוק את הערך העדכני מהדאטאבייס.
+
+**מיקום הבעיה בקוד:**
+- שורה 904: `${selectedClub.stars}★`
+- שורה 937: `${club.stars}★`
 
 ---
 
 ### הפתרון
 
-ליצור פונקציית `getDisplayStars()` שמחפשת את הכוכבים העדכניים מה-`clubsWithOverrides` במקום להשתמש ב-`club.stars` ישירות.
-
----
-
-### שינויים טכניים
-
-#### 1. `src/components/TournamentGame.tsx`
-
-הוספת פונקציית helper ושימוש בה בתצוגה:
+ליצור פונקציית `getDisplayStars(club)` שמחפשת את הכוכבים העדכניים מה-`clubsWithOverrides`:
 
 ```typescript
-// Helper function to get current star rating from database overrides
 const getDisplayStars = (club: Club): number => {
   const override = clubsWithOverrides.find(c => c.id === club.id);
   return override?.stars ?? club.stars;
 };
 ```
 
-עדכון כל המקומות שמציגים כוכבים:
+---
+
+### שינויים לביצוע
+
+#### 1. `src/components/TournamentGame.tsx`
+
+הוספת הפונקציה ושימוש בה בכל המקומות שמציגים כוכבים:
 
 | שורה | לפני | אחרי |
 |------|------|------|
-| ~904 | `selectedClub.stars` | `getDisplayStars(selectedClub)` |
-| ~937 | `club.stars` | `getDisplayStars(club)` |
+| 904 | `${selectedClub.stars}★` | `${getDisplayStars(selectedClub)}★` |
+| 937 | `${club.stars}★` | `${getDisplayStars(club)}★` |
 
 #### 2. `src/components/SinglesClubAssignment.tsx`
 
-אותו תיקון - להעביר את `clubsWithOverrides` כ-prop ולהשתמש ב-`getDisplayStars`.
+- להוסיף prop של `clubsWithOverrides`
+- ליצור פונקציית `getDisplayStars`
+- לעדכן תצוגת הכוכבים
 
 #### 3. `src/components/SinglesGameLive.tsx`
 
-אותו תיקון - להעביר את `clubsWithOverrides` כ-prop ולהשתמש ב-`getDisplayStars`.
+- להוסיף prop של `clubsWithOverrides`
+- ליצור פונקציית `getDisplayStars`
+- לעדכן תצוגת הכוכבים (שורות 297-299, 352-354)
 
 #### 4. `src/components/ClubSwapDialog.tsx`
 
-אותו תיקון לתצוגת הכוכבים בדיאלוג ההחלפה.
+- להוסיף prop של `clubsWithOverrides`
+- לעדכן תצוגת הכוכבים בדיאלוג
+
+#### 5. `src/pages/Index.tsx`
+
+- להעביר `clubsWithOverrides` כ-prop לכל הקומפוננטות הרלוונטיות
 
 ---
 
 ### זרימת נתונים לאחר התיקון
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                      Tournament State                            │
-│  round.teamPools = [{ id: 'benfica', stars: 4, ... }]           │
-│                      (נשמר כשהטורניר נוצר)                       │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      getDisplayStars(club)                       │
-│  1. חפש את club.id ב-clubsWithOverrides                         │
-│  2. אם נמצא → החזר stars מה-override                            │
-│  3. אם לא נמצא → החזר club.stars המקורי                         │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        UI Display                                │
-│  "SL Benfica 4.5★"  ← הכוכבים מה-override                       │
-└─────────────────────────────────────────────────────────────────┘
+Tournament State (saved data)
+    club = { id: 'benfica', stars: 4, ... }
+                  │
+                  ▼
+         getDisplayStars(club)
+                  │
+    ┌─────────────┴─────────────┐
+    │  Search in clubsWithOverrides  │
+    │  for club.id === 'benfica'     │
+    └─────────────┬─────────────┘
+                  │
+    Found: { id: 'benfica', stars: 4.5 }
+                  │
+                  ▼
+         Display: "SL Benfica 4.5★"
 ```
 
 ---
 
-### יתרונות הפתרון
-
-1. **שינויים ב-Admin מתעדכנים מיד** - גם בטורנירים קיימים
-2. **לא דורש מיגרציה של נתונים** - הטורנירים הקיימים ממשיכים לעבוד
-3. **הלוגיקה של בחירת קבוצות לא משתנה** - רק התצוגה מתעדכנת
-
----
-
-### סיכום הקבצים לשינוי
+### סיכום
 
 | קובץ | פעולה |
 |------|-------|
@@ -97,4 +92,6 @@ const getDisplayStars = (club: Club): number => {
 | `src/components/SinglesGameLive.tsx` | הוספת prop + `getDisplayStars()` |
 | `src/components/ClubSwapDialog.tsx` | הוספת prop + `getDisplayStars()` |
 | `src/pages/Index.tsx` | העברת `clubsWithOverrides` לקומפוננטות |
+
+אחרי התיקון, שינויי כוכבים ב-Admin יופיעו מיד גם בטורנירים קיימים!
 
