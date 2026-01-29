@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      club_overrides: {
+        Row: {
+          club_id: string
+          stars: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          club_id: string
+          stars: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          club_id?: string
+          stars?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       club_stats: {
         Row: {
           club_id: string
