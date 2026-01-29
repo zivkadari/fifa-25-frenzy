@@ -32,8 +32,15 @@ export const ClubSwapDialog = ({
   otherPoolClubIds,
   usedClubIdsThisEvening,
   onSwap,
+  clubsWithOverrides,
 }: ClubSwapDialogProps) => {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
 
   // Get available clubs for swap
   const availableClubs = useMemo(() => {
