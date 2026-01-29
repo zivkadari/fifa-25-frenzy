@@ -107,21 +107,21 @@ export class TeamSelector {
       const pool: Club[] = [];
 
       // 2 clubs/national teams with 5 stars
-      const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
+      const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
       for (let i = 0; i < 2; i++) {
         const team5 = pickAndBan(pool, fiveStarPool, 5);
         if (team5) pool.push(team5);
       }
 
       // 3 clubs/national teams with 4.5 stars
-      const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
+      const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
       for (let i = 0; i < 3; i++) {
         const team45 = pickAndBan(pool, available45, 4.5);
         if (team45) pool.push(team45);
       }
 
       // 2 clubs/national teams with 4 stars
-      const fourStarPool = [...getClubsOnly(4), ...getNationalTeamsByStars(4)];
+      const fourStarPool = [...getClubsOnly(4, this.clubs), ...getNationalTeamsByStars(4, this.clubs)];
       for (let i = 0; i < 2; i++) {
         const club4 = pickAndBan(pool, fourStarPool, 4);
         if (club4) pool.push(club4);
