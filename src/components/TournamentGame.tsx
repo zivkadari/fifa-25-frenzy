@@ -87,6 +87,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   
   // Clubs with overrides from database
   const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
+  const [overridesLoaded, setOverridesLoaded] = useState(false);
 
   // Helper function to get current star rating from database overrides
   const getDisplayStars = (club: Club): number => {
@@ -128,18 +129,21 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
   // Load clubs with database overrides on mount
   useEffect(() => {
-    getClubsWithOverrides().then(setClubsWithOverrides);
+    getClubsWithOverrides().then(clubs => {
+      setClubsWithOverrides(clubs);
+      setOverridesLoaded(true);
+    });
   }, []);
 
-  // Initialize first round (wait for clubs to load)
+  // Initialize first round (wait for overrides to load from database)
   useEffect(() => {
-    if (clubsWithOverrides.length === 0) return;
+    if (!overridesLoaded) return;
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
       loadCurrentRound();
     }
-  }, [clubsWithOverrides]);
+  }, [overridesLoaded]);
 
   // Countdown timer
   useEffect(() => {
