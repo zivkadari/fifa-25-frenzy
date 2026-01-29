@@ -179,7 +179,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     // Generate team pools for the entire round, excluding clubs that were ACTUALLY PLAYED this evening
     // Note: We only exclude clubs from usedClubCounts (clubs that were selected and played),
     // NOT clubs that were just in a pool but never selected
-    const teamSelector = new TeamSelector();
+    const teamSelector = new TeamSelector(clubsWithOverrides);
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
     console.log('Generating pools for round with maxMatches:', maxMatches);
     const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
