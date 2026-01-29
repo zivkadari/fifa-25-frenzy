@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, History, Gamepad2, User, Users, X, UserPlus } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users, X, UserPlus, Star } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
 import {
