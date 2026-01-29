@@ -44,6 +44,12 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [showGamesHistory, setShowGamesHistory] = useState(false);
 
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
+
   useEffect(() => {
     setCurrentEvening(evening);
     updatePlayerStats(evening);
