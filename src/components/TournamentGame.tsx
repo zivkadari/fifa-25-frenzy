@@ -480,7 +480,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
   // Auto-draw balanced teams for decider matches (stars >= 4, diff <= 1)
   const drawDeciderTeams = () => {
-    const teamSelector = new TeamSelector();
+    const teamSelector = new TeamSelector(clubsWithOverrides);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
     const [club1, club2] = teamSelector.generateBalancedDeciderTeams(excludeIds, 4, 1);
