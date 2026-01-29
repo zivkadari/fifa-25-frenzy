@@ -29,6 +29,7 @@ export const EveningSummary = ({ evening, onSaveToHistory, onBackToHome }: Eveni
   
   const playerStats = TournamentEngine.calculatePlayerStats(evening);
   const rankings = evening.rankings || TournamentEngine.calculateRankings(playerStats);
+  const hasGames = TournamentEngine.hasCompletedGames(evening);
 
   const handleSaveToHistory = async () => {
     await onSaveToHistory(evening);
