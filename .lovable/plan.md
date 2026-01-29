@@ -1,84 +1,114 @@
 
+## תיקון: Race Condition בטעינת Club Overrides
 
-## תיקון: הצגת כוכבים מעודכנים בטורניר
+### הבעיה שזיהיתי
 
-### הבעיה שזוהתה
+יש **race condition** בקוד. הסיבוב הראשון מתחיל עם נתונים סטטיים לפני שה-overrides נטענים מהדאטאבייס.
 
-בצילומי המסך רואים שבנפיקה מופיעה עם 4 כוכבים בטורניר, אבל ב-Admin עדכנת אותה ל-4.5 כוכבים.
+**המצב הנוכחי:**
 
-הסיבה: כשקבוצות נשמרות ב-`teamPools` או `playerClubs`, הן נשמרות **עם הכוכבים שהיו להן באותו רגע**. התצוגה ב-UI משתמשת ב-`club.stars` ישירות במקום לבדוק את הערך העדכני מהדאטאבייס.
+```typescript
+// שורה 89 - State מאותחל עם הנתונים הסטטיים
+const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
-**מיקום הבעיה בקוד:**
-- שורה 904: `${selectedClub.stars}★`
-- שורה 937: `${club.stars}★`
+// שורה 130-132 - טוען overrides מהדאטאבייס (async)
+useEffect(() => {
+  getClubsWithOverrides().then(setClubsWithOverrides);
+}, []);
+
+// שורה 134-142 - מתחיל סיבוב ראשון כשיש שינוי ב-clubsWithOverrides
+useEffect(() => {
+  if (clubsWithOverrides.length === 0) return;  // ❌ הבעיה!
+  if (currentEvening.rounds.length === 0) {
+    startNextRound(0);  // ❌ נקרא עם FIFA_CLUBS לפני שה-overrides הגיעו!
+  }
+}, [clubsWithOverrides]);
+```
+
+**למה זה לא עובד:**
+1. `clubsWithOverrides` מאותחל ל-`FIFA_CLUBS` (118 קבוצות - לא ריק!)
+2. הבדיקה `clubsWithOverrides.length === 0` מחזירה `false` מיידית
+3. `startNextRound(0)` נקרא עם הנתונים הסטטיים
+4. רק אחר כך ה-overrides נטענים - אבל כבר מאוחר מדי!
 
 ---
 
 ### הפתרון
 
-ליצור פונקציית `getDisplayStars(club)` שמחפשת את הכוכבים העדכניים מה-`clubsWithOverrides`:
+להוסיף flag `overridesLoaded` שמציין שה-overrides נטענו בהצלחה:
 
 ```typescript
-const getDisplayStars = (club: Club): number => {
-  const override = clubsWithOverrides.find(c => c.id === club.id);
-  return override?.stars ?? club.stars;
-};
+// הוספת state חדש
+const [overridesLoaded, setOverridesLoaded] = useState(false);
+
+// עדכון ה-useEffect שטוען overrides
+useEffect(() => {
+  getClubsWithOverrides().then(clubs => {
+    setClubsWithOverrides(clubs);
+    setOverridesLoaded(true);  // מסמן שהטעינה הסתיימה
+  });
+}, []);
+
+// עדכון ה-useEffect שמתחיל את הסיבוב הראשון
+useEffect(() => {
+  if (!overridesLoaded) return;  // ✅ ממתין לטעינה אמיתית
+  if (currentEvening.rounds.length === 0) {
+    startNextRound(0);
+  } else {
+    loadCurrentRound();
+  }
+}, [overridesLoaded]);
 ```
 
 ---
 
 ### שינויים לביצוע
 
-#### 1. `src/components/TournamentGame.tsx`
+#### קובץ: `src/components/TournamentGame.tsx`
 
-הוספת הפונקציה ושימוש בה בכל המקומות שמציגים כוכבים:
-
-| שורה | לפני | אחרי |
-|------|------|------|
-| 904 | `${selectedClub.stars}★` | `${getDisplayStars(selectedClub)}★` |
-| 937 | `${club.stars}★` | `${getDisplayStars(club)}★` |
-
-#### 2. `src/components/SinglesClubAssignment.tsx`
-
-- להוסיף prop של `clubsWithOverrides`
-- ליצור פונקציית `getDisplayStars`
-- לעדכן תצוגת הכוכבים
-
-#### 3. `src/components/SinglesGameLive.tsx`
-
-- להוסיף prop של `clubsWithOverrides`
-- ליצור פונקציית `getDisplayStars`
-- לעדכן תצוגת הכוכבים (שורות 297-299, 352-354)
-
-#### 4. `src/components/ClubSwapDialog.tsx`
-
-- להוסיף prop של `clubsWithOverrides`
-- לעדכן תצוגת הכוכבים בדיאלוג
-
-#### 5. `src/pages/Index.tsx`
-
-- להעביר `clubsWithOverrides` כ-prop לכל הקומפוננטות הרלוונטיות
+| שורה | שינוי |
+|------|-------|
+| 89 | הוספת `const [overridesLoaded, setOverridesLoaded] = useState(false);` |
+| 130-132 | עדכון ה-useEffect לסמן `setOverridesLoaded(true)` אחרי הטעינה |
+| 134-142 | שינוי התנאי מ-`clubsWithOverrides.length === 0` ל-`!overridesLoaded` |
 
 ---
 
 ### זרימת נתונים לאחר התיקון
 
 ```text
-Tournament State (saved data)
-    club = { id: 'benfica', stars: 4, ... }
-                  │
-                  ▼
-         getDisplayStars(club)
-                  │
-    ┌─────────────┴─────────────┐
-    │  Search in clubsWithOverrides  │
-    │  for club.id === 'benfica'     │
-    └─────────────┬─────────────┘
-                  │
-    Found: { id: 'benfica', stars: 4.5 }
-                  │
-                  ▼
-         Display: "SL Benfica 4.5★"
+┌─────────────────────────────────────────────────────────────────┐
+│                     Component Mount                              │
+│  clubsWithOverrides = FIFA_CLUBS (default)                      │
+│  overridesLoaded = false                                        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 useEffect: Load Overrides                        │
+│  getClubsWithOverrides() → async...                             │
+│  (לוקח כמה מילישניות)                                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 useEffect: Start Round                           │
+│  if (!overridesLoaded) return;  ← ✅ ממתין!                      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+         (Async completes)    │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              setClubsWithOverrides(updatedClubs)                │
+│              setOverridesLoaded(true)                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                 useEffect: Start Round (re-runs)                 │
+│  overridesLoaded = true ✅                                       │
+│  startNextRound(0) ← עכשיו עם הנתונים המעודכנים!                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -87,11 +117,8 @@ Tournament State (saved data)
 
 | קובץ | פעולה |
 |------|-------|
-| `src/components/TournamentGame.tsx` | הוספת `getDisplayStars()` ושימוש בה |
-| `src/components/SinglesClubAssignment.tsx` | הוספת prop + `getDisplayStars()` |
-| `src/components/SinglesGameLive.tsx` | הוספת prop + `getDisplayStars()` |
-| `src/components/ClubSwapDialog.tsx` | הוספת prop + `getDisplayStars()` |
-| `src/pages/Index.tsx` | העברת `clubsWithOverrides` לקומפוננטות |
+| `src/components/TournamentGame.tsx` | הוספת flag `overridesLoaded` והמתנה לו לפני התחלת סיבוב |
 
-אחרי התיקון, שינויי כוכבים ב-Admin יופיעו מיד גם בטורנירים קיימים!
-
+אחרי התיקון, הקבוצות יסוננו נכון לפי הכוכבים המעודכנים מהדאטאבייס:
+- לברקוזן (4.5★) תופיע בקטגוריית 4.5 ולא 4
+- בנפיקה (4.5★) תופיע בקטגוריית 4.5 ולא 4
