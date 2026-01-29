@@ -405,7 +405,7 @@ const handleGoHome = () => {
           <SinglesSetup
             onBack={() => window.history.back()}
             onStartSingles={(players: Player[], clubsPerPlayer: number) => {
-              const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, currentTeamId ?? undefined);
+              const singlesEvening = TournamentEngine.createSinglesEvening(players, clubsPerPlayer, currentTeamId ?? undefined, clubsWithOverrides);
               persistActiveEveningNow(singlesEvening);
               setCurrentEvening(singlesEvening);
               setSinglesFlowState('club-assignment');
