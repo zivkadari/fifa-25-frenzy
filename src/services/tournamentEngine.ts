@@ -171,6 +171,18 @@ export class TournamentEngine {
     return rankings;
   }
 
+  static hasCompletedGames(evening: Evening): boolean {
+    if (evening.type === 'singles') {
+      // Singles: check gameSequence
+      return evening.gameSequence?.some(game => game.completed) ?? false;
+    } else {
+      // Pairs: check rounds → matches
+      return evening.rounds.some(round => 
+        round.matches.some(match => match.completed)
+      );
+    }
+  }
+
   static isRoundComplete(round: Round, winsToComplete: number): boolean {
     // Round completes either when someone reaches winsToComplete OR when max scheduled matches are played
     const scores = Object.values(round.pairScores);
