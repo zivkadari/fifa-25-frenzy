@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, History, Gamepad2, User, Users, X, UserPlus } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users, X, UserPlus, Star } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
 import {
@@ -172,6 +172,21 @@ export const TournamentHome = ({
             Profile
           </Link>
         </Button>
+        
+        {/* Admin link - only visible for admin email */}
+        {userEmail === 'zivkad12@gmail.com' && (
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="w-full border-yellow-400/30 hover:bg-yellow-400/10 text-yellow-400"
+          >
+            <Link to="/admin/clubs">
+              <Star className="h-5 w-5" />
+              ניהול קבוצות (Admin)
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Footer */}

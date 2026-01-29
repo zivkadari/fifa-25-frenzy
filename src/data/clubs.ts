@@ -1,4 +1,10 @@
 import { Club } from '@/types/tournament';
+import { supabase } from '@/integrations/supabase/client';
+
+// Club overrides cache
+let clubOverridesCache: Record<string, number> | null = null;
+let lastOverridesFetch = 0;
+const OVERRIDES_CACHE_TTL = 60000; // 1 minute
 
 export const FIFA_CLUBS: Club[] = [
   // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (England)
@@ -133,6 +139,54 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'liverpool-xi', name: 'Liverpool XI', stars: 5, league: 'Prime', isPrime: true },
   { id: 'premier-league-xi', name: 'Premier League XI', stars: 5, league: 'Prime', isPrime: true },
 ];
+
+// Load overrides from database
+export async function loadClubOverrides(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (clubOverridesCache && now - lastOverridesFetch < OVERRIDES_CACHE_TTL) {
+    return clubOverridesCache;
+  }
+
+  if (!supabase) return {};
+
+  try {
+    const { data, error } = await supabase
+      .from('club_overrides')
+      .select('club_id, stars');
+    
+    if (error) {
+      console.error('Error loading club overrides:', error);
+      return clubOverridesCache || {};
+    }
+    
+    const map: Record<string, number> = {};
+    (data || []).forEach((row: { club_id: string; stars: number }) => {
+      map[row.club_id] = row.stars;
+    });
+    
+    clubOverridesCache = map;
+    lastOverridesFetch = now;
+    return map;
+  } catch (e) {
+    console.error('Failed to load club overrides:', e);
+    return clubOverridesCache || {};
+  }
+}
+
+// Get clubs with database overrides applied
+export async function getClubsWithOverrides(): Promise<Club[]> {
+  const overrides = await loadClubOverrides();
+  return FIFA_CLUBS.map(club => ({
+    ...club,
+    stars: overrides[club.id] ?? club.stars
+  }));
+}
+
+// Invalidate cache (call after saving overrides)
+export function invalidateClubOverridesCache() {
+  clubOverridesCache = null;
+  lastOverridesFetch = 0;
+}
 
 export const getClubsByStars = (stars: number): Club[] => {
   return FIFA_CLUBS.filter(club => club.stars === stars);
