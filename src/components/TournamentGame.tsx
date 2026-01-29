@@ -84,6 +84,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Club swap dialog state
   const [showSwapDialog, setShowSwapDialog] = useState(false);
   const [clubToSwap, setClubToSwap] = useState<{ club: Club; pairIndex: 0 | 1; clubIndex: number } | null>(null);
+  
+  // Clubs with overrides from database
+  const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
