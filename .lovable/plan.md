@@ -1,124 +1,88 @@
 
-## תיקון: Race Condition בטעינת Club Overrides
 
-### הבעיה שזיהיתי
+## מניעת שמירת טורנירים ריקים להיסטוריה
 
-יש **race condition** בקוד. הסיבוב הראשון מתחיל עם נתונים סטטיים לפני שה-overrides נטענים מהדאטאבייס.
+### הבעיה
 
-**המצב הנוכחי:**
-
-```typescript
-// שורה 89 - State מאותחל עם הנתונים הסטטיים
-const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
-
-// שורה 130-132 - טוען overrides מהדאטאבייס (async)
-useEffect(() => {
-  getClubsWithOverrides().then(setClubsWithOverrides);
-}, []);
-
-// שורה 134-142 - מתחיל סיבוב ראשון כשיש שינוי ב-clubsWithOverrides
-useEffect(() => {
-  if (clubsWithOverrides.length === 0) return;  // ❌ הבעיה!
-  if (currentEvening.rounds.length === 0) {
-    startNextRound(0);  // ❌ נקרא עם FIFA_CLUBS לפני שה-overrides הגיעו!
-  }
-}, [clubsWithOverrides]);
-```
-
-**למה זה לא עובד:**
-1. `clubsWithOverrides` מאותחל ל-`FIFA_CLUBS` (118 קבוצות - לא ריק!)
-2. הבדיקה `clubsWithOverrides.length === 0` מחזירה `false` מיידית
-3. `startNextRound(0)` נקרא עם הנתונים הסטטיים
-4. רק אחר כך ה-overrides נטענים - אבל כבר מאוחר מדי!
+בצילום המסך רואים טורנירים רבים עם "1 rounds" אבל ללא משחקים שהושלמו. אלה טורנירים שנסגרו לפני שבוצע אפילו משחק אחד, אבל עדיין נשמרו להיסטוריה וסטטיסטיקה.
 
 ---
 
 ### הפתרון
 
-להוסיף flag `overridesLoaded` שמציין שה-overrides נטענו בהצלחה:
+להוסיף פונקציית בדיקה `hasCompletedGames(evening)` ולמנוע שמירה אם אין משחקים שהושלמו:
 
-```typescript
-// הוספת state חדש
-const [overridesLoaded, setOverridesLoaded] = useState(false);
-
-// עדכון ה-useEffect שטוען overrides
-useEffect(() => {
-  getClubsWithOverrides().then(clubs => {
-    setClubsWithOverrides(clubs);
-    setOverridesLoaded(true);  // מסמן שהטעינה הסתיימה
-  });
-}, []);
-
-// עדכון ה-useEffect שמתחיל את הסיבוב הראשון
-useEffect(() => {
-  if (!overridesLoaded) return;  // ✅ ממתין לטעינה אמיתית
-  if (currentEvening.rounds.length === 0) {
-    startNextRound(0);
-  } else {
-    loadCurrentRound();
-  }
-}, [overridesLoaded]);
-```
+**לוגיקת הבדיקה:**
+- **טורניר זוגות**: בדוק אם יש לפחות משחק אחד עם `completed: true` ב-`rounds`
+- **טורניר יחידים**: בדוק אם יש לפחות משחק אחד עם `completed: true` ב-`gameSequence`
 
 ---
 
 ### שינויים לביצוע
 
-#### קובץ: `src/components/TournamentGame.tsx`
+#### 1. `src/services/tournamentEngine.ts`
 
-| שורה | שינוי |
-|------|-------|
-| 89 | הוספת `const [overridesLoaded, setOverridesLoaded] = useState(false);` |
-| 130-132 | עדכון ה-useEffect לסמן `setOverridesLoaded(true)` אחרי הטעינה |
-| 134-142 | שינוי התנאי מ-`clubsWithOverrides.length === 0` ל-`!overridesLoaded` |
+הוספת פונקציה סטטית חדשה:
 
----
+```typescript
+static hasCompletedGames(evening: Evening): boolean {
+  if (evening.type === 'singles') {
+    // Singles: check gameSequence
+    return evening.gameSequence?.some(game => game.completed) ?? false;
+  } else {
+    // Pairs: check rounds → matches
+    return evening.rounds.some(round => 
+      round.matches.some(match => match.completed)
+    );
+  }
+}
+```
 
-### זרימת נתונים לאחר התיקון
+#### 2. `src/components/EveningSummary.tsx`
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                     Component Mount                              │
-│  clubsWithOverrides = FIFA_CLUBS (default)                      │
-│  overridesLoaded = false                                        │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 useEffect: Load Overrides                        │
-│  getClubsWithOverrides() → async...                             │
-│  (לוקח כמה מילישניות)                                           │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 useEffect: Start Round                           │
-│  if (!overridesLoaded) return;  ← ✅ ממתין!                      │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-         (Async completes)    │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              setClubsWithOverrides(updatedClubs)                │
-│              setOverridesLoaded(true)                           │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                 useEffect: Start Round (re-runs)                 │
-│  overridesLoaded = true ✅                                       │
-│  startNextRound(0) ← עכשיו עם הנתונים המעודכנים!                 │
-└─────────────────────────────────────────────────────────────────┘
+שינוי כפתור השמירה להיות מושבת אם אין משחקים:
+
+| מיקום | שינוי |
+|-------|-------|
+| Import | הוספת `TournamentEngine` (כבר קיים) |
+| לפני כפתור Save | בדיקת `hasCompletedGames` |
+| כפתור Save | הוספת `disabled` + הודעה למשתמש |
+
+קוד לדוגמא:
+
+```tsx
+const hasGames = TournamentEngine.hasCompletedGames(evening);
+
+// בכפתור:
+{!saved && (
+  <Button
+    variant="gaming"
+    size="lg"
+    onClick={handleSaveToHistory}
+    disabled={!hasGames}
+    className="w-full"
+  >
+    <Save className="h-4 w-4" />
+    {hasGames ? "Save to History" : "No Games to Save"}
+  </Button>
+)}
 ```
 
 ---
 
-### סיכום
+### התנהגות לאחר התיקון
+
+| מצב | תוצאה |
+|-----|-------|
+| טורניר עם משחקים | כפתור "Save to History" פעיל |
+| טורניר ללא משחקים | כפתור מושבת עם טקסט "No Games to Save" |
+
+---
+
+### סיכום קבצים לעדכון
 
 | קובץ | פעולה |
 |------|-------|
-| `src/components/TournamentGame.tsx` | הוספת flag `overridesLoaded` והמתנה לו לפני התחלת סיבוב |
+| `src/services/tournamentEngine.ts` | הוספת `hasCompletedGames()` |
+| `src/components/EveningSummary.tsx` | שימוש בפונקציה להשבתת כפתור |
 
-אחרי התיקון, הקבוצות יסוננו נכון לפי הכוכבים המעודכנים מהדאטאבייס:
-- לברקוזן (4.5★) תופיע בקטגוריית 4.5 ולא 4
-- בנפיקה (4.5★) תופיע בקטגוריית 4.5 ולא 4
