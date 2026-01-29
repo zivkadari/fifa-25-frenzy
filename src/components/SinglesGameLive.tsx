@@ -24,6 +24,7 @@ import { TournamentEngine } from "@/services/tournamentEngine";
 import { useToast } from "@/hooks/use-toast";
 
 interface SinglesGameLiveProps {
+  clubsWithOverrides: Club[];
   evening: Evening;
   onBack: () => void;
   onComplete: (evening: Evening) => void;
