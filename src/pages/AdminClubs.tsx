@@ -162,6 +162,9 @@ export default function AdminClubs() {
       setOverrides((prev) => ({ ...prev, ...localChanges }));
       setLocalChanges({});
       
+      // Invalidate cache so other parts of app get fresh data
+      invalidateClubOverridesCache();
+      
       toast({
         title: "נשמר בהצלחה!",
         description: `עודכנו ${upserts.length} קבוצות`,
