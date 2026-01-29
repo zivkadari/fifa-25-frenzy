@@ -10,6 +10,11 @@ export interface TeamPoolResult {
 }
 
 /**
+ * TeamSelector manages club assignments for tournament matches.
+ * Pass a clubs array (e.g., from getClubsWithOverrides()) to use database star overrides.
+ */
+
+/**
  * Smart club picker that ensures each club appears only once per evening.
  * Falls back to allowing reuse ONLY when all clubs of the required star rating are exhausted.
  * 
