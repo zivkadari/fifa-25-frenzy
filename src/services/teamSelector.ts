@@ -327,7 +327,7 @@ export class TeamSelector {
       if (pools[0].length >= clubsPerPair && pools[1].length >= clubsPerPair) break;
       
       // Try to find unused clubs with 4+ stars
-      let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= 4);
+      let available = this.clubs.filter(c => !banned.has(c.id) && c.stars >= 4);
       let isRecycledBatch = false;
       
       // If no unused 4+ star clubs, allow reuse of 4+ star clubs
@@ -340,7 +340,7 @@ export class TeamSelector {
           isRecycledBatch = true;
         } else {
           // Last resort: any unused club
-          available = FIFA_CLUBS.filter(c => !banned.has(c.id));
+          available = this.clubs.filter(c => !banned.has(c.id));
         }
       }
       
