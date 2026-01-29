@@ -311,7 +311,7 @@ export class TeamSelector {
           poolsSums[pairIndex] += club.stars;
         } else {
           // No more 5-star available, try 4.5
-          const backup = pickFromPool(getClubsByStars(4.5), 4.5);
+          const backup = pickFromPool(getClubsByStars(4.5, this.clubs), 4.5);
           if (backup) {
             pool.push(backup);
             poolsSums[pairIndex] += backup.stars;
