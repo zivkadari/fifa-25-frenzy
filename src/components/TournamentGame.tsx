@@ -940,7 +940,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                                     </Badge>
                                   )}
                                   <Badge variant="secondary" className="text-xs ltr-numbers">
-                                    {club.isPrime ? 'Pr' : `${club.stars}★`}
+                                    {club.isPrime ? 'Pr' : `${getDisplayStars(club)}★`}
                                   </Badge>
                                   {club.isNational && (
                                     <Badge variant="outline" className="text-xs">נבח׳</Badge>
