@@ -494,6 +494,7 @@ export type Database = {
     Functions: {
       cleanup_old_join_attempts: { Args: never; Returns: undefined }
       get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
+      is_clubs_admin: { Args: { user_id: string }; Returns: boolean }
       is_evening_member: {
         Args: { _evening_id: string; _user_id: string }
         Returns: boolean
