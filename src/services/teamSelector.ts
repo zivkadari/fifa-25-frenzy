@@ -10,6 +10,11 @@ export interface TeamPoolResult {
 }
 
 /**
+ * TeamSelector manages club assignments for tournament matches.
+ * Pass a clubs array (e.g., from getClubsWithOverrides()) to use database star overrides.
+ */
+
+/**
  * Smart club picker that ensures each club appears only once per evening.
  * Falls back to allowing reuse ONLY when all clubs of the required star rating are exhausted.
  * 
@@ -59,6 +64,12 @@ function pickClubWithFallback(
 }
 
 export class TeamSelector {
+  private clubs: Club[];
+
+  constructor(clubs: Club[] = FIFA_CLUBS) {
+    this.clubs = clubs;
+  }
+
   /**
    * Generate 7 clubs per pair for 4-win evening:
    * - 2 clubs/national teams with 5 stars
@@ -76,7 +87,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
@@ -96,21 +107,21 @@ export class TeamSelector {
       const pool: Club[] = [];
 
       // 2 clubs/national teams with 5 stars
-      const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
+      const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
       for (let i = 0; i < 2; i++) {
         const team5 = pickAndBan(pool, fiveStarPool, 5);
         if (team5) pool.push(team5);
       }
 
       // 3 clubs/national teams with 4.5 stars
-      const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
+      const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
       for (let i = 0; i < 3; i++) {
         const team45 = pickAndBan(pool, available45, 4.5);
         if (team45) pool.push(team45);
       }
 
       // 2 clubs/national teams with 4 stars
-      const fourStarPool = [...getClubsOnly(4), ...getNationalTeamsByStars(4)];
+      const fourStarPool = [...getClubsOnly(4, this.clubs), ...getNationalTeamsByStars(4, this.clubs)];
       for (let i = 0; i < 2; i++) {
         const club4 = pickAndBan(pool, fourStarPool, 4);
         if (club4) pool.push(club4);
@@ -141,7 +152,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
@@ -161,18 +172,18 @@ export class TeamSelector {
       const pool: Club[] = [];
 
       // 1 Prime team (5 stars)
-      const prime = pickAndBan(pool, getPrimeTeams(), 5);
+      const prime = pickAndBan(pool, getPrimeTeams(this.clubs), 5);
       if (prime) pool.push(prime);
 
       // 3 clubs/national teams with 5 stars
-      const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
+      const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
       for (let i = 0; i < 3; i++) {
         const team5 = pickAndBan(pool, fiveStarPool, 5);
         if (team5) pool.push(team5);
       }
 
       // 3 clubs/national teams with 4.5 stars
-      const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
+      const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
       for (let i = 0; i < 3; i++) {
         const team45 = pickAndBan(pool, available45, 4.5);
         if (team45) pool.push(team45);
@@ -180,7 +191,7 @@ export class TeamSelector {
 
       // 2 clubs with 4 stars
       for (let i = 0; i < 2; i++) {
-        const club4 = pickAndBan(pool, getClubsOnly(4), 4);
+        const club4 = pickAndBan(pool, getClubsOnly(4, this.clubs), 4);
         if (club4) pool.push(club4);
       }
 
@@ -208,7 +219,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
@@ -228,14 +239,14 @@ export class TeamSelector {
       const pool: Club[] = [];
 
       // 3 clubs/national teams with 5 stars
-      const fiveStarPool = [...getClubsOnly(5), ...getNationalTeamsByStars(5)];
+      const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
       for (let i = 0; i < 3; i++) {
         const team5 = pickAndBan(pool, fiveStarPool, 5);
         if (team5) pool.push(team5);
       }
 
       // 4 clubs/national teams with 4.5 stars
-      const available45 = [...getClubsOnly(4.5), ...getNationalTeamsByStars(4.5)];
+      const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
       for (let i = 0; i < 4; i++) {
         const team45 = pickAndBan(pool, available45, 4.5);
         if (team45) pool.push(team45);
@@ -243,7 +254,7 @@ export class TeamSelector {
 
       // 4 clubs with 4 stars
       for (let i = 0; i < 4; i++) {
-        const club4 = pickAndBan(pool, getClubsOnly(4), 4);
+        const club4 = pickAndBan(pool, getClubsOnly(4, this.clubs), 4);
         if (club4) pool.push(club4);
       }
 
@@ -265,7 +276,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
@@ -287,7 +298,7 @@ export class TeamSelector {
     };
 
     // Get initial 5-star clubs pool
-    const fiveStarClubs = getClubsByStars(5);
+    const fiveStarClubs = getClubsByStars(5, this.clubs);
 
     pairs.forEach((pair, pairIndex) => {
       const pool: Club[] = [];
@@ -300,7 +311,7 @@ export class TeamSelector {
           poolsSums[pairIndex] += club.stars;
         } else {
           // No more 5-star available, try 4.5
-          const backup = pickFromPool(getClubsByStars(4.5), 4.5);
+          const backup = pickFromPool(getClubsByStars(4.5, this.clubs), 4.5);
           if (backup) {
             pool.push(backup);
             poolsSums[pairIndex] += backup.stars;
@@ -316,7 +327,7 @@ export class TeamSelector {
       if (pools[0].length >= clubsPerPair && pools[1].length >= clubsPerPair) break;
       
       // Try to find unused clubs with 4+ stars
-      let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= 4);
+      let available = this.clubs.filter(c => !banned.has(c.id) && c.stars >= 4);
       let isRecycledBatch = false;
       
       // If no unused 4+ star clubs, allow reuse of 4+ star clubs
@@ -329,7 +340,7 @@ export class TeamSelector {
           isRecycledBatch = true;
         } else {
           // Last resort: any unused club
-          available = FIFA_CLUBS.filter(c => !banned.has(c.id));
+          available = this.clubs.filter(c => !banned.has(c.id));
         }
       }
       
@@ -407,12 +418,12 @@ export class TeamSelector {
     
     // Track used clubs for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
     
     // First try: unused clubs with minStars or higher
-    let available = FIFA_CLUBS.filter(c => !banned.has(c.id) && c.stars >= minStars);
+    let available = this.clubs.filter(c => !banned.has(c.id) && c.stars >= minStars);
 
     // Fallback: if less than 2 unused clubs, allow reuse of clubs with same star rating
     if (available.length < 2) {
@@ -424,12 +435,12 @@ export class TeamSelector {
         available = [...available, ...usedWithMinStars.filter(c => c.id !== available[0].id)];
       } else {
         // Ultimate fallback: just get any clubs with minStars
-        available = FIFA_CLUBS.filter(c => c.stars >= minStars);
+        available = this.clubs.filter(c => c.stars >= minStars);
       }
     }
 
     if (available.length < 2) {
-      const backup = FIFA_CLUBS.filter(c => c.stars >= minStars);
+      const backup = this.clubs.filter(c => c.stars >= minStars);
       const first = backup[0];
       const second = backup.find(c => c.id !== first.id) || backup[0];
       return [first, second];

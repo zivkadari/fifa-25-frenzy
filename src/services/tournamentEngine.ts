@@ -237,16 +237,16 @@ export class TournamentEngine {
 
   // ========== SINGLES TOURNAMENT METHODS ==========
 
-  static createSinglesEvening(players: Player[], clubsPerPlayer: number, teamId?: string): Evening {
+  static createSinglesEvening(players: Player[], clubsPerPlayer: number, teamId?: string, clubs: Club[] = FIFA_CLUBS): Evening {
     // Assign clubs to each player with specific star distribution
     const playerClubs: { [playerId: string]: Club[] } = {};
     
     // Get available clubs by star rating
-    const fiveStarClubs = FIFA_CLUBS.filter(club => club.stars === 5 && !club.isNational);
-    const fiveStarNationals = FIFA_CLUBS.filter(club => club.stars === 5 && club.isNational);
-    const fourHalfStarClubs = FIFA_CLUBS.filter(club => club.stars === 4.5);
-    const fourStarClubs = FIFA_CLUBS.filter(club => club.stars === 4);
-    const threeHalfStarClubs = FIFA_CLUBS.filter(club => club.stars === 3.5);
+    const fiveStarClubs = clubs.filter(club => club.stars === 5 && !club.isNational);
+    const fiveStarNationals = clubs.filter(club => club.stars === 5 && club.isNational);
+    const fourHalfStarClubs = clubs.filter(club => club.stars === 4.5);
+    const fourStarClubs = clubs.filter(club => club.stars === 4);
+    const threeHalfStarClubs = clubs.filter(club => club.stars === 3.5);
     
     // Track used clubs globally across all players
     const globalUsedClubIds = new Set<string>();
@@ -289,7 +289,7 @@ export class TournamentEngine {
         // Remaining slots: Random but prefer 4+ stars
         while (assignedClubs.length < clubsPerPlayer) {
           // Try to get clubs 4+ stars first
-          const preferredClubs = FIFA_CLUBS.filter(c => 
+          const preferredClubs = clubs.filter(c => 
             c.stars >= 4 && !globalUsedClubIds.has(c.id)
           );
           
@@ -300,7 +300,7 @@ export class TournamentEngine {
             club = preferredClubs[Math.floor(Math.random() * preferredClubs.length)];
           } else {
             // No 4+ star clubs left, use any available club
-            const anyAvailable = FIFA_CLUBS.filter(c => !globalUsedClubIds.has(c.id));
+            const anyAvailable = clubs.filter(c => !globalUsedClubIds.has(c.id));
             if (anyAvailable.length > 0) {
               club = anyAvailable[Math.floor(Math.random() * anyAvailable.length)];
             }

@@ -32,6 +32,7 @@ import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { ClubSwapDialog } from "@/components/ClubSwapDialog";
+import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
 
 interface TournamentGameProps {
   evening: Evening;
@@ -83,6 +84,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Club swap dialog state
   const [showSwapDialog, setShowSwapDialog] = useState(false);
   const [clubToSwap, setClubToSwap] = useState<{ club: Club; pairIndex: 0 | 1; clubIndex: number } | null>(null);
+  
+  // Clubs with overrides from database
+  const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
@@ -116,15 +120,20 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     window.open(whatsappUrl, '_blank');
   };
 
-
-  // Initialize first round
+  // Load clubs with database overrides on mount
   useEffect(() => {
+    getClubsWithOverrides().then(setClubsWithOverrides);
+  }, []);
+
+  // Initialize first round (wait for clubs to load)
+  useEffect(() => {
+    if (clubsWithOverrides.length === 0) return;
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
       loadCurrentRound();
     }
-  }, []);
+  }, [clubsWithOverrides]);
 
   // Countdown timer
   useEffect(() => {
@@ -170,7 +179,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     // Generate team pools for the entire round, excluding clubs that were ACTUALLY PLAYED this evening
     // Note: We only exclude clubs from usedClubCounts (clubs that were selected and played),
     // NOT clubs that were just in a pool but never selected
-    const teamSelector = new TeamSelector();
+    const teamSelector = new TeamSelector(clubsWithOverrides);
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
     console.log('Generating pools for round with maxMatches:', maxMatches);
     const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
@@ -275,7 +284,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           // Restore recycled club IDs from round
           setRecycledClubIds(new Set(round.recycledClubIds ?? []));
         } else {
-          const teamSelector = new TeamSelector();
+          const teamSelector = new TeamSelector(clubsWithOverrides);
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
           // Only exclude clubs that were ACTUALLY PLAYED (from usedClubCounts)
           const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
@@ -373,7 +382,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       ];
       setTeamPools(filtered);
     } else {
-      const teamSelector = new TeamSelector();
+      const teamSelector = new TeamSelector(clubsWithOverrides);
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
@@ -471,7 +480,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
   // Auto-draw balanced teams for decider matches (stars >= 4, diff <= 1)
   const drawDeciderTeams = () => {
-    const teamSelector = new TeamSelector();
+    const teamSelector = new TeamSelector(clubsWithOverrides);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
     const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
     const [club1, club2] = teamSelector.generateBalancedDeciderTeams(excludeIds, 4, 1);

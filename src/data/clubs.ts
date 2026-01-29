@@ -188,31 +188,31 @@ export function invalidateClubOverridesCache() {
   lastOverridesFetch = 0;
 }
 
-export const getClubsByStars = (stars: number): Club[] => {
-  return FIFA_CLUBS.filter(club => club.stars === stars);
+export const getClubsByStars = (stars: number, clubs: Club[] = FIFA_CLUBS): Club[] => {
+  return clubs.filter(club => club.stars === stars);
 };
 
-export const getNationalTeams = (): Club[] => {
-  return FIFA_CLUBS.filter(club => club.isNational);
+export const getNationalTeams = (clubs: Club[] = FIFA_CLUBS): Club[] => {
+  return clubs.filter(club => club.isNational);
 };
 
-export const getPrimeTeams = (): Club[] => {
-  return FIFA_CLUBS.filter(club => club.league === 'Prime');
+export const getPrimeTeams = (clubs: Club[] = FIFA_CLUBS): Club[] => {
+  return clubs.filter(club => club.league === 'Prime');
 };
 
-export const getClubsOnly = (stars?: number): Club[] => {
-  return FIFA_CLUBS.filter(club => !club.isNational && club.league !== 'Prime' && (stars === undefined || club.stars === stars));
+export const getClubsOnly = (stars?: number, clubs: Club[] = FIFA_CLUBS): Club[] => {
+  return clubs.filter(club => !club.isNational && club.league !== 'Prime' && (stars === undefined || club.stars === stars));
 };
 
-export const getNationalTeamsByStars = (stars: number): Club[] => {
-  return FIFA_CLUBS.filter(club => club.isNational && club.stars === stars);
+export const getNationalTeamsByStars = (stars: number, clubs: Club[] = FIFA_CLUBS): Club[] => {
+  return clubs.filter(club => club.isNational && club.stars === stars);
 };
 
-export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxStars?: number): Club => {
-  const baseClubs = FIFA_CLUBS.filter(club => !excludeIds.includes(club.id) && !club.isNational);
+export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxStars?: number, clubs: Club[] = FIFA_CLUBS): Club => {
+  const baseClubs = clubs.filter(club => !excludeIds.includes(club.id) && !club.isNational);
 
-  const applyRange = (clubs: Club[]) =>
-    clubs.filter(club => {
+  const applyRange = (clubList: Club[]) =>
+    clubList.filter(club => {
       if (minStars !== undefined && club.stars < minStars) return false;
       if (maxStars !== undefined && club.stars > maxStars) return false;
       return true;
