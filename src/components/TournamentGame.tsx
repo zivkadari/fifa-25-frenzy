@@ -87,6 +87,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   
   // Clubs with overrides from database
   const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
+  const [overridesLoaded, setOverridesLoaded] = useState(false);
 
   // Helper function to get current star rating from database overrides
   const getDisplayStars = (club: Club): number => {
