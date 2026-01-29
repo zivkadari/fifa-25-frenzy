@@ -152,7 +152,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
