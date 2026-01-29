@@ -104,7 +104,7 @@ export const ClubSwapDialog = ({
             החלף קבוצה
           </DialogTitle>
           <DialogDescription>
-            במקום: <strong>{clubToSwap.name}</strong> {clubToSwap.isPrime ? '(Prime)' : `${clubToSwap.stars}★`}
+            במקום: <strong>{clubToSwap.name}</strong> {clubToSwap.isPrime ? '(Prime)' : `${getDisplayStars(clubToSwap)}★`}
           </DialogDescription>
         </DialogHeader>
 
@@ -117,7 +117,7 @@ export const ClubSwapDialog = ({
             disabled={availableClubs.length === 0}
           >
             <Shuffle className="h-4 w-4 mr-2" />
-            הגרל קבוצה רנדומלית ({clubToSwap.stars}★)
+            הגרל קבוצה רנדומלית ({getDisplayStars(clubToSwap)}★)
           </Button>
 
           {/* Divider */}
