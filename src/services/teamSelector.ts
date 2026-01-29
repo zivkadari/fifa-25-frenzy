@@ -298,7 +298,7 @@ export class TeamSelector {
     };
 
     // Get initial 5-star clubs pool
-    const fiveStarClubs = getClubsByStars(5);
+    const fiveStarClubs = getClubsByStars(5, this.clubs);
 
     pairs.forEach((pair, pairIndex) => {
       const pool: Club[] = [];
