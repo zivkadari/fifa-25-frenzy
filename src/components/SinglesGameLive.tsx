@@ -32,7 +32,7 @@ interface SinglesGameLiveProps {
   onUpdateEvening: (evening: Evening) => void;
 }
 
-export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening }: SinglesGameLiveProps) => {
+export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening, clubsWithOverrides }: SinglesGameLiveProps) => {
   const { toast } = useToast();
   const [currentEvening, setCurrentEvening] = useState(evening);
   const [currentGame, setCurrentGame] = useState<SinglesGame | null>(null);
