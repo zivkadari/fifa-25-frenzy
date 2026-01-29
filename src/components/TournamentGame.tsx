@@ -284,7 +284,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           // Restore recycled club IDs from round
           setRecycledClubIds(new Set(round.recycledClubIds ?? []));
         } else {
-          const teamSelector = new TeamSelector();
+          const teamSelector = new TeamSelector(clubsWithOverrides);
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
           // Only exclude clubs that were ACTUALLY PLAYED (from usedClubCounts)
           const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
