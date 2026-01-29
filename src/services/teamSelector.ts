@@ -440,7 +440,7 @@ export class TeamSelector {
     }
 
     if (available.length < 2) {
-      const backup = FIFA_CLUBS.filter(c => c.stars >= minStars);
+      const backup = this.clubs.filter(c => c.stars >= minStars);
       const first = backup[0];
       const second = backup.find(c => c.id !== first.id) || backup[0];
       return [first, second];

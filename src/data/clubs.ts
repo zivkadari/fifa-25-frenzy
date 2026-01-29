@@ -208,11 +208,11 @@ export const getNationalTeamsByStars = (stars: number, clubs: Club[] = FIFA_CLUB
   return clubs.filter(club => club.isNational && club.stars === stars);
 };
 
-export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxStars?: number): Club => {
-  const baseClubs = FIFA_CLUBS.filter(club => !excludeIds.includes(club.id) && !club.isNational);
+export const getRandomClub = (excludeIds: string[] = [], minStars?: number, maxStars?: number, clubs: Club[] = FIFA_CLUBS): Club => {
+  const baseClubs = clubs.filter(club => !excludeIds.includes(club.id) && !club.isNational);
 
-  const applyRange = (clubs: Club[]) =>
-    clubs.filter(club => {
+  const applyRange = (clubList: Club[]) =>
+    clubList.filter(club => {
       if (minStars !== undefined && club.stars < minStars) return false;
       if (maxStars !== undefined && club.stars > maxStars) return false;
       return true;
