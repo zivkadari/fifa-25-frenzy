@@ -289,7 +289,7 @@ export class TournamentEngine {
         // Remaining slots: Random but prefer 4+ stars
         while (assignedClubs.length < clubsPerPlayer) {
           // Try to get clubs 4+ stars first
-          const preferredClubs = FIFA_CLUBS.filter(c => 
+          const preferredClubs = clubs.filter(c => 
             c.stars >= 4 && !globalUsedClubIds.has(c.id)
           );
           
@@ -300,7 +300,7 @@ export class TournamentEngine {
             club = preferredClubs[Math.floor(Math.random() * preferredClubs.length)];
           } else {
             // No 4+ star clubs left, use any available club
-            const anyAvailable = FIFA_CLUBS.filter(c => !globalUsedClubIds.has(c.id));
+            const anyAvailable = clubs.filter(c => !globalUsedClubIds.has(c.id));
             if (anyAvailable.length > 0) {
               club = anyAvailable[Math.floor(Math.random() * anyAvailable.length)];
             }
