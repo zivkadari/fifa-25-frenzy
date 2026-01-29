@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { FIFA_CLUBS } from "@/data/clubs";
+import { FIFA_CLUBS, invalidateClubOverridesCache } from "@/data/clubs";
 import { Club } from "@/types/tournament";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Save, Star, Loader2 } from "lucide-react";
