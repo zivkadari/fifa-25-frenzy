@@ -88,6 +88,12 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Clubs with overrides from database
   const [clubsWithOverrides, setClubsWithOverrides] = useState<Club[]>(FIFA_CLUBS);
 
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
+
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
     const saveCurrentState = () => {
