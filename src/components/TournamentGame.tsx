@@ -382,7 +382,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       ];
       setTeamPools(filtered);
     } else {
-      const teamSelector = new TeamSelector();
+      const teamSelector = new TeamSelector(clubsWithOverrides);
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
