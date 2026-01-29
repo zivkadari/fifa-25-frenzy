@@ -64,6 +64,12 @@ function pickClubWithFallback(
 }
 
 export class TeamSelector {
+  private clubs: Club[];
+
+  constructor(clubs: Club[] = FIFA_CLUBS) {
+    this.clubs = clubs;
+  }
+
   /**
    * Generate 7 clubs per pair for 4-win evening:
    * - 2 clubs/national teams with 5 stars
@@ -81,7 +87,7 @@ export class TeamSelector {
     
     // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
-      const club = FIFA_CLUBS.find(c => c.id === id);
+      const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
