@@ -120,15 +120,20 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     window.open(whatsappUrl, '_blank');
   };
 
-
-  // Initialize first round
+  // Load clubs with database overrides on mount
   useEffect(() => {
+    getClubsWithOverrides().then(setClubsWithOverrides);
+  }, []);
+
+  // Initialize first round (wait for clubs to load)
+  useEffect(() => {
+    if (clubsWithOverrides.length === 0) return;
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
       loadCurrentRound();
     }
-  }, []);
+  }, [clubsWithOverrides]);
 
   // Countdown timer
   useEffect(() => {
