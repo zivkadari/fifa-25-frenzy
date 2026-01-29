@@ -129,7 +129,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
   // Load clubs with database overrides on mount
   useEffect(() => {
-    getClubsWithOverrides().then(setClubsWithOverrides);
+    getClubsWithOverrides().then(clubs => {
+      setClubsWithOverrides(clubs);
+      setOverridesLoaded(true);
+    });
   }, []);
 
   // Initialize first round (wait for clubs to load)
