@@ -40,14 +40,6 @@ export const SinglesClubAssignment = ({
     const override = clubsWithOverrides.find(c => c.id === club.id);
     return override?.stars ?? club.stars;
   };
-  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
-  const [selectedSwap, setSelectedSwap] = useState<{
-    fromPlayerId: string;
-    fromClubIndex: number;
-    toPlayerId?: string;
-    toClubIndex?: number;
-  } | null>(null);
-
   // Function to shorten long club names intelligently
   const shortenClubName = (name: string): string => {
     if (name.length <= 15) return name;
