@@ -23,9 +23,23 @@ export const SinglesClubAssignment = ({
   onContinue, 
   players, 
   playerClubs: initialPlayerClubs, 
-  clubsPerPlayer 
+  clubsPerPlayer,
+  clubsWithOverrides
 }: SinglesClubAssignmentProps) => {
   const [playerClubs, setPlayerClubs] = useState(initialPlayerClubs);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [selectedSwap, setSelectedSwap] = useState<{
+    fromPlayerId: string;
+    fromClubIndex: number;
+    toPlayerId?: string;
+    toClubIndex?: number;
+  } | null>(null);
+
+  // Helper function to get current star rating from database overrides
+  const getDisplayStars = (club: Club): number => {
+    const override = clubsWithOverrides.find(c => c.id === club.id);
+    return override?.stars ?? club.stars;
+  };
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
   const [selectedSwap, setSelectedSwap] = useState<{
     fromPlayerId: string;
