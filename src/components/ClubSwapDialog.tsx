@@ -140,7 +140,7 @@ export const ClubSwapDialog = ({
                   <span className="font-medium truncate">{club.name}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant="secondary" className="text-xs">
-                      {club.isPrime ? 'Prime' : `${club.stars}★`}
+                      {club.isPrime ? 'Prime' : `${getDisplayStars(club)}★`}
                     </Badge>
                     {club.isNational && (
                       <Badge variant="outline" className="text-xs">נבחרת</Badge>

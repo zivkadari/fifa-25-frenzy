@@ -1321,6 +1321,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             otherPoolClubIds={originalTeamPools[clubToSwap.pairIndex === 0 ? 1 : 0].map(c => c.id)}
             usedClubIdsThisEvening={Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1)}
             onSwap={handleSwapClub}
+            clubsWithOverrides={clubsWithOverrides}
           />
         )}
       </div>
