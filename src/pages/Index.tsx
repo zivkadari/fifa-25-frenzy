@@ -206,6 +206,7 @@ useEffect(() => {
       completed: false,
       type: 'pairs', // Explicitly set as pairs tournament
       pairSchedule,
+      teamSelectionMode: 'random', // Random mode (tier-question mode handled separately)
     };
 
     // Persist immediately so iOS backgrounding won't reset an in-progress tournament
