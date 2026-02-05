@@ -8,7 +8,7 @@ import { TournamentGame } from "@/components/TournamentGame";
 import { EveningSummary } from "@/components/EveningSummary";
 import { TournamentHistory, EveningWithTeam } from "@/components/TournamentHistory";
 import { JoinEvening } from "@/components/JoinEvening";
-import { Evening, Player, Club } from "@/types/tournament";
+import { Evening, Player, Club, Pair } from "@/types/tournament";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useToast } from "@/hooks/use-toast";
@@ -26,8 +26,10 @@ import { SinglesGameLive } from "@/components/SinglesGameLive";
 import { useActiveEveningPersistence } from "@/hooks/useActiveEveningPersistence";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
+import { PairsGameModeSelection } from "@/components/PairsGameModeSelection";
+import { TierQuestionFlow } from "@/components/TierQuestionFlow";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow';
 
 const Index = () => {
   const location = useLocation();
