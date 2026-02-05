@@ -396,17 +396,100 @@ const handleGoHome = () => {
         );
       
       case 'setup':
-        // This is only for pairs tournament
+        // This is only for pairs tournament - after setup, go to mode selection
         return (
           <EveningSetup
             onBack={() => window.history.back()}
             onStartEvening={(players: Player[], winsToComplete: number, teamId?: string) => {
-              // Pairs tournament - start immediately
-              handleStartRandomEvening(players, winsToComplete, teamId);
+              // Store pending data and go to pairs mode selection
+              setPendingPairsPlayers(players);
+              setPendingWinsToComplete(winsToComplete);
+              setPendingTeamId(teamId);
+              goTo('pairs-mode-selection');
             }}
-            savedPlayers={currentEvening?.players}
-            savedWinsToComplete={currentEvening?.winsToComplete}
-            savedTeamId={currentTeamId ?? undefined}
+            savedPlayers={pendingPairsPlayers || currentEvening?.players}
+            savedWinsToComplete={pendingWinsToComplete || currentEvening?.winsToComplete}
+            savedTeamId={pendingTeamId ?? currentTeamId ?? undefined}
+          />
+        );
+      
+      case 'pairs-mode-selection':
+        return (
+          <PairsGameModeSelection
+            onBack={() => window.history.back()}
+            onSelectRandom={() => {
+              if (pendingPairsPlayers) {
+                handleStartRandomEvening(pendingPairsPlayers, pendingWinsToComplete, pendingTeamId);
+              }
+            }}
+            onSelectTierQuestion={() => {
+              if (pendingPairsPlayers) {
+                // Create evening with tier-question mode but don't start rounds yet
+                const pairSchedule = TournamentEngine.generatePairs(pendingPairsPlayers);
+                const newEvening: Evening = {
+                  id: `evening-${Date.now()}`,
+                  date: new Date().toISOString(),
+                  players: pendingPairsPlayers,
+                  rounds: [],
+                  winsToComplete: pendingWinsToComplete,
+                  completed: false,
+                  type: 'pairs',
+                  pairSchedule,
+                  teamSelectionMode: 'tier-question',
+                };
+                persistActiveEveningNow(newEvening);
+                setCurrentEvening(newEvening);
+                setCurrentTeamId(pendingTeamId ?? null);
+                goTo('tier-question-flow');
+              }
+            }}
+          />
+        );
+      
+      case 'tier-question-flow':
+        if (!currentEvening || !currentEvening.pairSchedule || currentEvening.pairSchedule.length === 0) {
+          return null;
+        }
+        // Get pairs for round 0 (or current round if resuming)
+        const roundIndex = currentEvening.rounds.length;
+        const pairs = currentEvening.pairSchedule[roundIndex] as [Pair, Pair] | undefined;
+        if (!pairs) {
+          return null;
+        }
+        return (
+          <TierQuestionFlow
+            evening={currentEvening}
+            pairs={pairs}
+            clubsWithOverrides={clubsWithOverrides}
+            onBack={() => window.history.back()}
+            onComplete={async (pools: [Club[], Club[]]) => {
+              // Pools are assigned - now start the game with these pools
+              // Create the first round with pre-assigned pools
+              const roundNumber = currentEvening.rounds.length + 1;
+              const newRound = TournamentEngine.createRound(roundNumber, pairs, currentEvening.winsToComplete);
+              const firstMatch = TournamentEngine.createNextMatch(newRound, pairs);
+              const roundWithMatch = { 
+                ...newRound, 
+                matches: [firstMatch],
+                teamPools: pools,
+              };
+
+              const updatedEvening: Evening = {
+                ...currentEvening,
+                rounds: [...currentEvening.rounds, roundWithMatch],
+                tierQuestionState: undefined, // Clear state after completing
+              };
+
+              persistActiveEveningNow(updatedEvening);
+              setCurrentEvening(updatedEvening);
+
+              // Push to remote for collaboration
+              const effectiveTeamId = pendingTeamId ?? currentTeamId ?? null;
+              await RemoteStorageService.upsertEveningLiveWithTeam(updatedEvening, effectiveTeamId).catch(() => {});
+
+              goTo('game');
+            }}
+            onUpdateEvening={handleUpdateEvening}
           />
         );
       
