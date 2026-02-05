@@ -38,6 +38,14 @@ export interface Round {
   recycledClubIds?: string[]; // IDs of clubs that were recycled (reused because star rating ran out)
 }
 
+export interface TierQuestionRoundState {
+  currentTierIndex: number;
+  tiersCompleted: number[];
+  pairTeamChoices: { [pairId: string]: string[] }; // Club IDs chosen by each pair
+  usedQuestionIds: number[];
+  assignedPools?: [Club[], Club[]]; // Final assigned pools after all tiers complete
+}
+
 export interface Evening {
   id: string;
   date: string;
@@ -58,6 +66,9 @@ export interface Evening {
   playerClubs?: { [playerId: string]: Club[] }; // Clubs assigned to each player
   gameSequence?: SinglesGame[]; // Pre-generated sequence of games
   currentGameIndex?: number;
+  // Tier Question Mode fields (for pairs tournaments)
+  teamSelectionMode?: 'random' | 'tier-question';
+  tierQuestionState?: TierQuestionRoundState;
 }
 
 export interface SinglesGame {
