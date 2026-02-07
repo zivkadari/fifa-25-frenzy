@@ -47,6 +47,7 @@ export const TierQuestionFlow = ({
   const [tiersCompleted, setTiersCompleted] = useState<TierResult[]>([]);
   const [usedQuestionIds, setUsedQuestionIds] = useState<number[]>(initialState.usedQuestionIds);
   const [currentQuestion, setCurrentQuestion] = useState<TriviaQuestion | null>(null);
+  const [currentTierTeams, setCurrentTierTeams] = useState<Club[]>([]); // Store teams for current tier
   const [pair1Pool, setPair1Pool] = useState<Club[]>([]);
   const [pair2Pool, setPair2Pool] = useState<Club[]>([]);
   const [showSummary, setShowSummary] = useState(false);
