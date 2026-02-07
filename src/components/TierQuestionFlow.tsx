@@ -93,16 +93,25 @@ export const TierQuestionFlow = ({
     return shuffled.slice(0, tier.count * 2);
   };
 
-  // Initialize first question
+  // Initialize teams and question for current tier
   useEffect(() => {
-    if (!currentQuestion && currentTierIndex < tierConfig.length) {
-      const question = getRandomQuestion(usedQuestionIds);
-      if (question) {
-        setCurrentQuestion(question);
-        setUsedQuestionIds(prev => [...prev, question.id]);
+    if (currentTierIndex < tierConfig.length) {
+      // Calculate available teams once when entering a new tier
+      if (currentTierTeams.length === 0) {
+        const teams = getTeamsForTier(currentTierIndex);
+        setCurrentTierTeams(teams);
+      }
+      
+      // Get a new question if we don't have one
+      if (!currentQuestion) {
+        const question = getRandomQuestion(usedQuestionIds);
+        if (question) {
+          setCurrentQuestion(question);
+          setUsedQuestionIds(prev => [...prev, question.id]);
+        }
       }
     }
-  }, [currentTierIndex, currentQuestion]);
+  }, [currentTierIndex, currentQuestion, currentTierTeams.length]);
 
   const handleTierComplete = (result: {
     winnerPairId: string;
