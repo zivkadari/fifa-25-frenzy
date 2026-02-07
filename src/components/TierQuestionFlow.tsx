@@ -193,6 +193,7 @@ export const TierQuestionFlow = ({
       
       setCurrentTierIndex(currentTierIndex + 1);
       setCurrentQuestion(null);
+      setCurrentTierTeams([]); // Reset to recalculate for next tier
       setIsTiebreaker(false);
     }
   };
