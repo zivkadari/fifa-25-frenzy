@@ -294,7 +294,7 @@ export const TierQuestionFlow = ({
 
   // Current tier question phase
   const currentTier = tierConfig[currentTierIndex];
-  const availableTeams = getTeamsForTier(currentTierIndex);
+  // Use stored currentTierTeams instead of recalculating
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4" dir="rtl">
