@@ -120,9 +120,15 @@ export const TierQuestionFlow = ({
     pair2Guess: number;
   }) => {
     const tier = tierConfig[currentTierIndex];
-    const availableTeams = getTeamsForTier(currentTierIndex);
-    const chosenClub = availableTeams.find(c => c.id === result.chosenClubId)!;
-    const remainingTeams = availableTeams.filter(c => c.id !== result.chosenClubId);
+    // Use stored currentTierTeams instead of recalculating (which would shuffle again)
+    const chosenClub = currentTierTeams.find(c => c.id === result.chosenClubId);
+    
+    if (!chosenClub) {
+      console.error('Selected club not found in available teams:', result.chosenClubId);
+      return;
+    }
+    
+    const remainingTeams = currentTierTeams.filter(c => c.id !== result.chosenClubId);
 
     // Distribute remaining teams evenly
     // Winner gets the chosen club + half of remaining (minus 1 since they already have one)
