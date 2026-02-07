@@ -47,6 +47,7 @@ export const TierQuestionFlow = ({
   const [tiersCompleted, setTiersCompleted] = useState<TierResult[]>([]);
   const [usedQuestionIds, setUsedQuestionIds] = useState<number[]>(initialState.usedQuestionIds);
   const [currentQuestion, setCurrentQuestion] = useState<TriviaQuestion | null>(null);
+  const [currentTierTeams, setCurrentTierTeams] = useState<Club[]>([]); // Store teams for current tier
   const [pair1Pool, setPair1Pool] = useState<Club[]>([]);
   const [pair2Pool, setPair2Pool] = useState<Club[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -92,16 +93,25 @@ export const TierQuestionFlow = ({
     return shuffled.slice(0, tier.count * 2);
   };
 
-  // Initialize first question
+  // Initialize teams and question for current tier
   useEffect(() => {
-    if (!currentQuestion && currentTierIndex < tierConfig.length) {
-      const question = getRandomQuestion(usedQuestionIds);
-      if (question) {
-        setCurrentQuestion(question);
-        setUsedQuestionIds(prev => [...prev, question.id]);
+    if (currentTierIndex < tierConfig.length) {
+      // Calculate available teams once when entering a new tier
+      if (currentTierTeams.length === 0) {
+        const teams = getTeamsForTier(currentTierIndex);
+        setCurrentTierTeams(teams);
+      }
+      
+      // Get a new question if we don't have one
+      if (!currentQuestion) {
+        const question = getRandomQuestion(usedQuestionIds);
+        if (question) {
+          setCurrentQuestion(question);
+          setUsedQuestionIds(prev => [...prev, question.id]);
+        }
       }
     }
-  }, [currentTierIndex, currentQuestion]);
+  }, [currentTierIndex, currentQuestion, currentTierTeams.length]);
 
   const handleTierComplete = (result: {
     winnerPairId: string;
@@ -110,9 +120,15 @@ export const TierQuestionFlow = ({
     pair2Guess: number;
   }) => {
     const tier = tierConfig[currentTierIndex];
-    const availableTeams = getTeamsForTier(currentTierIndex);
-    const chosenClub = availableTeams.find(c => c.id === result.chosenClubId)!;
-    const remainingTeams = availableTeams.filter(c => c.id !== result.chosenClubId);
+    // Use stored currentTierTeams instead of recalculating (which would shuffle again)
+    const chosenClub = currentTierTeams.find(c => c.id === result.chosenClubId);
+    
+    if (!chosenClub) {
+      console.error('Selected club not found in available teams:', result.chosenClubId);
+      return;
+    }
+    
+    const remainingTeams = currentTierTeams.filter(c => c.id !== result.chosenClubId);
 
     // Distribute remaining teams evenly
     // Winner gets the chosen club + half of remaining (minus 1 since they already have one)
@@ -177,6 +193,7 @@ export const TierQuestionFlow = ({
       
       setCurrentTierIndex(currentTierIndex + 1);
       setCurrentQuestion(null);
+      setCurrentTierTeams([]); // Reset to recalculate for next tier
       setIsTiebreaker(false);
     }
   };
@@ -277,7 +294,7 @@ export const TierQuestionFlow = ({
 
   // Current tier question phase
   const currentTier = tierConfig[currentTierIndex];
-  const availableTeams = getTeamsForTier(currentTierIndex);
+  // Use stored currentTierTeams instead of recalculating
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4" dir="rtl">
@@ -310,12 +327,12 @@ export const TierQuestionFlow = ({
           </div>
         </div>
 
-        {currentQuestion && (
+        {currentQuestion && currentTierTeams.length > 0 && (
           <TierQuestionPhase
             tierLabel={currentTier.label}
             tierStars={currentTier.stars}
             isPrime={currentTier.isPrime}
-            availableTeams={availableTeams}
+            availableTeams={currentTierTeams}
             question={currentQuestion}
             pairs={pairs}
             onComplete={handleTierComplete}
