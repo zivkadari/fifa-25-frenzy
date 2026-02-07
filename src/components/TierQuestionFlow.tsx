@@ -327,12 +327,12 @@ export const TierQuestionFlow = ({
           </div>
         </div>
 
-        {currentQuestion && (
+        {currentQuestion && currentTierTeams.length > 0 && (
           <TierQuestionPhase
             tierLabel={currentTier.label}
             tierStars={currentTier.stars}
             isPrime={currentTier.isPrime}
-            availableTeams={availableTeams}
+            availableTeams={currentTierTeams}
             question={currentQuestion}
             pairs={pairs}
             onComplete={handleTierComplete}
