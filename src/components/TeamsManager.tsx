@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
-import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus, Pencil, Check, X } from "lucide-react";
 import { validateTeamName, validatePlayerName } from "@/lib/validation";
 import { SelectExistingPlayerDialog } from "./SelectExistingPlayerDialog";
 
@@ -40,6 +40,8 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [selectPlayerOpen, setSelectPlayerOpen] = useState(false);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingTeamName, setEditingTeamName] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -185,6 +187,41 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     }
   };
 
+  const startEditingTeam = (team: { id: string; name: string }) => {
+    setEditingTeamId(team.id);
+    setEditingTeamName(team.name);
+  };
+
+  const cancelEditingTeam = () => {
+    setEditingTeamId(null);
+    setEditingTeamName("");
+  };
+
+  const saveTeamName = async () => {
+    if (!editingTeamId) return;
+    const name = editingTeamName.trim();
+    if (!name) return;
+
+    const validation = validateTeamName(name);
+    if (!validation.valid) {
+      toast({ title: "שגיאה בשם הקבוצה", description: validation.error, variant: "destructive" });
+      return;
+    }
+
+    try {
+      const ok = await RemoteStorageService.renameTeam(editingTeamId, validation.value);
+      if (ok) {
+        setTeams((prev) => prev.map((t) => t.id === editingTeamId ? { ...t, name: validation.value } : t));
+        toast({ title: "שם הקבוצה עודכן", description: validation.value });
+        cancelEditingTeam();
+      } else {
+        toast({ title: "שגיאה בעדכון שם הקבוצה", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "שגיאה בעדכון שם הקבוצה", description: error instanceof Error ? error.message : "שגיאה לא ידועה", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
@@ -218,27 +255,56 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
             </Button>
           </div>
           <div className="space-y-2">
-            {teams
-              .map((t) => (
-                <div key={t.id} className="flex items-center gap-2">
-                  <Button
-                    variant={t.id === selectedTeamId ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedTeamId(t.id)}
-                    className="flex-1"
-                  >
-                    {t.name}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => deleteTeam(t.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+            {teams.map((t) => (
+              <div key={t.id} className="flex items-center gap-2">
+                {editingTeamId === t.id ? (
+                  <>
+                    <Input
+                      value={editingTeamName}
+                      onChange={(e) => setEditingTeamName(e.target.value)}
+                      className="bg-gaming-surface border-border flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveTeamName();
+                        if (e.key === "Escape") cancelEditingTeam();
+                      }}
+                    />
+                    <Button variant="outline" size="icon" onClick={saveTeamName} className="text-neon-green">
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={cancelEditingTeam}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant={t.id === selectedTeamId ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTeamId(t.id)}
+                      className="flex-1"
+                    >
+                      {t.name}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => startEditingTeam(t)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => deleteTeam(t.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
             {!teams.length && (
               <p className="text-sm text-muted-foreground">אין קבוצות עדיין</p>
             )}
