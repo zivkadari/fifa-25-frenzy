@@ -187,6 +187,41 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
     }
   };
 
+  const startEditingTeam = (team: { id: string; name: string }) => {
+    setEditingTeamId(team.id);
+    setEditingTeamName(team.name);
+  };
+
+  const cancelEditingTeam = () => {
+    setEditingTeamId(null);
+    setEditingTeamName("");
+  };
+
+  const saveTeamName = async () => {
+    if (!editingTeamId) return;
+    const name = editingTeamName.trim();
+    if (!name) return;
+
+    const validation = validateTeamName(name);
+    if (!validation.valid) {
+      toast({ title: "שגיאה בשם הקבוצה", description: validation.error, variant: "destructive" });
+      return;
+    }
+
+    try {
+      const ok = await RemoteStorageService.renameTeam(editingTeamId, validation.value);
+      if (ok) {
+        setTeams((prev) => prev.map((t) => t.id === editingTeamId ? { ...t, name: validation.value } : t));
+        toast({ title: "שם הקבוצה עודכן", description: validation.value });
+        cancelEditingTeam();
+      } else {
+        toast({ title: "שגיאה בעדכון שם הקבוצה", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "שגיאה בעדכון שם הקבוצה", description: error instanceof Error ? error.message : "שגיאה לא ידועה", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gaming-bg p-4 mobile-optimized">
       <div className="max-w-md mx-auto">
