@@ -255,27 +255,56 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
             </Button>
           </div>
           <div className="space-y-2">
-            {teams
-              .map((t) => (
-                <div key={t.id} className="flex items-center gap-2">
-                  <Button
-                    variant={t.id === selectedTeamId ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedTeamId(t.id)}
-                    className="flex-1"
-                  >
-                    {t.name}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => deleteTeam(t.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+            {teams.map((t) => (
+              <div key={t.id} className="flex items-center gap-2">
+                {editingTeamId === t.id ? (
+                  <>
+                    <Input
+                      value={editingTeamName}
+                      onChange={(e) => setEditingTeamName(e.target.value)}
+                      className="bg-gaming-surface border-border flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveTeamName();
+                        if (e.key === "Escape") cancelEditingTeam();
+                      }}
+                    />
+                    <Button variant="outline" size="icon" onClick={saveTeamName} className="text-neon-green">
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={cancelEditingTeam}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant={t.id === selectedTeamId ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedTeamId(t.id)}
+                      className="flex-1"
+                    >
+                      {t.name}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => startEditingTeam(t)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => deleteTeam(t.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
             {!teams.length && (
               <p className="text-sm text-muted-foreground">אין קבוצות עדיין</p>
             )}

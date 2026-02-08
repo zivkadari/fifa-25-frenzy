@@ -127,19 +127,11 @@ export const TierQuestionPhase = ({
 
       {/* Question Card */}
       <Card className="bg-gradient-card border-neon-purple/30 p-4">
-        <div className="flex items-start gap-2 mb-3">
+        <div className="flex items-start gap-2">
           <AlertCircle className="h-5 w-5 text-neon-purple shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-foreground leading-relaxed">
-              {question.question_text}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              מקור: {question.source}
-            </p>
-          </div>
-        </div>
-        <div className="text-center text-xs text-muted-foreground">
-          טווח: {question.min_value.toLocaleString()} - {question.max_value.toLocaleString()}
+          <p className="text-sm font-medium text-foreground leading-relaxed">
+            {question.question_text}
+          </p>
         </div>
       </Card>
 
