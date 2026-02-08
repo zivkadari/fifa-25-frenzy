@@ -40,6 +40,8 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [selectPlayerOpen, setSelectPlayerOpen] = useState(false);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingTeamName, setEditingTeamName] = useState("");
 
   useEffect(() => {
     const load = async () => {
