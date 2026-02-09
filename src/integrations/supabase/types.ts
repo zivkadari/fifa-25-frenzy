@@ -156,6 +156,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pairs_pool_config: {
+        Row: {
+          distribution: Json
+          id: string
+          include_prime: boolean
+          prime_count: number
+          updated_at: string | null
+          updated_by: string | null
+          wins_to_complete: number
+        }
+        Insert: {
+          distribution: Json
+          id?: string
+          include_prime?: boolean
+          prime_count?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          wins_to_complete: number
+        }
+        Update: {
+          distribution?: Json
+          id?: string
+          include_prime?: boolean
+          prime_count?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          wins_to_complete?: number
+        }
+        Relationships: []
+      }
       player_accounts: {
         Row: {
           claimed_at: string
