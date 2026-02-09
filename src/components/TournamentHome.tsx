@@ -175,17 +175,30 @@ export const TournamentHome = ({
         
         {/* Admin link - only visible for admin email */}
         {userEmail === 'zivkad12@gmail.com' && (
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="w-full border-yellow-400/30 hover:bg-yellow-400/10 text-yellow-400"
-          >
-            <Link to="/admin/clubs">
-              <Star className="h-5 w-5" />
-              ניהול קבוצות (Admin)
-            </Link>
-          </Button>
+          <>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full border-yellow-400/30 hover:bg-yellow-400/10 text-yellow-400"
+            >
+              <Link to="/admin/clubs">
+                <Star className="h-5 w-5" />
+                ניהול קבוצות (Admin)
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full border-yellow-400/30 hover:bg-yellow-400/10 text-yellow-400"
+            >
+              <Link to="/admin/pool-config">
+                <Star className="h-5 w-5" />
+                הגדרת הרכב קבוצות (Admin)
+              </Link>
+            </Button>
+          </>
         )}
       </div>
 

@@ -1,5 +1,6 @@
 import { Club, Pair } from '@/types/tournament';
 import { getClubsByStars, getNationalTeams, getRandomClub, FIFA_CLUBS, getPrimeTeams, getClubsOnly, getNationalTeamsByStars } from '@/data/clubs';
+import { PoolConfig, PoolDistributionEntry } from '@/data/poolConfig';
 
 /**
  * Result from team pool generation including recycled club info

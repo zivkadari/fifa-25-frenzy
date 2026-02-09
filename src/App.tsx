@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import JoinTournament from "./pages/JoinTournament";
 import AdminClubs from "./pages/AdminClubs";
+import AdminPoolConfig from "./pages/AdminPoolConfig";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/join/:code" element={<JoinTournament />} />
           <Route path="/admin/clubs" element={<AdminClubs />} />
+          <Route path="/admin/pool-config" element={<AdminPoolConfig />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
