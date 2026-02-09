@@ -463,4 +463,60 @@ export class TeamSelector {
 
     return [first, second!];
   }
+
+  /**
+   * Generate team pools dynamically from a PoolConfig fetched from the database.
+   * Replaces the hardcoded generateTeamPoolsFor4/5/6Rounds methods.
+   */
+  generateTeamPoolsFromConfig(pairs: Pair[], config: PoolConfig, excludeClubIds: string[] = []): TeamPoolResult {
+    const pools: Club[][] = [];
+    const banned = new Set<string>(excludeClubIds);
+    const usedClubsMap = new Map<string, Club>();
+    const recycledClubIds = new Set<string>();
+
+    excludeClubIds.forEach(id => {
+      const club = this.clubs.find(c => c.id === id);
+      if (club) usedClubsMap.set(id, club);
+    });
+
+    const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
+      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars, pool);
+      if (result.club) {
+        banned.add(result.club.id);
+        usedClubsMap.set(result.club.id, result.club);
+        if (result.isRecycled) {
+          recycledClubIds.add(result.club.id);
+        }
+      }
+      return result.club;
+    };
+
+    pairs.forEach(() => {
+      const pool: Club[] = [];
+
+      // Prime teams first
+      if (config.include_prime && config.prime_count > 0) {
+        for (let i = 0; i < config.prime_count; i++) {
+          const prime = pickAndBan(pool, getPrimeTeams(this.clubs), 5);
+          if (prime) pool.push(prime);
+        }
+      }
+
+      // Distribution entries
+      for (const entry of config.distribution) {
+        const source = entry.include_national
+          ? [...getClubsOnly(entry.stars, this.clubs), ...getNationalTeamsByStars(entry.stars, this.clubs)]
+          : getClubsOnly(entry.stars, this.clubs);
+
+        for (let i = 0; i < entry.count; i++) {
+          const club = pickAndBan(pool, source, entry.stars);
+          if (club) pool.push(club);
+        }
+      }
+
+      pools.push(pool);
+    });
+
+    return { pools, recycledClubIds };
+  }
 }
