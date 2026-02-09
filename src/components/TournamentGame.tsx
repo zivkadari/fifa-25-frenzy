@@ -141,7 +141,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
-      loadCurrentRound();
+      const activeRoundIndex = currentEvening.rounds.findIndex(r => !r.completed);
+      const targetIndex = activeRoundIndex >= 0 ? activeRoundIndex : currentEvening.rounds.length - 1;
+      setCurrentRound(targetIndex);
+      loadCurrentRound(targetIndex);
     }
   }, [overridesLoaded]);
 
