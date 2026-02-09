@@ -1,65 +1,120 @@
 
 
-## שני תיקונים: ממשק שאלות וניהול קבוצות
-
-### שינוי 1: הסרת טווח ומקור מממשק השאלות
-
-**קובץ:** `src/components/TierQuestionPhase.tsx`
-
-הסרת שתי שורות מהתצוגה:
-- שורה 136-138: `<p className="text-xs...">מקור: {question.source}</p>`
-- שורה 141-143: `<div className="text-center...">טווח: ...</div>`
+## תיקון שני בעיות: חזרה לטורניר פעיל + הגדרת הרכב קבוצות (Admin)
 
 ---
 
-### שינוי 2: תיקון מחיקת קבוצה ושינוי שם
+### בעיה 1: חזרה לטורניר פעיל לא עובדת כמו שצריך
 
-**הבעיה:** הפוליסות של RLS בטבלת `teams` חוסמות DELETE ו-UPDATE לכולם:
-```sql
-Policy: "Teams: restrict delete" → qual: false  -- חוסם הכל!
-Policy: "Teams: restrict updates" → qual: false -- חוסם הכל!
+**שורש הבעיה:**
+
+ב-`TournamentGame.tsx`, כשחוזרים לטורניר פעיל, ה-state של `currentRound` מאותחל ל-`0`:
+
+```typescript
+const [currentRound, setCurrentRound] = useState(0);
 ```
 
-**הפתרון:** עדכון הפוליסות לאפשר רק לבעלים של הקבוצה:
+ואז ב-`useEffect` נקרא `loadCurrentRound()` ללא פרמטר, מה שטוען את סבב 0 במקום הסבב הנוכחי. אם הטורניר היה בסבב 2, הוא יטען את סבב 0 שכבר הושלם.
 
-```sql
--- מחיקת הפוליסות הישנות
-DROP POLICY IF EXISTS "Teams: restrict delete" ON teams;
-DROP POLICY IF EXISTS "Teams: restrict updates" ON teams;
+**הפתרון:**
 
--- פוליסה חדשה למחיקה - רק בעלים
-CREATE POLICY "Teams: owner can delete"
-ON teams FOR DELETE
-TO authenticated
-USING (owner_id = auth.uid());
+בעת אתחול הקומפוננטה, לחפש את הסבב הפעיל (האחרון שלא הושלם) ולטעון אותו:
 
--- פוליסה חדשה לעדכון - רק בעלים
-CREATE POLICY "Teams: owner can update"
-ON teams FOR UPDATE
-TO authenticated
-USING (owner_id = auth.uid())
-WITH CHECK (owner_id = auth.uid());
+```typescript
+// ב-useEffect של אתחול:
+if (currentEvening.rounds.length > 0) {
+  // מצא את הסבב הפעיל - האחרון שלא הושלם, או האחרון בכלל
+  const activeRoundIndex = currentEvening.rounds.findIndex(r => !r.completed);
+  const targetIndex = activeRoundIndex >= 0 
+    ? activeRoundIndex 
+    : currentEvening.rounds.length - 1;
+  setCurrentRound(targetIndex);
+  loadCurrentRound(targetIndex);
+}
 ```
 
----
-
-### שינוי 3: הוספת אפשרות לשנות שם קבוצה בממשק
-
-**קובץ:** `src/components/TeamsManager.tsx`
-
-הוספת:
-1. State לעריכת שם קבוצה
-2. כפתור עריכה ליד כל קבוצה
-3. Dialog או inline input לשינוי השם
-4. קריאה ל-`RemoteStorageService.renameTeam`
+**קובץ:** `src/components/TournamentGame.tsx` - עדכון ה-useEffect באתחול (שורות 139-146)
 
 ---
 
-### סיכום הקבצים לשינוי
+### בעיה 2: הגדרת הרכב קבוצות לטורניר זוגות (Admin)
+
+**מה נדרש:**
+
+אפשרות לאדמין לקבוע כמה קבוצות מכל דירוג כוכבים יהיו בכל סוג טורניר (4/5/6 ניצחונות).
+
+לדוגמה, עבור טורניר עד 4 ניצחונות (מקסימום 7 משחקים):
+- ברירת מחדל: 2 x 5 כוכבים, 3 x 4.5 כוכבים, 2 x 4 כוכבים
+- אפשר לשנות ל: 3 x 5 כוכבים, 2 x 4.5 כוכבים, 2 x 4 כוכבים
+
+**מבנה טכני:**
+
+#### 1. טבלת DB חדשה: `pairs_pool_config`
+
+```sql
+CREATE TABLE pairs_pool_config (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  wins_to_complete integer NOT NULL UNIQUE,  -- 4, 5, or 6
+  distribution jsonb NOT NULL,               -- [{stars: 5, count: 2}, {stars: 4.5, count: 3}, ...]
+  include_prime boolean NOT NULL DEFAULT false,
+  prime_count integer NOT NULL DEFAULT 0,
+  updated_by uuid REFERENCES auth.users(id),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+דוגמה לערך `distribution`:
+```json
+[
+  {"stars": 5, "count": 2, "include_national": true},
+  {"stars": 4.5, "count": 3, "include_national": true},
+  {"stars": 4, "count": 2, "include_national": false}
+]
+```
+
+RLS: קריאה לכל authenticated, כתיבה רק לאדמין (דרך `is_clubs_admin`).
+
+#### 2. דף אדמין חדש: `/admin/pool-config`
+
+- הצגת 3 כרטיסים (אחד לכל סוג: 4/5/6 ניצחונות)
+- בכל כרטיס: רשימת שורות עם דירוג כוכבים + כמות
+- אפשר להוסיף/להסיר שורות ולשנות כמויות
+- סך הכל = מקסימום משחקים (7/9/11)
+- כפתור שמירה
+
+#### 3. עדכון `TeamSelector` לקרוא מהגדרה דינמית
+
+במקום hardcoded בפונקציות `generateTeamPoolsFor4Rounds`, `generateTeamPoolsFor5Rounds`, `generateTeamPoolsFor6Rounds`, הלוגיקה תקרא את ההגדרה מהדאטאבייס.
+
+פונקציה חדשה `generateTeamPoolsFromConfig(pairs, config, excludeClubIds)` שמקבלת את ההגדרה ובונה את הפולים לפיה.
+
+#### 4. טעינת ההגדרה
+
+- ב-`Index.tsx` ו-`TournamentGame.tsx` - טעינת ההגדרה מ-Supabase בעת אתחול
+- Cache מקומי (דומה ל-`getClubsWithOverrides`)
+- Fallback לערכי ברירת מחדל אם אין הגדרה בDB
+
+---
+
+### סיכום קבצים לשינוי
 
 | קובץ | שינוי |
 |------|-------|
-| `src/components/TierQuestionPhase.tsx` | הסרת טווח ומקור מהתצוגה |
-| `supabase/migrations/XXXX_fix_teams_rls.sql` | תיקון פוליסות RLS |
-| `src/components/TeamsManager.tsx` | הוספת אפשרות עריכת שם |
+| `src/components/TournamentGame.tsx` | תיקון אתחול סבב נוכחי |
+| `supabase/migrations/XXXX_pool_config.sql` | טבלת `pairs_pool_config` + RLS + defaults |
+| `src/pages/AdminPoolConfig.tsx` | דף אדמין חדש להגדרת הרכב |
+| `src/App.tsx` | הוספת route `/admin/pool-config` |
+| `src/components/TournamentHome.tsx` | לינק לדף החדש (לאדמין בלבד) |
+| `src/services/teamSelector.ts` | פונקציה חדשה `generateTeamPoolsFromConfig` |
+| `src/data/poolConfig.ts` | קובץ עזר לטעינה + cache של ההגדרה |
+
+---
+
+### ברירות מחדל (יוכנסו ל-DB במיגרציה)
+
+| ניצחונות | סה"כ | הרכב |
+|----------|------|------|
+| 4 | 7 | 2x5★, 3x4.5★, 2x4★ (ללא Prime) |
+| 5 | 9 | 1 Prime, 3x5★, 3x4.5★, 2x4★ |
+| 6 | 11 | 3x5★, 4x4.5★, 4x4★ (ללא Prime) |
 
