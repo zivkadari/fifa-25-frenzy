@@ -233,7 +233,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setCurrentMatch(firstMatch);
   };
 
-  const createNextMatch = (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
+  const createNextMatch = async (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
     // Use stored round pairs if pairs not provided
     const roundPairs = pairs || currentRoundPairs;
     const round = evening.rounds[roundIndex];
