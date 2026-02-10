@@ -28,6 +28,7 @@ import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tourname
 import { SinglesGameComponent } from "@/components/SinglesGame";
 import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
+import { fetchPoolConfigs, getPoolConfigForWins, PoolConfig } from "@/data/poolConfig";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
