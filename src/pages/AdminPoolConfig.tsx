@@ -100,7 +100,7 @@ const AdminPoolConfig = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-4" dir="rtl">
+    <div className="min-h-screen bg-gaming-bg p-4 pb-8" dir="rtl">
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
@@ -173,7 +173,7 @@ const AdminPoolConfig = () => {
           );
         })}
 
-        <Button onClick={handleSave} disabled={saving} className="w-full" variant="gaming" size="lg">
+        <Button onClick={handleSave} disabled={saving} className="w-full mb-8" variant="gaming" size="lg">
           <Save className="h-5 w-5" />
           {saving ? "שומר..." : "שמור הכל"}
         </Button>

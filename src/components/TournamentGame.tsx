@@ -28,6 +28,7 @@ import { Evening, Round, Match, Pair, Club, PlayerStats } from "@/types/tourname
 import { SinglesGameComponent } from "@/components/SinglesGame";
 import { DiceScoreInput } from "@/components/DiceScoreInput";
 import { TournamentEngine } from "@/services/tournamentEngine";
+import { fetchPoolConfigs, getPoolConfigForWins, PoolConfig } from "@/data/poolConfig";
 import { TeamSelector } from "@/services/teamSelector";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
@@ -162,7 +163,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     return () => clearInterval(interval);
   }, [isCountdownActive, countdown]);
 
-  const startNextRound = (targetRoundIndex?: number) => {
+  const startNextRound = async (targetRoundIndex?: number) => {
     const roundIndex = targetRoundIndex ?? currentRound;
     const roundNumber = roundIndex + 1;
     const roundPairs = pairSchedule[roundIndex];
@@ -196,13 +197,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const maxMatches = currentEvening.winsToComplete * 2 - 1;
     console.log('Generating pools for round with maxMatches:', maxMatches);
     const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
-    const poolResult = currentEvening.winsToComplete === 4 
-      ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, actuallyPlayedClubIds)
-      : currentEvening.winsToComplete === 5
-        ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, actuallyPlayedClubIds)
-        : currentEvening.winsToComplete === 6
-          ? teamSelector.generateTeamPoolsFor6Rounds(roundPairs, actuallyPlayedClubIds)
-          : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
+    const poolConfigs = await fetchPoolConfigs();
+    const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
+    const poolResult = poolConfig
+      ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, actuallyPlayedClubIds)
+      : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
     console.log('Generated pools:', poolResult.pools);
 
     // Track recycled clubs for this round
@@ -234,7 +233,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setCurrentMatch(firstMatch);
   };
 
-  const createNextMatch = (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
+  const createNextMatch = async (evening: Evening, roundIndex: number, pairs?: Pair[]) => {
     // Use stored round pairs if pairs not provided
     const roundPairs = pairs || currentRoundPairs;
     const round = evening.rounds[roundIndex];
@@ -301,13 +300,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
           // Only exclude clubs that were ACTUALLY PLAYED (from usedClubCounts)
           const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
-          const poolResult = currentEvening.winsToComplete === 4 
-            ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, actuallyPlayedClubIds)
-            : currentEvening.winsToComplete === 5
-              ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, actuallyPlayedClubIds)
-              : currentEvening.winsToComplete === 6
-                ? teamSelector.generateTeamPoolsFor6Rounds(roundPairs, actuallyPlayedClubIds)
-                : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
+          const poolConfigs = await fetchPoolConfigs();
+          const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
+          const poolResult = poolConfig
+            ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, actuallyPlayedClubIds)
+            : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
           // Track recycled clubs
           setRecycledClubIds(poolResult.recycledClubIds);
           // Persist these pools on the round
@@ -344,7 +341,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setGamePhase('team-selection');
   };
 
-  const loadCurrentRound = (targetIndex?: number) => {
+  const loadCurrentRound = async (targetIndex?: number) => {
     const idx = targetIndex ?? currentRound;
     const round = currentEvening.rounds[idx];
     if (!round) return;
@@ -399,13 +396,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-      const poolResult = currentEvening.winsToComplete === 4 
-        ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
-        : currentEvening.winsToComplete === 5
-          ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, excludeIds)
-          : currentEvening.winsToComplete === 6
-            ? teamSelector.generateTeamPoolsFor6Rounds(roundPairs, excludeIds)
-            : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+      const poolConfigs = await fetchPoolConfigs();
+      const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
+      const poolResult = poolConfig
+        ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, excludeIds)
+        : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
       // Track recycled clubs
       setRecycledClubIds(poolResult.recycledClubIds);
       // Persist pools on the round in evening state
