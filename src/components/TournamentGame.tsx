@@ -396,13 +396,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
       const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
-      const poolResult = currentEvening.winsToComplete === 4 
-        ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, excludeIds)
-        : currentEvening.winsToComplete === 5
-          ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, excludeIds)
-          : currentEvening.winsToComplete === 6
-            ? teamSelector.generateTeamPoolsFor6Rounds(roundPairs, excludeIds)
-            : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
+      const poolConfigs = await fetchPoolConfigs();
+      const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
+      const poolResult = poolConfig
+        ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, excludeIds)
+        : teamSelector.generateTeamPools(roundPairs, excludeIds, maxMatches);
       // Track recycled clubs
       setRecycledClubIds(poolResult.recycledClubIds);
       // Persist pools on the round in evening state
