@@ -341,7 +341,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setGamePhase('team-selection');
   };
 
-  const loadCurrentRound = (targetIndex?: number) => {
+  const loadCurrentRound = async (targetIndex?: number) => {
     const idx = targetIndex ?? currentRound;
     const round = currentEvening.rounds[idx];
     if (!round) return;
