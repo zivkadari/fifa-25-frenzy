@@ -173,7 +173,7 @@ const AdminPoolConfig = () => {
           );
         })}
 
-        <Button onClick={handleSave} disabled={saving} className="w-full" variant="gaming" size="lg">
+        <Button onClick={handleSave} disabled={saving} className="w-full mb-8" variant="gaming" size="lg">
           <Save className="h-5 w-5" />
           {saving ? "שומר..." : "שמור הכל"}
         </Button>
