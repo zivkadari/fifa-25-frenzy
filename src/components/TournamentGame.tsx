@@ -300,13 +300,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           const maxMatches = currentEvening.winsToComplete * 2 - 1;
           // Only exclude clubs that were ACTUALLY PLAYED (from usedClubCounts)
           const actuallyPlayedClubIds = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
-          const poolResult = currentEvening.winsToComplete === 4 
-            ? teamSelector.generateTeamPoolsFor4Rounds(roundPairs, actuallyPlayedClubIds)
-            : currentEvening.winsToComplete === 5
-              ? teamSelector.generateTeamPoolsFor5Rounds(roundPairs, actuallyPlayedClubIds)
-              : currentEvening.winsToComplete === 6
-                ? teamSelector.generateTeamPoolsFor6Rounds(roundPairs, actuallyPlayedClubIds)
-                : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
+          const poolConfigs = await fetchPoolConfigs();
+          const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
+          const poolResult = poolConfig
+            ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, actuallyPlayedClubIds)
+            : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
           // Track recycled clubs
           setRecycledClubIds(poolResult.recycledClubIds);
           // Persist these pools on the round
