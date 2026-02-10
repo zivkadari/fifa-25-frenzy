@@ -163,7 +163,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     return () => clearInterval(interval);
   }, [isCountdownActive, countdown]);
 
-  const startNextRound = (targetRoundIndex?: number) => {
+  const startNextRound = async (targetRoundIndex?: number) => {
     const roundIndex = targetRoundIndex ?? currentRound;
     const roundNumber = roundIndex + 1;
     const roundPairs = pairSchedule[roundIndex];
