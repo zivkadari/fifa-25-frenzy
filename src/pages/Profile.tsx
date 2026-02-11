@@ -187,7 +187,7 @@ const Profile = () => {
       <div className="max-w-md mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">הפרופיל שלי</h1>

@@ -141,7 +141,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Button variant="ghost" size="icon" onClick={onBack}>
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 rotate-180" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Tournament History</h1>
@@ -172,8 +172,8 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+           <Button variant="ghost" size="icon" onClick={onBack}>
+              <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Tournament History</h1>

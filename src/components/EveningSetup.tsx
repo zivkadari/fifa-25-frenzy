@@ -177,15 +177,15 @@ export const EveningSetup = ({ onBack, onStartEvening, savedPlayers, savedWinsTo
   };
 
   return (
-    <div className="min-h-screen bg-gaming-bg p-3 mobile-optimized">
+    <div className="min-h-screen bg-gaming-bg p-3 mobile-optimized" dir="rtl">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Evening Setup</h1>
+            <h1 className="text-xl font-bold text-foreground">הגדרת ערב</h1>
           </div>
         </div>
 

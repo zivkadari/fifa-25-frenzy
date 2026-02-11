@@ -430,7 +430,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           
           <div className="text-center">

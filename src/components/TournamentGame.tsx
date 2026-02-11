@@ -41,9 +41,10 @@ interface TournamentGameProps {
   onComplete: (evening: Evening) => void;
   onGoHome: () => void;
   onUpdateEvening: (evening: Evening) => void;
+  onRoundModeSelection?: (nextRoundIndex: number) => void;
 }
 
-export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening }: TournamentGameProps) => {
+export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening, onRoundModeSelection }: TournamentGameProps) => {
   // If this is a singles tournament, use the singles component
   if (evening.type === 'singles') {
     return (
@@ -142,10 +143,40 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
-      const activeRoundIndex = currentEvening.rounds.findIndex(r => !r.completed);
-      const targetIndex = activeRoundIndex >= 0 ? activeRoundIndex : currentEvening.rounds.length - 1;
-      setCurrentRound(targetIndex);
-      loadCurrentRound(targetIndex);
+      // Find the correct round to resume:
+      // 1. First, check if any round is explicitly not completed
+      // 2. Also verify by checking if a "completed" round actually has all wins scored
+      let activeRoundIndex = -1;
+      for (let i = 0; i < currentEvening.rounds.length; i++) {
+        const r = currentEvening.rounds[i];
+        const isActuallyComplete = r.completed || TournamentEngine.isRoundComplete(r, currentEvening.winsToComplete);
+        if (!isActuallyComplete) {
+          activeRoundIndex = i;
+          break;
+        }
+        // Mark completed if not already
+        if (!r.completed && isActuallyComplete) {
+          r.completed = true;
+        }
+      }
+      
+      if (activeRoundIndex >= 0) {
+        setCurrentRound(activeRoundIndex);
+        loadCurrentRound(activeRoundIndex);
+      } else {
+        // All existing rounds are complete. Check if we need to start a new round.
+        const lastRoundIndex = currentEvening.rounds.length - 1;
+        if (lastRoundIndex < 2) {
+          // Need to start next round
+          const nextIdx = lastRoundIndex + 1;
+          setCurrentRound(nextIdx);
+          startNextRound(nextIdx);
+        } else {
+          // Tournament should be complete
+          setCurrentRound(lastRoundIndex);
+          loadCurrentRound(lastRoundIndex);
+        }
+      }
     }
   }, [overridesLoaded]);
 
@@ -727,11 +758,35 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   };
 
   const handleRoundComplete = () => {
+    // Mark current round as completed
+    const round = currentEvening.rounds[currentRound];
+    if (round && !round.completed) {
+      const completedRound = { ...round, completed: true };
+      const updatedEvening = {
+        ...currentEvening,
+        rounds: [
+          ...currentEvening.rounds.slice(0, currentRound),
+          completedRound,
+          ...currentEvening.rounds.slice(currentRound + 1)
+        ]
+      };
+      setCurrentEvening(updatedEvening);
+      onUpdateEvening(updatedEvening);
+    }
+
     if (currentRound === 2) { 
       // Tournament complete
       completeEvening();
     } else {
       // Move to next round
+      // If tier-question mode, callback to parent to show mode selection
+      if (currentEvening.teamSelectionMode === 'tier-question') {
+        // Signal parent that we need round mode selection
+        if (onRoundModeSelection) {
+          onRoundModeSelection(currentRound + 1);
+          return;
+        }
+      }
       setCurrentRound(prev => {
         const next = prev + 1;
         startNextRound(next);
@@ -766,7 +821,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
         {/* Header */}
         <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <div className="text-center">
             <h1 className="text-lg font-bold text-foreground">
@@ -875,9 +930,36 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
 
             {/* Decider Match - Draw Balanced Teams Button */}
             {currentRoundData?.isDeciderMatch && (
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-3">
                 <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
-                <Button variant="gaming" onClick={drawDeciderTeams}>Draw Balanced Teams</Button>
+                <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">Draw Balanced Teams</Button>
+                <Button variant="outline" onClick={() => {
+                  // Open manual selection for decider - generate balanced pool to choose from
+                  const teamSelector = new TeamSelector(clubsWithOverrides);
+                  const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
+                  // For manual decider, exclude only clubs used in THIS round (not previous rounds)
+                  const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                  const candidates = clubsWithOverrides
+                    .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
+                    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+                  // Set pools for manual selection from decider candidates (split equally)
+                  const half = Math.ceil(candidates.length / 2);
+                  setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
+                  // Switch off decider flag temporarily to show accordion
+                  const round = currentEvening.rounds[currentRound];
+                  if (round) {
+                    const updatedRound = { ...round, isDeciderMatch: false };
+                    const updatedEvening = {
+                      ...currentEvening,
+                      rounds: [
+                        ...currentEvening.rounds.slice(0, currentRound),
+                        updatedRound,
+                        ...currentEvening.rounds.slice(currentRound + 1)
+                      ]
+                    };
+                    setCurrentEvening(updatedEvening);
+                  }
+                }} className="w-full">בחר ידנית</Button>
               </div>
             )}
 

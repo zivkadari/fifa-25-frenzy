@@ -104,7 +104,7 @@ const AdminPoolConfig = () => {
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">הגדרת הרכב קבוצות</h1>
         </div>
