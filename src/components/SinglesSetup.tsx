@@ -140,7 +140,7 @@ export const SinglesSetup = ({ onBack, onStartSingles, savedPlayers }: SinglesSe
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">הגדרת טורניר יחידים</h1>

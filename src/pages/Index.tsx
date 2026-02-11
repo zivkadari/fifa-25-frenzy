@@ -47,6 +47,7 @@ const Index = () => {
   const [pendingPairsPlayers, setPendingPairsPlayers] = useState<Player[] | null>(null);
   const [pendingWinsToComplete, setPendingWinsToComplete] = useState<number>(4);
   const [pendingTeamId, setPendingTeamId] = useState<string | undefined>(undefined);
+  const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
@@ -419,13 +420,19 @@ const handleGoHome = () => {
           <PairsGameModeSelection
             onBack={() => window.history.back()}
             onSelectRandom={() => {
-              if (pendingPairsPlayers) {
+              if (currentEvening && currentEvening.rounds.length > 0) {
+                // Mid-tournament: go back to game, random mode will auto-generate pools
+                goTo('game');
+              } else if (pendingPairsPlayers) {
                 handleStartRandomEvening(pendingPairsPlayers, pendingWinsToComplete, pendingTeamId);
               }
             }}
             onSelectTierQuestion={() => {
-              if (pendingPairsPlayers) {
-                // Create evening with tier-question mode but don't start rounds yet
+              if (currentEvening && currentEvening.rounds.length > 0) {
+                // Mid-tournament: go to tier-question flow for this round
+                goTo('tier-question-flow');
+              } else if (pendingPairsPlayers) {
+                // Initial tournament creation with tier-question mode
                 const pairSchedule = TournamentEngine.generatePairs(pendingPairsPlayers);
                 const newEvening: Evening = {
                   id: `evening-${Date.now()}`,
@@ -557,6 +564,10 @@ const handleGoHome = () => {
               onComplete={handleCompleteEvening}
               onGoHome={handleGoHome}
               onUpdateEvening={handleUpdateEvening}
+              onRoundModeSelection={(nextRoundIndex) => {
+                setPendingRoundIndex(nextRoundIndex);
+                goTo('pairs-mode-selection');
+              }}
             />
           )
         ) : null;

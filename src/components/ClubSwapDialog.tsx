@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -35,6 +36,7 @@ export const ClubSwapDialog = ({
   clubsWithOverrides,
 }: ClubSwapDialogProps) => {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Helper function to get current star rating from database overrides
   const getDisplayStars = (club: Club): number => {
@@ -127,10 +129,24 @@ export const ClubSwapDialog = ({
             <div className="h-px flex-1 bg-border" />
           </div>
 
+          {/* Search */}
+          <Input
+            placeholder="חפש קבוצה..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-gaming-surface border-border"
+          />
+
           {/* Club List */}
           <ScrollArea className="h-[300px] pr-3">
             <div className="space-y-1">
-              {availableClubs.map((club) => (
+              {availableClubs
+                .filter((club) => {
+                  if (!searchQuery.trim()) return true;
+                  const q = searchQuery.toLowerCase();
+                  return club.name.toLowerCase().includes(q) || club.league.toLowerCase().includes(q);
+                })
+                .map((club) => (
                 <Button
                   key={club.id}
                   variant={selectedClub?.id === club.id ? "default" : "ghost"}
