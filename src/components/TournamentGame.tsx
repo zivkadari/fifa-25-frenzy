@@ -17,9 +17,12 @@ import {
   Home,
   Copy,
   RefreshCw,
-  Share2
+  Share2,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -82,6 +85,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
   const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
   const [showRankings, setShowRankings] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [editScore1, setEditScore1] = useState(0);
+  const [editScore2, setEditScore2] = useState(0);
   
   // Club swap dialog state
   const [showSwapDialog, setShowSwapDialog] = useState(false);
@@ -632,6 +638,120 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setGamePhase('team-selection');
     toast({ title: 'בוטלה הבחירה', description: 'בחרו מחדש את הקבוצות' });
   };
+
+  // Edit an already-submitted match result
+  const editMatchResult = (matchId: string, newScore1: number, newScore2: number) => {
+    const round = currentEvening.rounds[currentRound];
+    if (!round) return;
+    const matchIdx = round.matches.findIndex(m => m.id === matchId);
+    if (matchIdx < 0) return;
+    const match = round.matches[matchIdx];
+    if (!match.completed) return;
+
+    // Recalculate pair scores from scratch
+    const updatedMatch: Match = { ...match, score: [newScore1, newScore2] };
+    // Determine new winner
+    if (newScore1 > newScore2) updatedMatch.winner = match.pairs[0].id;
+    else if (newScore2 > newScore1) updatedMatch.winner = match.pairs[1].id;
+    else updatedMatch.winner = '';
+
+    const updatedMatches = [...round.matches];
+    updatedMatches[matchIdx] = updatedMatch;
+
+    // Recalculate ALL pair scores from scratch
+    const newPairScores: { [pairId: string]: number } = {};
+    newPairScores[round.matches[0]?.pairs[0]?.id] = 0;
+    newPairScores[round.matches[0]?.pairs[1]?.id] = 0;
+    updatedMatches.forEach(m => {
+      if (m.completed && m.winner) {
+        newPairScores[m.winner] = (newPairScores[m.winner] || 0) + 1;
+      }
+    });
+
+    const updatedRound = { ...round, matches: updatedMatches, pairScores: newPairScores };
+    const updatedEvening = {
+      ...currentEvening,
+      rounds: [
+        ...currentEvening.rounds.slice(0, currentRound),
+        updatedRound,
+        ...currentEvening.rounds.slice(currentRound + 1)
+      ]
+    };
+    setCurrentEvening(updatedEvening);
+    onUpdateEvening(updatedEvening);
+    setEditingMatch(null);
+    toast({ title: 'תוצאה עודכנה', description: `${newScore1}-${newScore2}` });
+  };
+
+  // Delete a completed match entirely
+  const deleteMatch = (matchId: string) => {
+    const round = currentEvening.rounds[currentRound];
+    if (!round) return;
+    const matchIdx = round.matches.findIndex(m => m.id === matchId);
+    if (matchIdx < 0) return;
+    const match = round.matches[matchIdx];
+    if (!match.completed) return;
+
+    // Return clubs to pool by removing from used sets
+    const c1 = match.clubs[0];
+    const c2 = match.clubs[1];
+    
+    setUsedClubCounts(prev => {
+      const updated = { ...prev };
+      if (c1?.id) updated[c1.id] = Math.max(0, (updated[c1.id] ?? 0) - 1);
+      if (c2?.id) updated[c2.id] = Math.max(0, (updated[c2.id] ?? 0) - 1);
+      return updated;
+    });
+    setUsedClubIdsThisRound(prev => {
+      const next = new Set(prev);
+      if (c1?.id) next.delete(c1.id);
+      if (c2?.id) next.delete(c2.id);
+      return next;
+    });
+
+    // Re-add clubs to teamPools if they exist in original pools
+    setTeamPools(prev => {
+      const newPools: [Club[], Club[]] = [[...prev[0]], [...prev[1]]];
+      [0, 1].forEach(pairIdx => {
+        const club = match.clubs[pairIdx];
+        if (club?.id && originalTeamPools[pairIdx].some(c => c.id === club.id) && !newPools[pairIdx].some(c => c.id === club.id)) {
+          newPools[pairIdx].push(club);
+        }
+      });
+      return newPools;
+    });
+
+    // Remove match and recalculate scores
+    const updatedMatches = round.matches.filter(m => m.id !== matchId);
+    const newPairScores: { [pairId: string]: number } = {};
+    const pairIds = Object.keys(round.pairScores);
+    pairIds.forEach(id => { newPairScores[id] = 0; });
+    updatedMatches.forEach(m => {
+      if (m.completed && m.winner) {
+        newPairScores[m.winner] = (newPairScores[m.winner] || 0) + 1;
+      }
+    });
+
+    const updatedRound = { ...round, matches: updatedMatches, pairScores: newPairScores, completed: false };
+    const updatedEvening = {
+      ...currentEvening,
+      rounds: [
+        ...currentEvening.rounds.slice(0, currentRound),
+        updatedRound,
+        ...currentEvening.rounds.slice(currentRound + 1)
+      ]
+    };
+    setCurrentEvening(updatedEvening);
+    onUpdateEvening(updatedEvening);
+
+    // If no current in-progress match, create one
+    const hasInProgress = updatedMatches.some(m => !m.completed);
+    if (!hasInProgress) {
+      createNextMatch(updatedEvening, currentRound);
+    }
+
+    toast({ title: 'משחק נמחק', description: 'הקבוצות הוחזרו למאגר' });
+  };
   const submitResult = (score1: number, score2: number) => {
     if (!currentMatch) return;
     
@@ -850,18 +970,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               variant="ghost"
               size="icon"
               onClick={() => {
-                if (!currentMatch || !teamPools[0]?.length || !teamPools[1]?.length) return;
+                if (!currentMatch) return;
+                const round = currentEvening.rounds[currentRound];
+                const allPools = round?.teamPools as [Club[], Club[]] | undefined;
+                if (!allPools || !allPools[0]?.length || !allPools[1]?.length) return;
                 const lines: string[] = [];
                 currentMatch.pairs.forEach((pair, index) => {
                   const pairName = pair.players.map(p => p.name).join(' ו');
                   lines.push(pairName);
-                  teamPools[index].forEach((club) => {
-                    lines.push(club.name);
+                  allPools[index].forEach((club) => {
+                    const used = usedClubIdsThisRound.has(club.id) ? ' ✓' : '';
+                    lines.push(`${club.name}${used}`);
                   });
                   lines.push('');
                 });
                 navigator.clipboard.writeText(lines.join('\n').trim());
-                toast({ title: "הועתק!", description: "רשימת הקבוצות הועתקה ללוח" });
+                toast({ title: "הועתק!", description: "רשימת כל הקבוצות של הסיבוב הועתקה ללוח" });
               }}
               aria-label="Copy teams"
             >
@@ -1059,8 +1183,25 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </Accordion>
             )}
 
+            {/* When pools exhausted but round not complete - offer balance draw */}
+            {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length === 0 && teamPools[1].length === 0 && !TournamentEngine.isRoundComplete(currentRoundData!, currentEvening.winsToComplete) && (
+              <div className="text-center space-y-3">
+                <p className="text-sm text-muted-foreground">הקבוצות נגמרו, אבל אף זוג לא הגיע ל-{currentEvening.winsToComplete} ניצחונות</p>
+                <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
+                <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">הגרל קבוצות מאוזנות</Button>
+                <Button variant="outline" onClick={() => {
+                  const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                  const candidates = clubsWithOverrides
+                    .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
+                    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+                  const half = Math.ceil(candidates.length / 2);
+                  setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
+                }} className="w-full">בחר ידנית</Button>
+              </div>
+            )}
+
             {/* Loading State */}
-            {!currentRoundData?.isDeciderMatch && (!teamPools[0] || !teamPools[1] || teamPools[0].length === 0 || teamPools[1].length === 0) && (
+            {!currentRoundData?.isDeciderMatch && (!teamPools[0] || !teamPools[1]) && (
               <div className="text-center text-muted-foreground py-8">
                 <p>Loading teams...</p>
               </div>
@@ -1261,6 +1402,75 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   );
                 })()}
                 </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Match History with Edit/Delete */}
+            {currentRoundData && currentRoundData.matches.filter(m => m.completed).length > 0 && (
+              <div className="space-y-2 mt-3">
+                <h3 className="text-sm font-medium text-muted-foreground">משחקים שהושלמו בסיבוב</h3>
+                {currentRoundData.matches.filter(m => m.completed).map((match, idx) => (
+                  <Card key={match.id} className="bg-gaming-surface border-border/30 p-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex-1">
+                        <span className="text-foreground">{match.clubs[0]?.name}</span>
+                        <span className="text-neon-green font-bold mx-2">{match.score?.[0]}-{match.score?.[1]}</span>
+                        <span className="text-foreground">{match.clubs[1]?.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                          setEditingMatch(match);
+                          setEditScore1(match.score?.[0] ?? 0);
+                          setEditScore2(match.score?.[1] ?? 0);
+                        }}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteMatch(match.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Edit Match Dialog */}
+            <Dialog open={!!editingMatch} onOpenChange={(open) => { if (!open) setEditingMatch(null); }}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>עריכת תוצאה</DialogTitle>
+                </DialogHeader>
+                {editingMatch && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground mb-1">{editingMatch.clubs[0]?.name}</p>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editScore1}
+                          onChange={(e) => setEditScore1(parseInt(e.target.value) || 0)}
+                          className="w-16 text-center"
+                        />
+                      </div>
+                      <span className="text-neon-green font-bold">-</span>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground mb-1">{editingMatch.clubs[1]?.name}</p>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editScore2}
+                          onChange={(e) => setEditScore2(parseInt(e.target.value) || 0)}
+                          className="w-16 text-center"
+                        />
+                      </div>
+                    </div>
+                    <Button variant="gaming" className="w-full" onClick={() => editMatchResult(editingMatch.id, editScore1, editScore2)}>
+                      שמור שינויים
+                    </Button>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
           </div>

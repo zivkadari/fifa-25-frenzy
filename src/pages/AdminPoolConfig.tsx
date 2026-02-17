@@ -88,6 +88,7 @@ const AdminPoolConfig = () => {
 
       invalidatePoolConfigCache();
       toast({ title: "נשמר בהצלחה!" });
+      navigate("/");
     } catch (e: any) {
       toast({ title: "שגיאה בשמירה", description: e.message, variant: "destructive" });
     } finally {
@@ -126,17 +127,17 @@ const AdminPoolConfig = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {config.distribution.map((entry, starIdx) => (
-                  <div key={entry.stars} className="flex items-center gap-3">
-                    <span className="w-16 text-sm font-medium">{STAR_LABELS[entry.stars]}</span>
+                  <div key={entry.stars} className="flex flex-wrap items-center gap-2">
+                    <span className="w-14 text-sm font-medium shrink-0">{STAR_LABELS[entry.stars]}</span>
                     <Input
                       type="number"
                       min={0}
                       max={max}
                       value={entry.count}
                       onChange={(e) => updateDistribution(winsIdx, starIdx, "count", parseInt(e.target.value) || 0)}
-                      className="w-20"
+                      className="w-16 shrink-0"
                     />
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Switch
                         checked={entry.include_national}
                         onCheckedChange={(v) => updateDistribution(winsIdx, starIdx, "include_national", v)}
@@ -146,8 +147,8 @@ const AdminPoolConfig = () => {
                   </div>
                 ))}
 
-                <div className="flex items-center gap-3 pt-2 border-t border-border/30">
-                  <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/30">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Switch
                       checked={config.include_prime}
                       onCheckedChange={(v) => {
@@ -164,7 +165,7 @@ const AdminPoolConfig = () => {
                       max={max}
                       value={config.prime_count}
                       onChange={(e) => updateConfig(winsIdx, "prime_count", parseInt(e.target.value) || 0)}
-                      className="w-20"
+                      className="w-16 shrink-0"
                     />
                   )}
                 </div>
