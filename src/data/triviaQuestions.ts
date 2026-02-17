@@ -76,31 +76,71 @@ export function getRandomQuestion(usedIds: number[]): TriviaQuestion | null {
   return available[Math.floor(Math.random() * available.length)];
 }
 
+export interface TierConfigEntry {
+  stars: number;
+  count: number;
+  label: string;
+  isPrime?: boolean;
+  includeNational?: boolean;
+}
+
 /**
- * Get tier configuration based on winsToComplete
- * Returns array of { stars, count, label, isPrime? } for each tier
+ * Get tier configuration based on winsToComplete (hardcoded fallback)
  */
-export function getTierConfig(winsToComplete: number): Array<{ stars: number; count: number; label: string; isPrime?: boolean }> {
+export function getTierConfig(winsToComplete: number): TierConfigEntry[] {
   switch (winsToComplete) {
     case 4:
       return [
-        { stars: 5, count: 2, label: '5 כוכבים' },
-        { stars: 4.5, count: 3, label: '4.5 כוכבים' },
-        { stars: 4, count: 2, label: '4 כוכבים' },
+        { stars: 5, count: 2, label: '5 כוכבים', includeNational: true },
+        { stars: 4.5, count: 3, label: '4.5 כוכבים', includeNational: true },
+        { stars: 4, count: 2, label: '4 כוכבים', includeNational: false },
       ];
     case 5:
       return [
         { stars: 5, count: 1, label: 'Prime', isPrime: true },
-        { stars: 5, count: 3, label: '5 כוכבים' },
-        { stars: 4.5, count: 3, label: '4.5 כוכבים' },
-        { stars: 4, count: 2, label: '4 כוכבים' },
+        { stars: 5, count: 3, label: '5 כוכבים', includeNational: true },
+        { stars: 4.5, count: 3, label: '4.5 כוכבים', includeNational: true },
+        { stars: 4, count: 2, label: '4 כוכבים', includeNational: false },
       ];
     case 6:
     default:
       return [
-        { stars: 5, count: 3, label: '5 כוכבים' },
-        { stars: 4.5, count: 4, label: '4.5 כוכבים' },
-        { stars: 4, count: 4, label: '4 כוכבים' },
+        { stars: 5, count: 3, label: '5 כוכבים', includeNational: true },
+        { stars: 4.5, count: 4, label: '4.5 כוכבים', includeNational: true },
+        { stars: 4, count: 4, label: '4 כוכבים', includeNational: false },
       ];
   }
+}
+
+/**
+ * Build tier config from admin PoolConfig (database-driven).
+ * This ensures Trivia Mode uses the exact same composition as Random Mode.
+ */
+export function buildTierConfigFromPoolConfig(config: import('@/data/poolConfig').PoolConfig): TierConfigEntry[] {
+  const tiers: TierConfigEntry[] = [];
+
+  // Add Prime tier first if enabled
+  if (config.include_prime && config.prime_count > 0) {
+    tiers.push({
+      stars: 5,
+      count: config.prime_count,
+      label: 'Prime',
+      isPrime: true,
+      includeNational: false,
+    });
+  }
+
+  // Add distribution entries
+  for (const entry of config.distribution) {
+    const starLabel = entry.stars === 5 ? '5 כוכבים' : entry.stars === 4.5 ? '4.5 כוכבים' : '4 כוכבים';
+    tiers.push({
+      stars: entry.stars,
+      count: entry.count,
+      label: starLabel,
+      isPrime: false,
+      includeNational: entry.include_national,
+    });
+  }
+
+  return tiers;
 }
