@@ -125,9 +125,9 @@ const AdminPoolConfig = () => {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 overflow-hidden">
                 {config.distribution.map((entry, starIdx) => (
-                  <div key={entry.stars} className="flex flex-wrap items-center gap-2">
+                  <div key={entry.stars} className="flex flex-wrap items-center gap-2 overflow-hidden">
                     <span className="w-14 text-sm font-medium shrink-0">{STAR_LABELS[entry.stars]}</span>
                     <Input
                       type="number"
@@ -137,18 +137,18 @@ const AdminPoolConfig = () => {
                       onChange={(e) => updateDistribution(winsIdx, starIdx, "count", parseInt(e.target.value) || 0)}
                       className="w-16 shrink-0"
                     />
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Switch
                         checked={entry.include_national}
                         onCheckedChange={(v) => updateDistribution(winsIdx, starIdx, "include_national", v)}
                       />
-                      <Label className="text-xs">נבחרות</Label>
+                      <Label className="text-xs whitespace-nowrap">נבחרות</Label>
                     </div>
                   </div>
                 ))}
 
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/30">
-                  <div className="flex items-center gap-1 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/30 overflow-hidden">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Switch
                       checked={config.include_prime}
                       onCheckedChange={(v) => {
@@ -156,7 +156,7 @@ const AdminPoolConfig = () => {
                         if (!v) updateConfig(winsIdx, "prime_count", 0);
                       }}
                     />
-                    <Label className="text-xs">Prime</Label>
+                    <Label className="text-xs whitespace-nowrap">Prime</Label>
                   </div>
                   {config.include_prime && (
                     <Input

@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle, Star } from "lucide-react";
 import { Evening, Pair, Club, TierQuestionRoundState } from "@/types/tournament";
 import { TierQuestionPhase } from "@/components/TierQuestionPhase";
-import { getRandomQuestion, getTierConfig, TriviaQuestion } from "@/data/triviaQuestions";
+import { getRandomQuestion, getTierConfig, buildTierConfigFromPoolConfig, TierConfigEntry, TriviaQuestion } from "@/data/triviaQuestions";
 import { getClubsOnly, getNationalTeamsByStars, getPrimeTeams } from "@/data/clubs";
+import { fetchPoolConfigs, getPoolConfigForWins } from "@/data/poolConfig";
 
 interface TierQuestionFlowProps {
   evening: Evening;
@@ -33,8 +34,25 @@ export const TierQuestionFlow = ({
   onComplete,
   onUpdateEvening,
 }: TierQuestionFlowProps) => {
-  const tierConfig = getTierConfig(evening.winsToComplete);
+  const [tierConfig, setTierConfig] = useState<TierConfigEntry[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   
+  // Load tier config from admin pool settings (same source as random mode)
+  useEffect(() => {
+    const loadConfig = async () => {
+      const poolConfigs = await fetchPoolConfigs();
+      const poolConfig = getPoolConfigForWins(poolConfigs, evening.winsToComplete);
+      if (poolConfig) {
+        setTierConfig(buildTierConfigFromPoolConfig(poolConfig));
+      } else {
+        // Fallback to hardcoded config
+        setTierConfig(getTierConfig(evening.winsToComplete));
+      }
+      setConfigLoaded(true);
+    };
+    loadConfig();
+  }, [evening.winsToComplete]);
+
   // Initialize state from evening or fresh
   const initialState: TierQuestionRoundState = evening.tierQuestionState || {
     currentTierIndex: 0,
@@ -47,13 +65,13 @@ export const TierQuestionFlow = ({
   const [tiersCompleted, setTiersCompleted] = useState<TierResult[]>([]);
   const [usedQuestionIds, setUsedQuestionIds] = useState<number[]>(initialState.usedQuestionIds);
   const [currentQuestion, setCurrentQuestion] = useState<TriviaQuestion | null>(null);
-  const [currentTierTeams, setCurrentTierTeams] = useState<Club[]>([]); // Store teams for current tier
+  const [currentTierTeams, setCurrentTierTeams] = useState<Club[]>([]);
   const [pair1Pool, setPair1Pool] = useState<Club[]>([]);
   const [pair2Pool, setPair2Pool] = useState<Club[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [isTiebreaker, setIsTiebreaker] = useState(false);
 
-  // Get available teams for current tier
+  // Get available teams for current tier using admin config
   const getTeamsForTier = (tierIndex: number): Club[] => {
     const tier = tierConfig[tierIndex];
     if (!tier) return [];
@@ -68,21 +86,14 @@ export const TierQuestionFlow = ({
     let sourceClubs: Club[];
     if (tier.isPrime) {
       sourceClubs = getPrimeTeams(clubsWithOverrides);
-    } else if (tier.stars === 5) {
-      sourceClubs = [
-        ...getClubsOnly(5, clubsWithOverrides),
-        ...getNationalTeamsByStars(5, clubsWithOverrides),
-      ];
-    } else if (tier.stars === 4.5) {
-      sourceClubs = [
-        ...getClubsOnly(4.5, clubsWithOverrides),
-        ...getNationalTeamsByStars(4.5, clubsWithOverrides),
-      ];
     } else {
-      sourceClubs = [
-        ...getClubsOnly(4, clubsWithOverrides),
-        ...getNationalTeamsByStars(4, clubsWithOverrides),
-      ];
+      // Use includeNational from admin config to decide source
+      const clubs = getClubsOnly(tier.stars, clubsWithOverrides);
+      if (tier.includeNational) {
+        sourceClubs = [...clubs, ...getNationalTeamsByStars(tier.stars, clubsWithOverrides)];
+      } else {
+        sourceClubs = clubs;
+      }
     }
 
     // Filter out already used clubs
@@ -95,14 +106,13 @@ export const TierQuestionFlow = ({
 
   // Initialize teams and question for current tier
   useEffect(() => {
+    if (!configLoaded || tierConfig.length === 0) return;
     if (currentTierIndex < tierConfig.length) {
-      // Calculate available teams once when entering a new tier
       if (currentTierTeams.length === 0) {
         const teams = getTeamsForTier(currentTierIndex);
         setCurrentTierTeams(teams);
       }
       
-      // Get a new question if we don't have one
       if (!currentQuestion) {
         const question = getRandomQuestion(usedQuestionIds);
         if (question) {
@@ -111,7 +121,7 @@ export const TierQuestionFlow = ({
         }
       }
     }
-  }, [currentTierIndex, currentQuestion, currentTierTeams.length]);
+  }, [currentTierIndex, currentQuestion, currentTierTeams.length, configLoaded, tierConfig.length]);
 
   const handleTierComplete = (result: {
     winnerPairId: string;
@@ -120,7 +130,6 @@ export const TierQuestionFlow = ({
     pair2Guess: number;
   }) => {
     const tier = tierConfig[currentTierIndex];
-    // Use stored currentTierTeams instead of recalculating (which would shuffle again)
     const chosenClub = currentTierTeams.find(c => c.id === result.chosenClubId);
     
     if (!chosenClub) {
@@ -129,15 +138,9 @@ export const TierQuestionFlow = ({
     }
     
     const remainingTeams = currentTierTeams.filter(c => c.id !== result.chosenClubId);
-
-    // Distribute remaining teams evenly
-    // Winner gets the chosen club + half of remaining (minus 1 since they already have one)
-    // Loser gets the other half
     const teamsPerPair = tier.count;
     const winnerIsP1 = result.winnerPairId === pairs[0].id;
 
-    // Winner gets chosen + (teamsPerPair - 1) from remaining
-    // Loser gets teamsPerPair from remaining
     const shuffledRemaining = [...remainingTeams].sort(() => Math.random() - 0.5);
     
     let pair1Assignments: Club[];
@@ -162,7 +165,6 @@ export const TierQuestionFlow = ({
     const newTiersCompleted = [...tiersCompleted, tierResult];
     setTiersCompleted(newTiersCompleted);
 
-    // Update evening state
     const newState: TierQuestionRoundState = {
       currentTierIndex: currentTierIndex + 1,
       tiersCompleted: newTiersCompleted.map(t => t.tierIndex),
@@ -173,9 +175,7 @@ export const TierQuestionFlow = ({
       usedQuestionIds,
     };
 
-    // Move to next tier or complete
     if (currentTierIndex + 1 >= tierConfig.length) {
-      // All tiers complete - build final pools
       const finalPair1Pool = newTiersCompleted.flatMap(t => t.pair1Assignments);
       const finalPair2Pool = newTiersCompleted.flatMap(t => t.pair2Assignments);
       
@@ -193,13 +193,12 @@ export const TierQuestionFlow = ({
       
       setCurrentTierIndex(currentTierIndex + 1);
       setCurrentQuestion(null);
-      setCurrentTierTeams([]); // Reset to recalculate for next tier
+      setCurrentTierTeams([]);
       setIsTiebreaker(false);
     }
   };
 
   const handleTiebreaker = () => {
-    // Get a new question for tiebreaker
     const question = getRandomQuestion(usedQuestionIds);
     if (question) {
       setUsedQuestionIds(prev => [...prev, question.id]);
@@ -217,6 +216,14 @@ export const TierQuestionFlow = ({
       <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400 inline-block" />
     ));
   };
+
+  if (!configLoaded) {
+    return (
+      <div className="min-h-screen bg-gaming-bg flex items-center justify-center text-foreground">
+        טוען הגדרות...
+      </div>
+    );
+  }
 
   // Summary view after all tiers complete
   if (showSummary) {
@@ -294,7 +301,7 @@ export const TierQuestionFlow = ({
 
   // Current tier question phase
   const currentTier = tierConfig[currentTierIndex];
-  // Use stored currentTierTeams instead of recalculating
+  if (!currentTier) return null;
 
   return (
     <div className="min-h-screen bg-gaming-bg p-4" dir="rtl">
