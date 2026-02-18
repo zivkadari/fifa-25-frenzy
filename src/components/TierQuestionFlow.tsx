@@ -123,6 +123,15 @@ export const TierQuestionFlow = ({
     }
   }, [currentTierIndex, currentQuestion, currentTierTeams.length, configLoaded, tierConfig.length]);
 
+  // Replace current question with a new unused one
+  const handleReplaceQuestion = () => {
+    const question = getRandomQuestion(usedQuestionIds);
+    if (question) {
+      setUsedQuestionIds(prev => [...prev, question.id]);
+      setCurrentQuestion(question);
+    }
+  };
+
   const handleTierComplete = (result: {
     winnerPairId: string;
     chosenClubId: string;
@@ -344,6 +353,7 @@ export const TierQuestionFlow = ({
             pairs={pairs}
             onComplete={handleTierComplete}
             onTiebreaker={handleTiebreaker}
+            onReplaceQuestion={handleReplaceQuestion}
             isTiebreaker={isTiebreaker}
           />
         )}
