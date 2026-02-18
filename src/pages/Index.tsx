@@ -237,6 +237,9 @@ useEffect(() => {
   };
 
  const handleSaveToHistory = async (evening: Evening) => {
+     // Do not save empty tournaments (no completed matches)
+     if (!TournamentEngine.hasCompletedGames(evening)) return;
+
      // Ensure rankings are saved (TournamentHistory relies on `evening.rankings`)
      const eveningToSave: Evening = evening.rankings
        ? evening

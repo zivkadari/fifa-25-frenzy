@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Star, Trophy, AlertCircle } from "lucide-react";
+import { Star, Trophy, AlertCircle, RefreshCw } from "lucide-react";
 import { Club, Pair } from "@/types/tournament";
 import { TriviaQuestion } from "@/data/triviaQuestions";
 
@@ -24,6 +24,7 @@ interface TierQuestionPhaseProps {
     pair2Guess: number;
   }) => void;
   onTiebreaker: () => void; // Request another question for tiebreaker
+  onReplaceQuestion?: () => void; // Replace current question with a new one
   isTiebreaker?: boolean;
 }
 
@@ -36,6 +37,7 @@ export const TierQuestionPhase = ({
   pairs,
   onComplete,
   onTiebreaker,
+  onReplaceQuestion,
   isTiebreaker = false,
 }: TierQuestionPhaseProps) => {
   const [phase, setPhase] = useState<PhaseState>('guessing');
@@ -199,6 +201,16 @@ export const TierQuestionPhase = ({
           >
             גלה תשובה
           </Button>
+          {onReplaceQuestion && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={onReplaceQuestion}
+            >
+              <RefreshCw className="h-4 w-4 ml-2" />
+              החלף שאלה
+            </Button>
+          )}
         </div>
       )}
 
