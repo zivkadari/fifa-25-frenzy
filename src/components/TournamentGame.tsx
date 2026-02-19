@@ -146,6 +146,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Initialize first round (wait for overrides to load from database)
   useEffect(() => {
     if (!overridesLoaded) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[DEV] TournamentGame init', {
+        eveningId: currentEvening.id,
+        roundsCount: currentEvening.rounds.length,
+        rounds: currentEvening.rounds.map((r, i) => ({
+          index: i,
+          completed: r.completed,
+          matchCount: r.matches.length,
+          completedMatches: r.matches.filter(m => m.completed).length,
+          pairScores: r.pairScores,
+          hasTeamPools: !!(r.teamPools && r.teamPools[0]?.length),
+        })),
+      });
+    }
+
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
@@ -364,13 +380,24 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
         }
       } else {
-        // Filter original pools to remove clubs already ACTUALLY PLAYED this evening
-        // usedClubIdsThisRound tracks clubs selected in THIS round's matches (to prevent duplicates within the round)
+        // Only filter by clubs used THIS round (the original pool was generated
+        // with cross-evening exclusions already applied; recycled clubs must remain).
         const filteredPools: [Club[], Club[]] = [
-          originalTeamPools[0].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id)),
-          originalTeamPools[1].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id))
+          originalTeamPools[0].filter(club => !usedClubIdsThisRound.has(club.id)),
+          originalTeamPools[1].filter(club => !usedClubIdsThisRound.has(club.id))
         ];
         setTeamPools(filteredPools);
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[DEV] createNextMatch pool filter', {
+            roundIndex,
+            pair0_original: originalTeamPools[0].length,
+            pair0_remaining: filteredPools[0].length,
+            pair1_original: originalTeamPools[1].length,
+            pair1_remaining: filteredPools[1].length,
+            usedThisRound: Array.from(usedClubIdsThisRound),
+          });
+        }
       }
     }
     
@@ -382,6 +409,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const idx = targetIndex ?? currentRound;
     const round = currentEvening.rounds[idx];
     if (!round) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[DEV] loadCurrentRound', {
+        roundIndex: idx,
+        matchCount: round.matches.length,
+        completedMatches: round.matches.filter(m => m.completed).length,
+        pairScores: round.pairScores,
+        hasTeamPools: !!(round.teamPools && round.teamPools[0]?.length),
+        teamPoolSizes: round.teamPools ? [round.teamPools[0]?.length, round.teamPools[1]?.length] : null,
+      });
+    }
 
     // Restore pairs for this round
     const allPairs = pairSchedule;
@@ -422,12 +460,33 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setOriginalTeamPools([basePools[0], basePools[1]]);
       // Restore recycled club IDs from round
       setRecycledClubIds(new Set(round.recycledClubIds ?? []));
-      // Filter for already-used clubs in the evening and this round
+      // Only filter by clubs used THIS round (the pool was already generated with
+      // cross-evening exclusions; re-filtering by counts removes recycled clubs).
       const filtered: [Club[], Club[]] = [
-        basePools[0].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
-        basePools[1].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
+        basePools[0].filter(c => !usedThisRound.has(c.id)),
+        basePools[1].filter(c => !usedThisRound.has(c.id)),
       ];
       setTeamPools(filtered);
+
+      // DEV invariant check: verify pool sizes
+      if (process.env.NODE_ENV !== 'production') {
+        const maxMatches = currentEvening.winsToComplete * 2 - 1;
+        console.log('[DEV] loadCurrentRound pool check', {
+          roundIndex: idx,
+          pair0_assigned: basePools[0].length,
+          pair1_assigned: basePools[1].length,
+          pair0_remaining: filtered[0].length,
+          pair1_remaining: filtered[1].length,
+          usedThisRound: Array.from(usedThisRound),
+          expectedPoolSize: maxMatches,
+        });
+        if (basePools[0].length < maxMatches || basePools[1].length < maxMatches) {
+          console.warn('[DEV] Pool size smaller than expected maxMatches!', {
+            pair0Missing: maxMatches - basePools[0].length,
+            pair1Missing: maxMatches - basePools[1].length,
+          });
+        }
+      }
     } else {
       const teamSelector = new TeamSelector(clubsWithOverrides);
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
