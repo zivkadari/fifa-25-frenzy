@@ -146,6 +146,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   // Initialize first round (wait for overrides to load from database)
   useEffect(() => {
     if (!overridesLoaded) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[DEV] TournamentGame init', {
+        eveningId: currentEvening.id,
+        roundsCount: currentEvening.rounds.length,
+        rounds: currentEvening.rounds.map((r, i) => ({
+          index: i,
+          completed: r.completed,
+          matchCount: r.matches.length,
+          completedMatches: r.matches.filter(m => m.completed).length,
+          pairScores: r.pairScores,
+          hasTeamPools: !!(r.teamPools && r.teamPools[0]?.length),
+        })),
+      });
+    }
+
     if (currentEvening.rounds.length === 0) {
       startNextRound(0);
     } else {
