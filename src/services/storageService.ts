@@ -57,7 +57,29 @@ export class StorageService {
     try {
       const stored = localStorage.getItem(ACTIVE_EVENING_KEY);
       if (!stored) return null;
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored) as Evening;
+      // Validate essential fields to avoid restoring corrupted/empty state
+      if (!parsed || !parsed.id || !Array.isArray(parsed.players) || !Array.isArray(parsed.rounds)) {
+        console.warn('[StorageService] Invalid active evening data, clearing', parsed);
+        localStorage.removeItem(ACTIVE_EVENING_KEY);
+        return null;
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEV] loadActiveEvening restored', {
+          id: parsed.id,
+          roundsCount: parsed.rounds.length,
+          completed: parsed.completed,
+          hasSchedule: !!parsed.pairSchedule,
+          roundDetails: parsed.rounds.map((r, i) => ({
+            index: i,
+            matches: r.matches?.length ?? 0,
+            completed: r.completed,
+            pairScores: r.pairScores,
+            hasTeamPools: !!(r.teamPools && r.teamPools[0]?.length),
+          })),
+        });
+      }
+      return parsed;
     } catch (error) {
       console.error('Failed to load active evening:', error);
       return null;
