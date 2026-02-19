@@ -422,12 +422,33 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setOriginalTeamPools([basePools[0], basePools[1]]);
       // Restore recycled club IDs from round
       setRecycledClubIds(new Set(round.recycledClubIds ?? []));
-      // Filter for already-used clubs in the evening and this round
+      // Only filter by clubs used THIS round (the pool was already generated with
+      // cross-evening exclusions; re-filtering by counts removes recycled clubs).
       const filtered: [Club[], Club[]] = [
-        basePools[0].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
-        basePools[1].filter(c => (counts[c.id] ?? 0) < 1 && !usedThisRound.has(c.id)),
+        basePools[0].filter(c => !usedThisRound.has(c.id)),
+        basePools[1].filter(c => !usedThisRound.has(c.id)),
       ];
       setTeamPools(filtered);
+
+      // DEV invariant check: verify pool sizes
+      if (process.env.NODE_ENV !== 'production') {
+        const maxMatches = currentEvening.winsToComplete * 2 - 1;
+        console.log('[DEV] loadCurrentRound pool check', {
+          roundIndex: idx,
+          pair0_assigned: basePools[0].length,
+          pair1_assigned: basePools[1].length,
+          pair0_remaining: filtered[0].length,
+          pair1_remaining: filtered[1].length,
+          usedThisRound: Array.from(usedThisRound),
+          expectedPoolSize: maxMatches,
+        });
+        if (basePools[0].length < maxMatches || basePools[1].length < maxMatches) {
+          console.warn('[DEV] Pool size smaller than expected maxMatches!', {
+            pair0Missing: maxMatches - basePools[0].length,
+            pair1Missing: maxMatches - basePools[1].length,
+          });
+        }
+      }
     } else {
       const teamSelector = new TeamSelector(clubsWithOverrides);
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
