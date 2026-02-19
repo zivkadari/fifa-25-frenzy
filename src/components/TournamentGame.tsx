@@ -364,13 +364,24 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
         }
       } else {
-        // Filter original pools to remove clubs already ACTUALLY PLAYED this evening
-        // usedClubIdsThisRound tracks clubs selected in THIS round's matches (to prevent duplicates within the round)
+        // Only filter by clubs used THIS round (the original pool was generated
+        // with cross-evening exclusions already applied; recycled clubs must remain).
         const filteredPools: [Club[], Club[]] = [
-          originalTeamPools[0].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id)),
-          originalTeamPools[1].filter(club => (usedClubCounts[club.id] ?? 0) < 1 && !usedClubIdsThisRound.has(club.id))
+          originalTeamPools[0].filter(club => !usedClubIdsThisRound.has(club.id)),
+          originalTeamPools[1].filter(club => !usedClubIdsThisRound.has(club.id))
         ];
         setTeamPools(filteredPools);
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[DEV] createNextMatch pool filter', {
+            roundIndex,
+            pair0_original: originalTeamPools[0].length,
+            pair0_remaining: filteredPools[0].length,
+            pair1_original: originalTeamPools[1].length,
+            pair1_remaining: filteredPools[1].length,
+            usedThisRound: Array.from(usedClubIdsThisRound),
+          });
+        }
       }
     }
     
