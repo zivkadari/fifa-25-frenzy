@@ -410,6 +410,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const round = currentEvening.rounds[idx];
     if (!round) return;
 
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[DEV] loadCurrentRound', {
+        roundIndex: idx,
+        matchCount: round.matches.length,
+        completedMatches: round.matches.filter(m => m.completed).length,
+        pairScores: round.pairScores,
+        hasTeamPools: !!(round.teamPools && round.teamPools[0]?.length),
+        teamPoolSizes: round.teamPools ? [round.teamPools[0]?.length, round.teamPools[1]?.length] : null,
+      });
+    }
+
     // Restore pairs for this round
     const allPairs = pairSchedule;
     const roundPairs = allPairs[idx];
