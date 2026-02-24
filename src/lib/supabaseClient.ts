@@ -21,7 +21,7 @@ let client: SupabaseClient | null = null;
 const { url, anonKey } = getConfig();
 if (url && anonKey) {
   client = createClient(url, anonKey, {
-    auth: { persistSession: true, autoRefreshToken: true },
+    auth: { persistSession: true, autoRefreshToken: true, flowType: 'implicit' },
     realtime: { params: { eventsPerSecond: 5 } },
   });
 }

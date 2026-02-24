@@ -13,5 +13,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    storageKey: `sb-${SUPABASE_URL.split('//')[1]?.split('.')[0]}-auth-token`,
+    flowType: 'implicit',
+  },
 });
