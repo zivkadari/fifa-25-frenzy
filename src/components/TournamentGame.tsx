@@ -1146,8 +1146,52 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </div>
             )}
 
-            {/* Accordion Team Selection */}
-            {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 && (
+            {/* Pre-compute filtered pools to detect deadlock */}
+            {(() => {
+              if (!teamPools[0] || !teamPools[1] || currentRoundData?.isDeciderMatch) return null;
+              const computeFiltered = (pool: Club[], pairIdx: number) => {
+                const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
+                return pool.filter(c => (usedClubCounts[c.id] ?? 0) < 1 && !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+              };
+              const filtered0 = computeFiltered(teamPools[0], 0);
+              const filtered1 = computeFiltered(teamPools[1], 1);
+              const bothEmpty = filtered0.length === 0 && filtered1.length === 0;
+              const roundNotComplete = currentRoundData && !TournamentEngine.isRoundComplete(currentRoundData, currentEvening.winsToComplete);
+
+              // Deadlock: pools exhausted (filtered) but round not done
+              if (bothEmpty && roundNotComplete) {
+                return (
+                  <div className="text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">הקבוצות נגמרו, אבל אף זוג לא הגיע ל-{currentEvening.winsToComplete} ניצחונות</p>
+                    <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
+                    <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">הגרל קבוצות מאוזנות</Button>
+                    <Button variant="outline" onClick={() => {
+                      const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                      const candidates = clubsWithOverrides
+                        .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
+                        .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
+                      const half = Math.ceil(candidates.length / 2);
+                      setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
+                    }} className="w-full">בחר ידנית</Button>
+                  </div>
+                );
+              }
+
+              // Normal: show accordion
+              if (teamPools[0].length > 0 && teamPools[1].length > 0) return null; // handled below
+              return null;
+            })()}
+            {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length > 0 && teamPools[1].length > 0 && (() => {
+              // Re-check: if both filtered are empty, the deadlock block above handles it
+              const computeFiltered2 = (pool: Club[], pairIdx: number) => {
+                const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
+                return pool.filter(c => (usedClubCounts[c.id] ?? 0) < 1 && !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+              };
+              const f0 = computeFiltered2(teamPools[0], 0);
+              const f1 = computeFiltered2(teamPools[1], 1);
+              if (f0.length === 0 && f1.length === 0 && currentRoundData && !TournamentEngine.isRoundComplete(currentRoundData, currentEvening.winsToComplete)) return false;
+              return true;
+            })() && (
               <Accordion type="single" collapsible value={openAccordion} onValueChange={setOpenAccordion} className="space-y-2">
                 {teamPools.map((pool, pairIndex) => {
                   const pairNames = currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ');
@@ -1242,22 +1286,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </Accordion>
             )}
 
-            {/* When pools exhausted but round not complete - offer balance draw */}
-            {!currentRoundData?.isDeciderMatch && teamPools[0] && teamPools[1] && teamPools[0].length === 0 && teamPools[1].length === 0 && !TournamentEngine.isRoundComplete(currentRoundData!, currentEvening.winsToComplete) && (
-              <div className="text-center space-y-3">
-                <p className="text-sm text-muted-foreground">הקבוצות נגמרו, אבל אף זוג לא הגיע ל-{currentEvening.winsToComplete} ניצחונות</p>
-                <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
-                <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">הגרל קבוצות מאוזנות</Button>
-                <Button variant="outline" onClick={() => {
-                  const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
-                  const candidates = clubsWithOverrides
-                    .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
-                    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
-                  const half = Math.ceil(candidates.length / 2);
-                  setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
-                }} className="w-full">בחר ידנית</Button>
-              </div>
-            )}
+            {/* Old deadlock block removed - handled above in pre-compute */}
 
             {/* Loading State */}
             {!currentRoundData?.isDeciderMatch && (!teamPools[0] || !teamPools[1]) && (
