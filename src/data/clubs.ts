@@ -84,6 +84,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'reims', name: 'Stade de Reims', stars: 4, league: 'Ligue 1' },
   { id: 'lens', name: 'Lens', stars: 4, league: 'Ligue 1' },
   { id: 'nice', name: 'OGC Nice', stars: 4, league: 'Ligue 1' },
+  { id: 'strasbourg', name: 'RC Strasbourg', stars: 4, league: 'Ligue 1' },
 
   // 🌍 Rest of World
   { id: 'sporting-cp', name: 'Sporting CP', stars: 4.5, league: 'Portugal' },
@@ -100,9 +101,12 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'al-ahli', name: 'Al Ahli', stars: 4, league: 'Saudi Arabia' },
   { id: 'al-nassr', name: 'Al Nassr', stars: 4, league: 'Saudi Arabia' },
   { id: 'al-hilal', name: 'Al Hilal', stars: 4, league: 'Saudi Arabia' },
+  { id: 'al-qadsiah', name: 'Al Qadsiah', stars: 4, league: 'Saudi Arabia' },
   { id: 'boca-juniors', name: 'Boca Juniors', stars: 4, league: 'Argentina' },
   { id: 'slavia-praha', name: 'Slavia Praha', stars: 4, league: 'Czech Republic' },
   { id: 'olympiacos', name: 'Olympiacos', stars: 4, league: 'Greece' },
+  { id: 'aek-athens', name: 'AEK Athens', stars: 4, league: 'Greece' },
+  { id: 'celtic', name: 'Celtic', stars: 4, league: 'Scotland' },
 
   // 🗺️ International (National Teams)
   { id: 'france', name: 'France', stars: 5, league: 'International', isNational: true },

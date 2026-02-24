@@ -43,6 +43,7 @@ const LEAGUE_ORDER = [
   "Argentina",
   "Czech Republic",
   "Greece",
+  "Scotland",
   "International",
   "Prime",
 ];
@@ -60,6 +61,7 @@ const LEAGUE_FLAGS: Record<string, string> = {
   "Argentina": "🇦🇷",
   "Czech Republic": "🇨🇿",
   "Greece": "🇬🇷",
+  "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
   "International": "🌍",
   "Prime": "🏆",
 };
