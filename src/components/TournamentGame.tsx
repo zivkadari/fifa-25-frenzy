@@ -1126,8 +1126,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                     .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
                   // Set pools for manual selection from decider candidates (split equally)
-                  const half = Math.ceil(candidates.length / 2);
-                  setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
+                   setTeamPools([candidates, candidates]);
                   // Switch off decider flag temporarily to show accordion
                   const round = currentEvening.rounds[currentRound];
                   if (round) {
@@ -1170,8 +1169,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                       const candidates = clubsWithOverrides
                         .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                         .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
-                      const half = Math.ceil(candidates.length / 2);
-                      setTeamPools([candidates.slice(0, half), candidates.slice(half)]);
+                       setTeamPools([candidates, candidates]);
                     }} className="w-full">בחר ידנית</Button>
                   </div>
                 );
