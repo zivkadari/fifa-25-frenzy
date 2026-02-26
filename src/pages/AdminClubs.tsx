@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ADMIN_EMAIL = "zivkad12@gmail.com";
+
 
 const STAR_OPTIONS = [
   { value: "0.5", label: "0.5" },
@@ -84,7 +84,13 @@ export default function AdminClubs() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.email !== ADMIN_EMAIL) {
+      if (!user) {
+        navigate("/");
+        return;
+      }
+      // Use server-side admin check via RPC
+      const { data: isAdmin } = await supabase.rpc('is_clubs_admin', { user_id: user.id });
+      if (!isAdmin) {
         navigate("/");
         return;
       }

@@ -259,6 +259,16 @@ export class RemoteStorageService {
     if (!supabase) return null;
     const cleaned = code.trim().toUpperCase();
 
+    // Validate code length and format before sending to server
+    if (cleaned.length === 0 || cleaned.length > 20) {
+      console.error('Invalid code length');
+      return null;
+    }
+    if (!/^[A-Z0-9-]+$/.test(cleaned)) {
+      console.error('Invalid code format');
+      return null;
+    }
+
     // Use RPC function which handles membership insertion and RLS properly
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('join_evening_by_code', { _code: cleaned });
