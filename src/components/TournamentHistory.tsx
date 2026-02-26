@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users, Link2 } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users, Link2, Plus } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { EveningMatchDetails } from "@/components/EveningMatchDetails";
 import { LinkToTeamDialog } from "@/components/LinkToTeamDialog";
+import { ManualTournamentEntry } from "@/components/ManualTournamentEntry";
 
 export type EveningWithTeam = Evening & { teamId?: string; teamName?: string };
 
@@ -31,6 +32,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
   const [teamEvenings, setTeamEvenings] = useState<EveningWithTeam[]>([]);
   
   const [loading, setLoading] = useState(false);
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -175,12 +177,15 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
            <Button variant="ghost" size="icon" onClick={onBack}>
               <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground">Tournament History</h1>
             <p className="text-muted-foreground text-sm">
               {activeEvenings.length} טורנירים מוצגים
             </p>
           </div>
+          <Button variant="neon" size="sm" onClick={() => setManualEntryOpen(true)}>
+            <Plus className="h-4 w-4" /> הוסף
+          </Button>
           </div>
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-2">
@@ -401,6 +406,12 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
             Keep playing to build your tournament legacy! 🏆
           </p>
         </div>
+
+        <ManualTournamentEntry
+          open={manualEntryOpen}
+          onOpenChange={setManualEntryOpen}
+          onSaved={() => onRefresh?.()}
+        />
       </div>
     </div>
   );
