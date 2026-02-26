@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users, Link2 } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Medal, Award, Trash2, Target, Users, Link2, Plus } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Evening } from "@/types/tournament";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { EveningMatchDetails } from "@/components/EveningMatchDetails";
 import { LinkToTeamDialog } from "@/components/LinkToTeamDialog";
+import { ManualTournamentEntry } from "@/components/ManualTournamentEntry";
 
 export type EveningWithTeam = Evening & { teamId?: string; teamName?: string };
 
