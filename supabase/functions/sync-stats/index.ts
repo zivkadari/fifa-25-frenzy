@@ -196,14 +196,51 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Authenticate the caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Use service role for data operations
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
     const { evening_id, backfill_all } = body;
 
-    console.log("sync-stats called with:", { evening_id, backfill_all });
+    console.log("sync-stats called with:", { evening_id, backfill_all, userId });
+
+    // Restrict backfill_all to admin users only
+    if (backfill_all) {
+      const { data: isAdmin } = await supabase.rpc("is_clubs_admin", { user_id: userId });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Admin access required for backfill" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     let evenings: { id: string; data: Evening; team_id: string | null }[] = [];
 
