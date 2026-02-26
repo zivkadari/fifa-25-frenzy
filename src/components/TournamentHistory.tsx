@@ -406,6 +406,12 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
             Keep playing to build your tournament legacy! 🏆
           </p>
         </div>
+
+        <ManualTournamentEntry
+          open={manualEntryOpen}
+          onOpenChange={setManualEntryOpen}
+          onSaved={() => onRefresh?.()}
+        />
       </div>
     </div>
   );
