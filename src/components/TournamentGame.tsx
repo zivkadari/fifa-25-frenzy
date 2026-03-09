@@ -1148,9 +1148,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
             {/* Pre-compute filtered pools to detect deadlock */}
             {(() => {
               if (!teamPools[0] || !teamPools[1] || currentRoundData?.isDeciderMatch) return null;
+              // Filter only by round usage + other pair's current selection.
+              // Do NOT filter by usedClubCounts — recycled clubs are legitimately in the pool.
               const computeFiltered = (pool: Club[], pairIdx: number) => {
                 const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
-                return pool.filter(c => (usedClubCounts[c.id] ?? 0) < 1 && !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+                return pool.filter(c => !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
               };
               const filtered0 = computeFiltered(teamPools[0], 0);
               const filtered1 = computeFiltered(teamPools[1], 1);
