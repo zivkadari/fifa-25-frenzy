@@ -1197,12 +1197,12 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   const pairNames = currentMatch.pairs[pairIndex].players.map(p => p.name).join(' + ');
                   const selectedClub = selectedClubs[pairIndex];
                   // Filter out clubs that:
-                  // 1. Were ACTUALLY PLAYED in the evening (usedClubCounts >= 1)
-                  // 2. Are already selected in THIS round's current or previous matches (usedClubIdsThisRound)
-                  // 3. Are currently selected by the OTHER pair in this match
+                  // 1. Are already used in THIS round (usedClubIdsThisRound)
+                  // 2. Are currently selected by the OTHER pair in this match
+                  // Note: Do NOT filter by usedClubCounts — recycled clubs from previous rounds
+                  // are legitimately part of this round's pool and must remain selectable.
                   const otherPairSelectedId = selectedClubs[pairIndex === 0 ? 1 : 0]?.id || '';
                   const filtered = pool.filter((club) =>
-                    (usedClubCounts[club.id] ?? 0) < 1 &&
                     !usedClubIdsThisRound.has(club.id) &&
                     club.id !== otherPairSelectedId
                   );
