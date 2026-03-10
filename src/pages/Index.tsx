@@ -129,8 +129,31 @@ useEffect(() => {
   // Realtime sync: subscribe to current evening when in game state
   useEffect(() => {
     if (appState !== 'game' || !currentEvening) return;
+
+    // Helper: count total completed matches across all rounds as a progress metric
+    const countCompletedMatches = (e: Evening) =>
+      e.rounds.reduce((sum, r) => sum + r.matches.filter(m => m.completed).length, 0);
+
     const unsubscribe = RemoteStorageService.subscribeToEvening(currentEvening.id, (remoteEvening) => {
-      setCurrentEvening(remoteEvening);
+      const local = currentEveningRef.current;
+      if (!local) {
+        setCurrentEvening(remoteEvening);
+        return;
+      }
+
+      const localProgress = countCompletedMatches(local);
+      const remoteProgress = countCompletedMatches(remoteEvening);
+
+      // Only accept remote state if it has equal or more progress than local.
+      // This prevents stale server data (from before an internet outage) from
+      // overwriting newer local progress when the connection is restored.
+      if (remoteProgress >= localProgress) {
+        setCurrentEvening(remoteEvening);
+      } else {
+        console.warn('[Realtime] Ignored stale remote state', { localProgress, remoteProgress });
+        // Re-push local state to server so it catches up
+        RemoteStorageService.upsertEveningLive(local).catch(() => {});
+      }
     });
     return () => unsubscribe && unsubscribe();
   }, [appState, currentEvening?.id]);
