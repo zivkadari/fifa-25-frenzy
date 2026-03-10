@@ -1,27 +1,47 @@
 
 
-## הוספת 4 קבוצות חדשות
+## תיקון: טורניר מתאפס כשהאינטרנט מתנתק
 
-### קבוצות להוספה
+### שורש הבעיה
 
-| קבוצה | ליגה | כוכבים |
-|--------|------|--------|
-| Al Qadsiah | Saudi Arabia | 4 |
-| RC Strasbourg | Ligue 1 | 4 |
-| AEK Athens | Greece | 4 |
-| Celtic | Scotland (ליגה חדשה) | 4 |
+ב-`Index.tsx` שורה 124-130, יש subscription ל-Supabase Realtime שמאזין לשינויים ב-evening הנוכחי. כשהאינטרנט מתנתק ואז מתחבר מחדש:
 
-### פרטים טכניים
+1. בזמן הניתוק, כל עדכוני ה-`upsertEveningLive` נכשלים בשקט → ה-state ב-Supabase נשאר ישן
+2. כשהאינטרנט חוזר, Supabase Realtime שולח את ה-state הישן מהשרת
+3. `setCurrentEvening(remoteEvening)` **דורס את ה-state המקומי החדש** עם data ישן מהשרת
+4. זה מפעיל את ה-`useEffect` ב-TournamentGame שקורא ל-`onUpdateEvening` עם ה-data הישן
+5. `persistActiveEveningNow` שומר את ה-data הישן ל-localStorage, ודורס גם את הגיבוי המקומי
 
-**קובץ:** `src/data/clubs.ts`
+### התיקון
 
-1. **Saudi Arabia** — הוספת `{ id: 'al-qadsiah', name: 'Al Qadsiah', stars: 4, league: 'Saudi Arabia' }` אחרי Al Hilal
-2. **Ligue 1** — הוספת `{ id: 'strasbourg', name: 'RC Strasbourg', stars: 4, league: 'Ligue 1' }` אחרי Nice
-3. **Greece** — הוספת `{ id: 'aek-athens', name: 'AEK Athens', stars: 4, league: 'Greece' }` אחרי Olympiacos
-4. **Scotland** — ליגה חדשה. הוספת `{ id: 'celtic', name: 'Celtic', stars: 4, league: 'Scotland' }` באזור Rest of World
+**קובץ: `src/pages/Index.tsx`** (שורות 124-130)
 
-**קובץ:** `src/pages/AdminClubs.tsx`
+בתוך ה-callback של `subscribeToEvening`, לפני שדורסים את ה-state, לבדוק אם ה-data מהשרת באמת **חדש יותר** מה-state המקומי. ההשוואה תהיה לפי מספר המשחקים שהושלמו (completed matches) ברחבי כל הסיבובים:
 
-5. הוספת `"Scotland"` ל-`LEAGUE_ORDER` (אחרי Greece)
-6. הוספת `"Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿"` ל-`LEAGUE_FLAGS`
+```typescript
+const unsubscribe = RemoteStorageService.subscribeToEvening(currentEvening.id, (remoteEvening) => {
+  // Count completed matches to determine which state has more progress
+  const countCompleted = (e: Evening) => 
+    e.rounds.reduce((sum, r) => sum + r.matches.filter(m => m.completed).length, 0);
+  
+  const localProgress = countCompleted(currentEvening);
+  const remoteProgress = countCompleted(remoteEvening);
+  
+  // Only accept remote state if it has equal or more progress
+  if (remoteProgress >= localProgress) {
+    setCurrentEvening(remoteEvening);
+  }
+});
+```
+
+הבעיה: `currentEvening` בתוך ה-callback הוא stale (closure ישן). צריך להשתמש ב-`ref` כדי לגשת ל-state העדכני:
+
+- להוסיף `useRef` שמחזיק את `currentEvening` העדכני
+- בתוך ה-callback, להשוות מול ה-ref ולא מול ה-closure
+
+**שינויים נדרשים:**
+
+1. **הוספת ref** ב-Index.tsx: `const currentEveningRef = useRef(currentEvening)` + `useEffect` שמעדכן אותו
+2. **עדכון ה-realtime callback** להשוות progress לפני דריסה
+3. **הוספת הגנה נוספת** ב-`handleUpdateEvening`: כשה-evening שמגיע מ-realtime מפעיל את `onUpdateEvening`, לוודא שלא דורסים state חדש יותר ב-localStorage
 
