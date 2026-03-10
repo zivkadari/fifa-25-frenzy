@@ -61,6 +61,12 @@ const Index = () => {
     currentEvening,
   });
 
+  // Ref to access latest currentEvening inside realtime callbacks (avoids stale closures)
+  const currentEveningRef = useRef(currentEvening);
+  useEffect(() => {
+    currentEveningRef.current = currentEvening;
+  }, [currentEvening]);
+
 useEffect(() => {
     let mounted = true;
 
