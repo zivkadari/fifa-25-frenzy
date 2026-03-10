@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { TournamentHome } from "@/components/TournamentHome";
 import { EveningSetup } from "@/components/EveningSetup";
