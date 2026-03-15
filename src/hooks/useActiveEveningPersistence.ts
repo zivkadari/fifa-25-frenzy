@@ -11,14 +11,19 @@ type Params = {
 export function useActiveEveningPersistence({ currentEvening, debounceMs = 600 }: Params) {
   const persistTimer = useRef<number | null>(null);
 
+  // Always keep the latest evening in a ref so event handlers never use stale data
+  const latestEveningRef = useRef<Evening | null>(currentEvening);
+  useEffect(() => {
+    latestEveningRef.current = currentEvening;
+  }, [currentEvening]);
+
   const isInProgress = useMemo(() => {
     return !!currentEvening && !currentEvening.completed;
   }, [currentEvening]);
 
-  const persistNow = (evening?: Evening | null) => {
-    const e = evening ?? currentEvening;
+  const persistNow = () => {
+    const e = latestEveningRef.current;
     if (!e) return;
-    // Only persist in-progress tournaments
     if (e.completed) {
       StorageService.clearActiveEvening();
       return;
@@ -34,7 +39,6 @@ export function useActiveEveningPersistence({ currentEvening, debounceMs = 600 }
   useEffect(() => {
     if (!currentEvening) return;
 
-    // Clear if completed so we don't auto-resume finished tournaments
     if (currentEvening.completed) {
       StorageService.clearActiveEvening();
       return;
@@ -44,7 +48,11 @@ export function useActiveEveningPersistence({ currentEvening, debounceMs = 600 }
       window.clearTimeout(persistTimer.current);
     }
     persistTimer.current = window.setTimeout(() => {
-      StorageService.saveActiveEvening(currentEvening);
+      // Use ref to persist the absolute latest state
+      const latest = latestEveningRef.current;
+      if (latest && !latest.completed) {
+        StorageService.saveActiveEvening(latest);
+      }
     }, debounceMs);
 
     return () => {
@@ -68,6 +76,7 @@ export function useActiveEveningPersistence({ currentEvening, debounceMs = 600 }
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
     };
+    // persistNow is stable (reads from ref), so no extra deps needed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInProgress]);
 
