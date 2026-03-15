@@ -103,6 +103,11 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     return override?.stars ?? club.stars;
   };
 
+  // Sync local state when the parent evening prop changes (e.g. after resume/hydration)
+  useEffect(() => {
+    setCurrentEvening(evening);
+  }, [evening]);
+
   // Persist evening state to avoid losing teams when navigating
   useEffect(() => {
     const saveCurrentState = () => {
