@@ -21,9 +21,11 @@ export function useActiveEveningPersistence({ currentEvening, debounceMs = 600 }
     return !!currentEvening && !currentEvening.completed;
   }, [currentEvening]);
 
-  const persistNow = () => {
-    const e = latestEveningRef.current;
+  const persistNow = (override?: Evening | null) => {
+    const e = override ?? latestEveningRef.current;
     if (!e) return;
+    // Also update the ref so subsequent calls (e.g. pagehide) use this version
+    if (override) latestEveningRef.current = override;
     if (e.completed) {
       StorageService.clearActiveEvening();
       return;
