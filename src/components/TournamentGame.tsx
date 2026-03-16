@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { ClubSwapDialog } from "@/components/ClubSwapDialog";
 import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
+import { VoiceResultEntry } from "@/components/VoiceResultEntry";
+import { VoiceResultCandidate } from "@/lib/voiceResultParser";
 
 interface TournamentGameProps {
   evening: Evening;
@@ -985,6 +987,124 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     }
   };
 
+  /**
+   * Apply voice-recognized results through the same manual entry logic.
+   * Each candidate is applied sequentially as if the user selected clubs and submitted a score.
+   */
+  const applyVoiceResults = useCallback((results: VoiceResultCandidate[]) => {
+    if (!currentMatch) return;
+    const roundData = currentEvening.rounds[currentRound];
+    if (!roundData) return;
+
+    let latestEvening = currentEvening;
+    let latestRound = currentRoundData;
+    let latestConsumed = [...consumedClubIdsThisRound];
+    let latestUsedCounts = { ...usedClubCounts };
+
+    for (const result of results) {
+      if (!result.pairAClub || !result.pairBClub || result.scoreA === null || result.scoreB === null) continue;
+
+      const score1 = result.scoreA;
+      const score2 = result.scoreB;
+
+      let winner = '';
+      if (score1 > score2) winner = result.pairAId || currentMatch.pairs[0].id;
+      else if (score2 > score1) winner = result.pairBId || currentMatch.pairs[1].id;
+
+      // Find the in-progress match in the latest round state
+      const roundIdx = currentRound;
+      const round = latestEvening.rounds[roundIdx];
+      const inProgressIdx = round.matches.findIndex(m => !m.completed);
+      
+      if (inProgressIdx < 0) break; // No more in-progress matches
+
+      const matchToComplete: Match = {
+        ...round.matches[inProgressIdx],
+        clubs: [result.pairAClub, result.pairBClub],
+        score: [score1, score2],
+        winner,
+        completed: true,
+      };
+
+      const updatedMatches = [...round.matches];
+      updatedMatches[inProgressIdx] = matchToComplete;
+
+      const updatedPairScores = { ...round.pairScores };
+      if (winner) {
+        updatedPairScores[winner] = (updatedPairScores[winner] || 0) + 1;
+      }
+
+      const updatedRound = { ...round, matches: updatedMatches, pairScores: updatedPairScores };
+      latestEvening = {
+        ...latestEvening,
+        rounds: [
+          ...latestEvening.rounds.slice(0, roundIdx),
+          updatedRound,
+          ...latestEvening.rounds.slice(roundIdx + 1),
+        ],
+      };
+      latestRound = updatedRound;
+
+      // Track club consumption
+      latestUsedCounts[result.pairAClub.id] = (latestUsedCounts[result.pairAClub.id] ?? 0) + 1;
+      latestUsedCounts[result.pairBClub.id] = (latestUsedCounts[result.pairBClub.id] ?? 0) + 1;
+      latestConsumed.push(result.pairAClub.id, result.pairBClub.id);
+
+      // Check if round is complete after this result
+      if (TournamentEngine.isRoundComplete(updatedRound, currentEvening.winsToComplete)) {
+        break; // Don't add more matches if round is done
+      }
+
+      // Create next match for the next voice result
+      if (results.indexOf(result) < results.length - 1) {
+        const nextMatch = TournamentEngine.createNextMatch(updatedRound, currentRoundPairs);
+        const roundWithNext = { ...updatedRound, matches: [...updatedRound.matches, nextMatch] };
+        latestEvening = {
+          ...latestEvening,
+          rounds: [
+            ...latestEvening.rounds.slice(0, roundIdx),
+            roundWithNext,
+            ...latestEvening.rounds.slice(roundIdx + 1),
+          ],
+        };
+        latestRound = roundWithNext;
+      }
+    }
+
+    // Apply all state updates at once
+    setCurrentEvening(latestEvening);
+    onUpdateEvening(latestEvening);
+    setUsedClubCounts(latestUsedCounts);
+    setConsumedClubIdsThisRound(latestConsumed);
+    setTeamPools([
+      filterPoolByAllocations(originalTeamPools[0], latestConsumed),
+      filterPoolByAllocations(originalTeamPools[1], latestConsumed),
+    ]);
+
+    toast({
+      title: `${results.length} תוצאות הוחלו`,
+      description: 'התוצאות עודכנו בהצלחה מהקלטה קולית',
+    });
+
+    // Check round completion and proceed
+    if (TournamentEngine.isRoundComplete(latestRound, currentEvening.winsToComplete)) {
+      if (TournamentEngine.isRoundTied(latestRound, currentEvening.winsToComplete)) {
+        setTimeout(() => createNextMatch(latestEvening, currentRound), 1500);
+      } else {
+        const roundWinner = TournamentEngine.getRoundWinner(latestRound);
+        if (roundWinner) {
+          const winnerPair = currentRoundPairs.find(p => p.id === roundWinner);
+          if (winnerPair) {
+            setRoundWinnerMessage(`${winnerPair.players.map(p => p.name).join(' + ')} wins Round ${currentRound + 1}!`);
+            setShowRoundWinnerDialog(true);
+          }
+        }
+      }
+    } else {
+      setTimeout(() => createNextMatch(latestEvening, currentRound), 1500);
+    }
+  }, [currentMatch, currentEvening, currentRound, currentRoundPairs, consumedClubIdsThisRound, usedClubCounts, originalTeamPools, onUpdateEvening, toast]);
+
   const handleRoundWinnerConfirm = () => {
     setShowRoundWinnerDialog(false);
     handleRoundComplete();
@@ -1114,6 +1234,16 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               >
                 קוד: {shareCode}
               </Button>
+            )}
+            {/* Voice Result Entry - only during active rounds */}
+            {currentMatch && gamePhase === 'team-selection' && !currentRoundData?.completed && (
+              <VoiceResultEntry
+                currentPairs={currentRoundPairs}
+                availableClubs={[...originalTeamPools[0], ...originalTeamPools[1]]}
+                allClubs={clubsWithOverrides}
+                onApplyResults={applyVoiceResults}
+                disabled={!currentMatch || currentRoundData?.completed}
+              />
             )}
             <Button variant="ghost" size="icon" onClick={onGoHome} aria-label="Home">
               <Home className="h-5 w-5" />
