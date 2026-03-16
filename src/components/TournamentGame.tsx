@@ -1220,7 +1220,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
                     <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">הגרל קבוצות מאוזנות</Button>
                     <Button variant="outline" onClick={() => {
-                      const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                      const excludeIds = [...new Set([...consumedClubIdsThisRound])];
                       const candidates = clubsWithOverrides
                         .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                         .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
