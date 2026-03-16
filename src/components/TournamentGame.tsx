@@ -992,7 +992,9 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
    * Each candidate is applied sequentially as if the user selected clubs and submitted a score.
    */
   const applyVoiceResults = useCallback((results: VoiceResultCandidate[]) => {
-    if (!currentMatch || !currentRoundData) return;
+    if (!currentMatch) return;
+    const roundData = currentEvening.rounds[currentRound];
+    if (!roundData) return;
 
     let latestEvening = currentEvening;
     let latestRound = currentRoundData;
