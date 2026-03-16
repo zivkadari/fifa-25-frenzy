@@ -71,8 +71,41 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [usedClubCounts, setUsedClubCounts] = useState<Record<string, number>>({});
-  const [usedClubIdsThisRound, setUsedClubIdsThisRound] = useState<Set<string>>(new Set());
+  // Track consumed club allocations this round as an array (supports duplicate IDs for recycled clubs)
+  const [consumedClubIdsThisRound, setConsumedClubIdsThisRound] = useState<string[]>([]);
   const [recycledClubIds, setRecycledClubIds] = useState<Set<string>>(new Set()); // Track clubs that were recycled (reused because star rating exhausted)
+
+  /**
+   * Allocation-aware pool filter: removes only consumed allocation instances, not all occurrences of a club ID.
+   * If a club appears N times in the pool (due to recycling) and was consumed M times, N-M instances remain.
+   */
+  const filterPoolByAllocations = (pool: Club[], consumedIds: string[], extraExcludeId?: string): Club[] => {
+    // Count how many times each club ID was consumed
+    const consumedCounts = new Map<string, number>();
+    consumedIds.forEach(id => consumedCounts.set(id, (consumedCounts.get(id) || 0) + 1));
+
+    // Track how many instances of each club ID we've already emitted
+    const emittedCounts = new Map<string, number>();
+    
+    // Count how many times each club ID appears in the pool (total allocations)
+    const poolCounts = new Map<string, number>();
+    pool.forEach(c => poolCounts.set(c.id, (poolCounts.get(c.id) || 0) + 1));
+
+    return pool.filter(club => {
+      if (extraExcludeId && club.id === extraExcludeId) return false;
+      
+      const totalAllocations = poolCounts.get(club.id) || 0;
+      const consumed = consumedCounts.get(club.id) || 0;
+      const remaining = totalAllocations - consumed;
+      const emitted = emittedCounts.get(club.id) || 0;
+
+      if (emitted < remaining) {
+        emittedCounts.set(club.id, emitted + 1);
+        return true;
+      }
+      return false;
+    });
+  };
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
@@ -286,6 +319,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     // Reset game state for new round
     setSelectedClubs([null, null]);
     setGamePhase('team-selection');
+    setConsumedClubIdsThisRound([]);
     
     // Start first match
     setCurrentMatch(firstMatch);
@@ -385,22 +419,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           setTeamPools([poolResult.pools[0], poolResult.pools[1]]);
         }
       } else {
-        // Only filter by clubs used THIS round (the original pool was generated
-        // with cross-evening exclusions already applied; recycled clubs must remain).
+        // Use allocation-aware filtering: recycled clubs stay until their allocation is consumed
         const filteredPools: [Club[], Club[]] = [
-          originalTeamPools[0].filter(club => !usedClubIdsThisRound.has(club.id)),
-          originalTeamPools[1].filter(club => !usedClubIdsThisRound.has(club.id))
+          filterPoolByAllocations(originalTeamPools[0], consumedClubIdsThisRound),
+          filterPoolByAllocations(originalTeamPools[1], consumedClubIdsThisRound)
         ];
         setTeamPools(filteredPools);
 
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[DEV] createNextMatch pool filter', {
+          console.log('[DEV] createNextMatch pool filter (allocation-aware)', {
             roundIndex,
             pair0_original: originalTeamPools[0].length,
             pair0_remaining: filteredPools[0].length,
             pair1_original: originalTeamPools[1].length,
             pair1_remaining: filteredPools[1].length,
-            usedThisRound: Array.from(usedClubIdsThisRound),
+            consumedThisRound: consumedClubIdsThisRound,
+            recycledClubIds: Array.from(recycledClubIds),
           });
         }
       }
@@ -443,21 +477,15 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
     setUsedClubCounts(counts);
 
-    // Build per-round usage so far (completed matches AND in-progress matches with selected clubs)
-    const usedThisRound = new Set<string>();
+    // Build per-round consumed club IDs (only from completed matches — tracks allocation instances)
+    const consumedThisRound: string[] = [];
     round.matches.forEach((match) => {
-      // Include clubs from completed matches
       if (match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
-        usedThisRound.add(match.clubs[0].id);
-        usedThisRound.add(match.clubs[1].id);
-      }
-      // Also include clubs from in-progress match (selected but not yet completed)
-      if (!match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
-        usedThisRound.add(match.clubs[0].id);
-        usedThisRound.add(match.clubs[1].id);
+        consumedThisRound.push(match.clubs[0].id);
+        consumedThisRound.push(match.clubs[1].id);
       }
     });
-    setUsedClubIdsThisRound(usedThisRound);
+    setConsumedClubIdsThisRound(consumedThisRound);
 
     // Generate/restore team pools for this round (persisted to avoid changes on navigation)
     const basePools: [Club[], Club[]] | null = (round.teamPools as [Club[], Club[]] | undefined) ?? null;
@@ -465,13 +493,25 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setOriginalTeamPools([basePools[0], basePools[1]]);
       // Restore recycled club IDs from round
       setRecycledClubIds(new Set(round.recycledClubIds ?? []));
-      // Only filter by clubs used THIS round (the pool was already generated with
-      // cross-evening exclusions; re-filtering by counts removes recycled clubs).
+      // Use allocation-aware filtering
       const filtered: [Club[], Club[]] = [
-        basePools[0].filter(c => !usedThisRound.has(c.id)),
-        basePools[1].filter(c => !usedThisRound.has(c.id)),
+        filterPoolByAllocations(basePools[0], consumedThisRound),
+        filterPoolByAllocations(basePools[1], consumedThisRound),
       ];
       setTeamPools(filtered);
+
+      // DEV diagnostics
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEV] loadCurrentRound pool check (allocation-aware)', {
+          roundIndex: idx,
+          pair0_assigned: basePools[0].map(c => c.id),
+          pair1_assigned: basePools[1].map(c => c.id),
+          recycledClubIds: round.recycledClubIds ?? [],
+          consumedThisRound,
+          pair0_remaining: filtered[0].map(c => c.id),
+          pair1_remaining: filtered[1].map(c => c.id),
+        });
+      }
 
       // DEV invariant check: verify pool sizes
       if (process.env.NODE_ENV !== 'production') {
@@ -482,7 +522,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           pair1_assigned: basePools[1].length,
           pair0_remaining: filtered[0].length,
           pair1_remaining: filtered[1].length,
-          usedThisRound: Array.from(usedThisRound),
+          consumedThisRound,
           expectedPoolSize: maxMatches,
         });
         if (basePools[0].length < maxMatches || basePools[1].length < maxMatches) {
@@ -496,7 +536,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       const teamSelector = new TeamSelector(clubsWithOverrides);
       const maxMatches = currentEvening.winsToComplete * 2 - 1;
       const eveningMaxed = Object.keys(counts).filter((id) => (counts[id] ?? 0) >= 1);
-      const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedThisRound)])];
+      const excludeIds = [...new Set([...eveningMaxed, ...consumedThisRound])];
       const poolConfigs = await fetchPoolConfigs();
       const poolConfig = getPoolConfigForWins(poolConfigs, currentEvening.winsToComplete);
       const poolResult = poolConfig
@@ -591,7 +631,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const drawDeciderTeams = () => {
     const teamSelector = new TeamSelector(clubsWithOverrides);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
-    const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
+    const excludeIds = [...new Set([...eveningMaxed, ...consumedClubIdsThisRound])];
     const [club1, club2] = teamSelector.generateBalancedDeciderTeams(excludeIds, 4, 1);
     setSelectedClubs([club1, club2]);
     setUsedClubCounts(prev => ({
@@ -599,7 +639,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       [club1.id]: (prev[club1.id] ?? 0) + 1,
       [club2.id]: (prev[club2.id] ?? 0) + 1,
     }));
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), club1.id, club2.id]));
+    setConsumedClubIdsThisRound(prev => [...prev, club1.id, club2.id]);
     setGamePhase('countdown');
     setCountdown(60);
     toast({
@@ -766,23 +806,18 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       if (c2?.id) updated[c2.id] = Math.max(0, (updated[c2.id] ?? 0) - 1);
       return updated;
     });
-    setUsedClubIdsThisRound(prev => {
-      const next = new Set(prev);
-      if (c1?.id) next.delete(c1.id);
-      if (c2?.id) next.delete(c2.id);
-      return next;
-    });
-
-    // Re-add clubs to teamPools if they exist in original pools
-    setTeamPools(prev => {
-      const newPools: [Club[], Club[]] = [[...prev[0]], [...prev[1]]];
-      [0, 1].forEach(pairIdx => {
-        const club = match.clubs[pairIdx];
-        if (club?.id && originalTeamPools[pairIdx].some(c => c.id === club.id) && !newPools[pairIdx].some(c => c.id === club.id)) {
-          newPools[pairIdx].push(club);
-        }
-      });
-      return newPools;
+    // Recompute teamPools from originalTeamPools using updated consumed list
+    setConsumedClubIdsThisRound(prev => {
+      const updatedConsumed = [...prev];
+      // Remove one instance of each club (not all)
+      if (c1?.id) { const i = updatedConsumed.indexOf(c1.id); if (i >= 0) updatedConsumed.splice(i, 1); }
+      if (c2?.id) { const i = updatedConsumed.indexOf(c2.id); if (i >= 0) updatedConsumed.splice(i, 1); }
+      // Also update teamPools based on updated consumed list
+      setTeamPools([
+        filterPoolByAllocations(originalTeamPools[0], updatedConsumed),
+        filterPoolByAllocations(originalTeamPools[1], updatedConsumed)
+      ]);
+      return updatedConsumed;
     });
 
     // Remove match and recalculate scores
@@ -881,12 +916,13 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       [c1.id]: (prev[c1.id] ?? 0) + 1,
       [c2.id]: (prev[c2.id] ?? 0) + 1,
     }));
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), c1.id, c2.id]));
+    const newConsumed = [...consumedClubIdsThisRound, c1.id, c2.id];
+    setConsumedClubIdsThisRound(newConsumed);
 
-    // Immediately filter current team pools to remove the used clubs
-    setTeamPools(prev => [
-      prev[0].filter(club => club.id !== c1.id && club.id !== c2.id),
-      prev[1].filter(club => club.id !== c1.id && club.id !== c2.id)
+    // Immediately filter current team pools using allocation-aware logic
+    setTeamPools([
+      filterPoolByAllocations(originalTeamPools[0], newConsumed),
+      filterPoolByAllocations(originalTeamPools[1], newConsumed)
     ]);
 
     // Calculate winner names for notification
@@ -1043,7 +1079,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   const pairName = pair.players.map(p => p.name).join(' ו');
                   lines.push(pairName);
                   allPools[index].forEach((club) => {
-                    const used = usedClubIdsThisRound.has(club.id) ? ' ✓' : '';
+                    const used = consumedClubIdsThisRound.includes(club.id) ? ' ✓' : '';
                     lines.push(`${club.name}${used}`);
                   });
                   lines.push('');
@@ -1126,7 +1162,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   const teamSelector = new TeamSelector(clubsWithOverrides);
                   const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
                   // For manual decider, exclude only clubs used in THIS round (not previous rounds)
-                  const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                  const excludeIds = [...new Set([...consumedClubIdsThisRound])];
                   const candidates = clubsWithOverrides
                     .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                     .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
@@ -1157,7 +1193,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               // Do NOT filter by usedClubCounts — recycled clubs are legitimately in the pool.
               const computeFiltered = (pool: Club[], pairIdx: number) => {
                 const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
-                return pool.filter(c => !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+                return filterPoolByAllocations(pool, consumedClubIdsThisRound, otherSelId);
               };
               const filtered0 = computeFiltered(teamPools[0], 0);
               const filtered1 = computeFiltered(teamPools[1], 1);
@@ -1172,7 +1208,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                     <p className="text-sm text-muted-foreground">Stars ≥ 4, difference ≤ 1</p>
                     <Button variant="gaming" onClick={drawDeciderTeams} className="w-full">הגרל קבוצות מאוזנות</Button>
                     <Button variant="outline" onClick={() => {
-                      const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                      const excludeIds = [...new Set([...consumedClubIdsThisRound])];
                       const candidates = clubsWithOverrides
                         .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                         .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
@@ -1190,7 +1226,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               // Re-check: if both filtered are empty, the deadlock block above handles it
               const computeFiltered2 = (pool: Club[], pairIdx: number) => {
                 const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
-                return pool.filter(c => !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+                return filterPoolByAllocations(pool, consumedClubIdsThisRound, otherSelId);
               };
               const f0 = computeFiltered2(teamPools[0], 0);
               const f1 = computeFiltered2(teamPools[1], 1);
@@ -1207,10 +1243,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   // Note: Do NOT filter by usedClubCounts — recycled clubs from previous rounds
                   // are legitimately part of this round's pool and must remain selectable.
                   const otherPairSelectedId = selectedClubs[pairIndex === 0 ? 1 : 0]?.id || '';
-                  const filtered = pool.filter((club) =>
-                    !usedClubIdsThisRound.has(club.id) &&
-                    club.id !== otherPairSelectedId
-                  );
+                  const filtered = filterPoolByAllocations(pool, consumedClubIdsThisRound, otherPairSelectedId);
 
                   return (
                     <AccordionItem 
