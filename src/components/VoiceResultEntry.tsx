@@ -1,23 +1,22 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mic, MicOff, Check, X, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Check, X, AlertTriangle, Trash2, Square } from 'lucide-react';
 import { Pair, Club } from '@/types/tournament';
 import { parseVoiceResults, VoiceResultCandidate } from '@/lib/voiceResultParser';
 import { useToast } from '@/hooks/use-toast';
 
 interface VoiceResultEntryProps {
   currentPairs: Pair[];
-  availableClubs: Club[]; // clubs in current round pools (both pairs)
-  allClubs: Club[]; // full club list for alias resolution
+  availableClubs: Club[];
+  allClubs: Club[];
   onApplyResults: (results: VoiceResultCandidate[]) => void;
   disabled?: boolean;
 }
 
-// Check if Web Speech API is available
 function isSpeechRecognitionSupported(): boolean {
   return !!(
     (window as any).SpeechRecognition ||
@@ -39,14 +38,46 @@ export function VoiceResultEntry({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef('');
 
   const supported = isSpeechRecognitionSupported();
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (_) {}
+      }
+    };
+  }, []);
+
+  const stopListening = useCallback(() => {
+    setIsListening(false);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (_) {}
+    }
+  }, []);
+
+  const processTranscript = useCallback((text: string) => {
+    if (!text.trim()) {
+      setError('לא נקלט דיבור. נסה שוב.');
+      return;
+    }
+    setTranscript(text);
+    const parsed = parseVoiceResults(text, currentPairs, availableClubs, allClubs);
+    if (parsed.length > 0) {
+      setCandidates(parsed);
+      setShowConfirmDialog(true);
+    } else {
+      setError('לא הצלחנו לזהות תוצאות מהדיבור. נסה שוב.');
+    }
+  }, [currentPairs, availableClubs, allClubs]);
 
   const startListening = useCallback(() => {
     if (!supported) {
       toast({
         title: 'לא נתמך',
-        description: 'זיהוי קולי לא נתמך בדפדפן הזה',
+        description: 'זיהוי קולי לא נתמך בדפדפן הזה. נסה בכרום על מובייל.',
         variant: 'destructive',
       });
       return;
@@ -55,69 +86,69 @@ export function VoiceResultEntry({
     setError(null);
     setTranscript('');
     setCandidates([]);
+    finalTranscriptRef.current = '';
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    try {
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
 
-    recognition.lang = 'he-IL';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+      recognition.lang = 'he-IL';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
 
-    let finalTranscript = '';
+      recognition.onstart = () => {
+        console.log('[Voice] Recognition started');
+        setIsListening(true);
+      };
 
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript + ' ';
-        } else {
-          interim += result[0].transcript;
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        let final = '';
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            final += result[0].transcript + ' ';
+          } else {
+            interim += result[0].transcript;
+          }
         }
-      }
-      setTranscript((finalTranscript + interim).trim());
-    };
+        finalTranscriptRef.current = final;
+        setTranscript((final + interim).trim());
+      };
 
-    recognition.onerror = (event: any) => {
-      console.error('[Voice] Recognition error:', event.error);
-      if (event.error === 'no-speech') {
-        setError('לא נקלט דיבור. נסה שוב.');
-      } else if (event.error === 'not-allowed') {
-        setError('גישה למיקרופון נדחתה. אנא אפשר גישה בהגדרות הדפדפן.');
-      } else {
-        setError(`שגיאה בזיהוי: ${event.error}`);
-      }
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      // Parse the final transcript
-      const text = finalTranscript.trim();
-      if (text) {
-        setTranscript(text);
-        const parsed = parseVoiceResults(text, currentPairs, availableClubs, allClubs);
-        if (parsed.length > 0) {
-          setCandidates(parsed);
-          setShowConfirmDialog(true);
+      recognition.onerror = (event: any) => {
+        console.error('[Voice] Recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'no-speech') {
+          setError('לא נקלט דיבור. נסה שוב.');
+        } else if (event.error === 'not-allowed') {
+          setError('גישה למיקרופון נדחתה. אנא אפשר גישה בהגדרות הדפדפן.');
+        } else if (event.error === 'aborted') {
+          // User stopped - not an error
         } else {
-          setError('לא הצלחנו לזהות תוצאות מהדיבור. נסה שוב.');
+          setError(`שגיאה בזיהוי קולי: ${event.error}`);
         }
-      }
-    };
+      };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [supported, currentPairs, availableClubs, allClubs, toast]);
+      recognition.onend = () => {
+        console.log('[Voice] Recognition ended, transcript:', finalTranscriptRef.current);
+        setIsListening(false);
+        const text = finalTranscriptRef.current.trim();
+        if (text) {
+          processTranscript(text);
+        }
+      };
 
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('[Voice] Failed to start recognition:', err);
+      setError('לא הצליח להפעיל זיהוי קולי. נסה דפדפן Chrome.');
+      setIsListening(false);
     }
-  }, []);
+  }, [supported, processTranscript, toast]);
 
   const removeCandidate = (id: string) => {
     setCandidates(prev => prev.filter(c => c.id !== id));
@@ -127,7 +158,6 @@ export function VoiceResultEntry({
     const validCandidates = candidates.filter(
       c => c.pairAClub && c.pairBClub && c.scoreA !== null && c.scoreB !== null
     );
-
     if (validCandidates.length === 0) {
       toast({
         title: 'אין תוצאות תקינות',
@@ -136,7 +166,6 @@ export function VoiceResultEntry({
       });
       return;
     }
-
     onApplyResults(validCandidates);
     setShowConfirmDialog(false);
     setCandidates([]);
@@ -162,47 +191,58 @@ export function VoiceResultEntry({
   };
 
   if (!supported) {
-    return (
-      <Button variant="ghost" size="icon" disabled className="opacity-50" title="זיהוי קולי לא נתמך">
-        <MicOff className="h-5 w-5" />
-      </Button>
-    );
+    return null;
   }
 
   return (
     <>
-      {/* Microphone Button */}
-      <Button
-        variant={isListening ? 'destructive' : 'ghost'}
-        size="icon"
-        onClick={isListening ? stopListening : startListening}
-        disabled={disabled}
-        className={isListening ? 'animate-pulse' : ''}
-        title={isListening ? 'עצור הקלטה' : 'דווח תוצאות בקול'}
-      >
-        {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-      </Button>
-
-      {/* Listening indicator */}
-      {isListening && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-destructive text-destructive-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse">
+      {/* Main Voice Button - full width, prominent */}
+      {!isListening ? (
+        <Button
+          variant="outline"
+          onClick={startListening}
+          disabled={disabled}
+          className="w-full justify-center gap-2 border-dashed"
+        >
           <Mic className="h-4 w-4" />
-          <span className="text-sm font-medium">מקשיב...</span>
-          {transcript && <span className="text-xs opacity-80 max-w-[200px] truncate">{transcript}</span>}
-          <Button variant="ghost" size="sm" onClick={stopListening} className="h-6 px-2 text-xs">
-            סיים
-          </Button>
-        </div>
+          <span>דווח תוצאות בקול</span>
+        </Button>
+      ) : (
+        <Card className="p-3 border-destructive bg-destructive/10 animate-pulse">
+          <div className="flex items-center justify-between gap-2" dir="rtl">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Mic className="h-5 w-5 text-destructive shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-destructive">מקשיב...</p>
+                {transcript && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{transcript}</p>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={stopListening}
+              className="shrink-0 gap-1"
+            >
+              <Square className="h-3 w-3" />
+              סיים
+            </Button>
+          </div>
+        </Card>
       )}
 
-      {/* Error */}
+      {/* Error message */}
       {error && !isListening && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
-          <Alert variant="destructive" className="max-w-sm">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </div>
+        <Alert variant="destructive" className="mt-2">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-6 px-2">
+              <X className="h-3 w-3" />
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Confirmation Dialog */}
@@ -219,7 +259,7 @@ export function VoiceResultEntry({
           </DialogHeader>
 
           {/* Transcript */}
-          <div className="bg-muted rounded-md p-3 text-sm text-muted-foreground" dir="rtl">
+          <div className="bg-muted rounded-md p-3 text-sm" dir="rtl">
             <p className="text-xs text-muted-foreground mb-1">תמלול:</p>
             <p className="text-foreground">{transcript}</p>
           </div>
@@ -252,7 +292,6 @@ export function VoiceResultEntry({
                     </Button>
                   </div>
 
-                  {/* Match details */}
                   <div className="space-y-1 text-sm" dir="rtl">
                     <div className="flex items-center justify-between">
                       <span className="text-foreground font-medium">{candidate.pairAPlayers}</span>
@@ -269,7 +308,6 @@ export function VoiceResultEntry({
                         {candidate.pairBClub?.name ?? '❓'}
                       </Badge>
                     </div>
-
                     {candidate.winnerSide && (
                       <p className="text-xs text-center text-muted-foreground mt-1">
                         {candidate.winnerSide === 'A' && `🏆 ${candidate.pairAPlayers}`}
@@ -279,7 +317,6 @@ export function VoiceResultEntry({
                     )}
                   </div>
 
-                  {/* Warnings */}
                   {candidate.warnings.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {candidate.warnings.map((warning, idx) => (
@@ -291,7 +328,6 @@ export function VoiceResultEntry({
                     </div>
                   )}
 
-                  {/* Fragment */}
                   <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-1" dir="rtl">
                     "{candidate.transcriptFragment}"
                   </p>
