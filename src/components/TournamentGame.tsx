@@ -1205,7 +1205,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               // Do NOT filter by usedClubCounts — recycled clubs are legitimately in the pool.
               const computeFiltered = (pool: Club[], pairIdx: number) => {
                 const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
-                return pool.filter(c => !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+                return filterPoolByAllocations(pool, consumedClubIdsThisRound, otherSelId);
               };
               const filtered0 = computeFiltered(teamPools[0], 0);
               const filtered1 = computeFiltered(teamPools[1], 1);
