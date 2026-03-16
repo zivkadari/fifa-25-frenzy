@@ -928,12 +928,13 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       [c1.id]: (prev[c1.id] ?? 0) + 1,
       [c2.id]: (prev[c2.id] ?? 0) + 1,
     }));
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), c1.id, c2.id]));
+    const newConsumed = [...consumedClubIdsThisRound, c1.id, c2.id];
+    setConsumedClubIdsThisRound(newConsumed);
 
-    // Immediately filter current team pools to remove the used clubs
-    setTeamPools(prev => [
-      prev[0].filter(club => club.id !== c1.id && club.id !== c2.id),
-      prev[1].filter(club => club.id !== c1.id && club.id !== c2.id)
+    // Immediately filter current team pools using allocation-aware logic
+    setTeamPools([
+      filterPoolByAllocations(originalTeamPools[0], newConsumed),
+      filterPoolByAllocations(originalTeamPools[1], newConsumed)
     ]);
 
     // Calculate winner names for notification
