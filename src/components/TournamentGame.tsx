@@ -1103,7 +1103,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     } else {
       setTimeout(() => createNextMatch(latestEvening, currentRound), 1500);
     }
-  }, [currentMatch, currentRoundData, currentEvening, currentRound, currentRoundPairs, consumedClubIdsThisRound, usedClubCounts, originalTeamPools, onUpdateEvening, toast]);
+  }, [currentMatch, currentEvening, currentRound, currentRoundPairs, consumedClubIdsThisRound, usedClubCounts, originalTeamPools, onUpdateEvening, toast]);
 
   const handleRoundWinnerConfirm = () => {
     setShowRoundWinnerDialog(false);
