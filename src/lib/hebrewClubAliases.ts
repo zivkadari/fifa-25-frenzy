@@ -6,10 +6,10 @@
 
 export const HEBREW_CLUB_ALIASES: Record<string, string[]> = {
   // Premier League
-  'manchester-city': ['מנצ\'סטר סיטי', 'מנצסטר סיטי', 'מן סיטי', 'סיטי', 'מנצ סיטי', 'מנצסטר סטי'],
-  'liverpool': ['ליברפול'],
+  'manchester-city': ['מנצ\'סטר סיטי', 'מנצסטר סיטי', 'מן סיטי', 'סיטי', 'מנצ סיטי', 'מנצסטר סטי', 'מנציסטר סיטי', 'מנצסטר סטי'],
+  'liverpool': ['ליברפול', 'ליוורפול'],
   'arsenal': ['ארסנל', 'ארסנאל'],
-  'chelsea': ['צ\'לסי', 'צלסי', 'צלסיה'],
+  'chelsea': ['צ\'לסי', 'צלסי', 'צלסיה', 'צלצי', 'צ\'לצי'],
   'tottenham': ['טוטנהאם', 'טוטנהם', 'ספרס'],
   'manchester-united': ['מנצ\'סטר יונייטד', 'מנצסטר יונייטד', 'מן יונייטד', 'יונייטד'],
   'newcastle': ['ניוקאסל'],
@@ -143,6 +143,41 @@ export const HEBREW_CLUB_ALIASES: Record<string, string[]> = {
 };
 
 /**
+ * Common Hebrew ASR (speech-to-text) substitution mistakes.
+ * Maps commonly mistranscribed words to their likely intended words.
+ * Applied as a preprocessing step before alias lookup.
+ */
+export const ASR_CORRECTIONS: [RegExp, string][] = [
+  // "על הלל" → "אל הילאל"
+  [/על הלל/g, 'אל הילאל'],
+  [/על ה[יי]לל/g, 'אל הילאל'],
+  [/אל הלל/g, 'אל הילאל'],
+  // "על אהלי" → "אל אהלי"
+  [/על אהלי/g, 'אל אהלי'],
+  // "על נאסר" → "אל נאסר"
+  [/על נאסר/g, 'אל נאסר'],
+  [/על נסר/g, 'אל נאסר'],
+  // "על איתי חד" → "אל איתיחאד"
+  [/על איתי\s*חד/g, 'אל איתיחאד'],
+  [/אל איתי\s*חד/g, 'אל איתיחאד'],
+  // common misspellings for PSG
+  [/פי\s*אס\s*ג/g, 'פסז'],
+  [/פ\s*ס\s*ז/g, 'פסז'],
+  // "מנצסטר" variants
+  [/מנצי?סטר/g, 'מנצסטר'],
+  [/מנצסתר/g, 'מנצסטר'],
+  // "ארסנאל" / "ארסנל" 
+  [/ארס[ינ]ל/g, 'ארסנל'],
+  // "ברצלונה" variants
+  [/בר[סצ]לונ[הא]/g, 'ברצלונה'],
+  // "יובנטוס" variants
+  [/יוב[נא]טוס/g, 'יובנטוס'],
+  // "ליברפול" variants
+  [/ליב[רא]פול/g, 'ליברפול'],
+  [/ליוורפול/g, 'ליברפול'],
+];
+
+/**
  * Normalize a string for fuzzy matching: lowercase, remove quotes/apostrophes, trim
  */
 export function normalizeForMatch(s: string): string {
@@ -151,6 +186,17 @@ export function normalizeForMatch(s: string): string {
     .replace(/['"״׳`']/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Apply ASR correction rules to a transcript before parsing.
+ */
+export function applyAsrCorrections(text: string): string {
+  let corrected = text;
+  for (const [pattern, replacement] of ASR_CORRECTIONS) {
+    corrected = corrected.replace(pattern, replacement);
+  }
+  return corrected;
 }
 
 /**
@@ -181,7 +227,31 @@ export function buildAliasLookup(clubs: { id: string; name: string }[]): Map<str
 }
 
 /**
- * Find the best matching club ID for a spoken name, preferring clubs in the given context pool.
+ * Compute Levenshtein distance between two strings (for fuzzy matching).
+ */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) => {
+    const row = new Array(n + 1).fill(0);
+    row[0] = i;
+    return row;
+  });
+  for (let j = 1; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Find the best matching club ID for a spoken name.
+ * Supports exact match, substring match, and fuzzy (Levenshtein) match.
+ * Prefers clubs in the given context pool.
  */
 export function findClubMatch(
   spokenName: string,
@@ -189,7 +259,7 @@ export function findClubMatch(
   contextClubIds?: Set<string>
 ): { clubId: string; confidence: number } | null {
   const normalized = normalizeForMatch(spokenName);
-  if (!normalized) return null;
+  if (!normalized || normalized.length < 2) return null;
   
   // Direct match
   const directMatch = aliasLookup.get(normalized);
@@ -201,6 +271,7 @@ export function findClubMatch(
   let bestMatch: { clubId: string; confidence: number; length: number } | null = null;
   
   for (const [alias, clubId] of aliasLookup.entries()) {
+    if (alias.length < 2) continue;
     if (normalized.includes(alias) || alias.includes(normalized)) {
       const matchLength = Math.min(alias.length, normalized.length);
       const confidence = contextClubIds?.has(clubId) ? 0.7 : 0.5;
@@ -211,6 +282,40 @@ export function findClubMatch(
   }
   
   if (bestMatch) return { clubId: bestMatch.clubId, confidence: bestMatch.confidence };
+
+  // Fuzzy match: try Levenshtein distance for context clubs first
+  if (contextClubIds && contextClubIds.size > 0) {
+    let bestFuzzy: { clubId: string; distance: number } | null = null;
+    for (const [alias, clubId] of aliasLookup.entries()) {
+      if (!contextClubIds.has(clubId)) continue;
+      if (alias.length < 2) continue;
+      const dist = levenshtein(normalized, alias);
+      const maxLen = Math.max(normalized.length, alias.length);
+      // Allow up to 30% character difference
+      if (dist <= Math.ceil(maxLen * 0.3) && (!bestFuzzy || dist < bestFuzzy.distance)) {
+        bestFuzzy = { clubId, distance: dist };
+      }
+    }
+    if (bestFuzzy) {
+      return { clubId: bestFuzzy.clubId, confidence: 0.55 };
+    }
+  }
+
+  // Global fuzzy match (lower confidence)
+  {
+    let bestFuzzy: { clubId: string; distance: number } | null = null;
+    for (const [alias, clubId] of aliasLookup.entries()) {
+      if (alias.length < 3) continue;
+      const dist = levenshtein(normalized, alias);
+      const maxLen = Math.max(normalized.length, alias.length);
+      if (dist <= Math.ceil(maxLen * 0.25) && (!bestFuzzy || dist < bestFuzzy.distance)) {
+        bestFuzzy = { clubId, distance: dist };
+      }
+    }
+    if (bestFuzzy) {
+      return { clubId: bestFuzzy.clubId, confidence: 0.4 };
+    }
+  }
   
   return null;
 }

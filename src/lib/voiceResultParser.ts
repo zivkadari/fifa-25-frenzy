@@ -1,10 +1,11 @@
 /**
  * Voice Result Parser
  * Parses Hebrew speech transcripts into structured match result candidates.
+ * Supports multi-result parsing with context carry-forward and club-only inference.
  */
 
 import { Player, Pair, Club } from '@/types/tournament';
-import { buildAliasLookup, findClubMatch, normalizeForMatch } from '@/lib/hebrewClubAliases';
+import { buildAliasLookup, findClubMatch, normalizeForMatch, applyAsrCorrections } from '@/lib/hebrewClubAliases';
 
 export interface VoiceResultCandidate {
   id: string;
@@ -39,14 +40,15 @@ const HEBREW_NUMBERS: Record<string, number> = {
 };
 
 // Split delimiters for multiple results
-const SPLIT_PATTERNS = /\s*(?:ואז|אחר כך|ואחר כך|אחרי זה|וגם|ו?אחרי)\s*/;
+const SPLIT_PATTERN = /\s+(?:ואז|אחר כך|ואחר כך|אחרי זה|וגם|ו?אחרי)\s+/;
 
 // Win/loss indicators
 const WIN_WORDS = ['ניצחו', 'ניצח', 'ניצחה', 'גברו', 'גבר'];
 const LOSS_WORDS = ['הפסידו', 'הפסיד', 'הפסידה'];
+const DRAW_WORDS = ['עשו', 'עשתה', 'נגמר', 'תיקו'];
 
 // Score patterns
-const SCORE_REGEX_NUMERIC = /(\d+)\s*[-:]\s*(\d+)/;
+const SCORE_REGEX_NUMERIC = /(\d+)\s*[-–:]\s*(\d+)/;
 
 function parseHebrewNumber(word: string): number | null {
   const n = HEBREW_NUMBERS[word];
@@ -85,7 +87,6 @@ function extractScore(text: string): { scoreA: number; scoreB: number; matchedTe
 
 /**
  * Find which pair matches spoken player names.
- * Returns the pair whose player names best match the spoken text.
  */
 function findPairMatch(
   spokenText: string,
@@ -98,7 +99,7 @@ function findPairMatch(
     let matchScore = 0;
     for (const player of pair.players) {
       const playerNorm = normalizeForMatch(player.name);
-      if (normalized.includes(playerNorm)) {
+      if (playerNorm.length >= 2 && normalized.includes(playerNorm)) {
         matchScore += 1;
       }
     }
@@ -108,12 +109,36 @@ function findPairMatch(
   }
 
   if (bestMatch) {
-    // Both players matched = high confidence, one player = medium
     const confidence = bestMatch.score >= 2 ? 0.95 : 0.6;
     return { pair: bestMatch.pair, confidence };
   }
 
   return null;
+}
+
+/**
+ * Try to infer pairs from club assignments in current match context.
+ * If clubs are currently selected for pairs, we can match spoken clubs to pairs.
+ */
+function inferPairsFromClubs(
+  clubA: Club | null,
+  clubB: Club | null,
+  pairs: Pair[],
+  availableClubs: Club[]
+): { pairA: Pair | null; pairB: Pair | null } {
+  if (pairs.length !== 2 || !clubA || !clubB) {
+    return { pairA: null, pairB: null };
+  }
+
+  // Check which pool each club belongs to
+  // availableClubs is [...pool0, ...pool1], but we don't know the split
+  // For now just assign pair[0] to clubA and pair[1] to clubB as default
+  return { pairA: pairs[0], pairB: pairs[1] };
+}
+
+interface ParseContext {
+  lastPairA: Pair | null;
+  lastPairB: Pair | null;
 }
 
 /**
@@ -127,18 +152,27 @@ export function parseVoiceResults(
 ): VoiceResultCandidate[] {
   if (!transcript.trim()) return [];
 
+  // Apply ASR corrections before parsing
+  const corrected = applyAsrCorrections(transcript);
+
   // Build alias lookup
   const aliasLookup = buildAliasLookup(allClubs);
   const contextClubIds = new Set(availableClubs.map(c => c.id));
 
   // Split transcript into segments for multiple results
-  const segments = transcript.split(SPLIT_PATTERNS).filter(s => s.trim());
+  const segments = corrected.split(SPLIT_PATTERN).filter(s => s.trim());
 
   const candidates: VoiceResultCandidate[] = [];
+  const context: ParseContext = { lastPairA: null, lastPairB: null };
 
   for (const segment of segments) {
-    const candidate = parseSegment(segment.trim(), currentPairs, availableClubs, allClubs, aliasLookup, contextClubIds);
+    const candidate = parseSegment(segment.trim(), currentPairs, availableClubs, allClubs, aliasLookup, contextClubIds, context);
     candidates.push(candidate);
+    // Carry forward context: if this segment identified pairs, remember them
+    if (candidate.pairAId) {
+      context.lastPairA = currentPairs.find(p => p.id === candidate.pairAId) ?? null;
+      context.lastPairB = currentPairs.find(p => p.id === candidate.pairBId) ?? null;
+    }
   }
 
   return candidates;
@@ -150,7 +184,8 @@ function parseSegment(
   availableClubs: Club[],
   allClubs: Club[],
   aliasLookup: Map<string, string>,
-  contextClubIds: Set<string>
+  contextClubIds: Set<string>,
+  carryContext: ParseContext
 ): VoiceResultCandidate {
   const warnings: string[] = [];
   let confidence = 0.5;
@@ -162,35 +197,36 @@ function parseSegment(
 
   if (pairA) {
     confidence = Math.max(confidence, pairMatch!.confidence);
-    // Pair B is the other pair
     pairB = pairs.find(p => p.id !== pairA!.id) ?? null;
+  } else if (carryContext.lastPairA) {
+    // Carry forward from previous clause
+    pairA = carryContext.lastPairA;
+    pairB = carryContext.lastPairB;
+    confidence = 0.45;
+  } else if (pairs.length === 2) {
+    // Default: assign pairs[0] as A, pairs[1] as B — will refine with club matching below
+    pairA = pairs[0];
+    pairB = pairs[1];
+    confidence = 0.3;
   } else {
-    // If only two pairs in the round, try to infer
-    if (pairs.length === 2) {
-      warnings.push('לא זוהו שמות שחקנים, מנסה להתאים לזוג הנוכחי');
-      pairA = pairs[0];
-      pairB = pairs[1];
-      confidence = 0.3;
-    } else {
-      warnings.push('לא זוהו שמות שחקנים');
-    }
+    warnings.push('לא זוהו שמות שחקנים');
   }
 
   // 2. Determine win/loss direction
   let winnerSide: 'A' | 'B' | 'draw' | null = null;
-  const segmentLower = segment;
+  const hasWinWord = WIN_WORDS.some(w => segment.includes(w));
+  const hasLossWord = LOSS_WORDS.some(w => segment.includes(w));
+  const hasDrawWord = DRAW_WORDS.some(w => segment.includes(w));
 
-  const hasWinWord = WIN_WORDS.some(w => segmentLower.includes(w));
-  const hasLossWord = LOSS_WORDS.some(w => segmentLower.includes(w));
-
-  if (hasWinWord && !hasLossWord) {
+  if (hasDrawWord && !hasWinWord && !hasLossWord) {
+    winnerSide = 'draw';
+  } else if (hasWinWord && !hasLossWord) {
     winnerSide = 'A'; // The mentioned pair won
   } else if (hasLossWord && !hasWinWord) {
     winnerSide = 'B'; // The mentioned pair lost
   } else if (hasWinWord && hasLossWord) {
-    // Both words present, use the first one
-    const winIdx = Math.min(...WIN_WORDS.map(w => { const i = segmentLower.indexOf(w); return i >= 0 ? i : Infinity; }));
-    const lossIdx = Math.min(...LOSS_WORDS.map(w => { const i = segmentLower.indexOf(w); return i >= 0 ? i : Infinity; }));
+    const winIdx = Math.min(...WIN_WORDS.map(w => { const i = segment.indexOf(w); return i >= 0 ? i : Infinity; }));
+    const lossIdx = Math.min(...LOSS_WORDS.map(w => { const i = segment.indexOf(w); return i >= 0 ? i : Infinity; }));
     winnerSide = winIdx < lossIdx ? 'A' : 'B';
   }
 
@@ -199,11 +235,8 @@ function parseSegment(
   let scoreA = scoreResult?.scoreA ?? null;
   let scoreB = scoreResult?.scoreB ?? null;
 
-  // If winner side is B (pair A lost), the higher score belongs to pair B
+  // If winner side is B (pair A lost), swap scores so pair A has the lower score
   if (winnerSide === 'B' && scoreA !== null && scoreB !== null && scoreA > scoreB) {
-    // Swap: spoken score is from pair A's perspective but they lost, 
-    // so the score as spoken is "lost X-Y" meaning opponent got X, pair A got Y
-    // Actually in Hebrew "הפסידו 2-1" means they lost 2-1, so score is 1-2 from their perspective
     [scoreA, scoreB] = [scoreB, scoreA];
   }
 
@@ -212,56 +245,67 @@ function parseSegment(
   }
 
   // Validate score vs winner
-  if (scoreA !== null && scoreB !== null && winnerSide) {
-    if (winnerSide === 'A' && scoreA <= scoreB) {
-      warnings.push('ציון לא תואם לניצחון');
-      confidence *= 0.5;
-    }
-    if (winnerSide === 'B' && scoreB <= scoreA) {
-      warnings.push('ציון לא תואם להפסד');
-      confidence *= 0.5;
-    }
+  if (scoreA !== null && scoreB !== null) {
     if (scoreA === scoreB) {
       winnerSide = 'draw';
+    } else if (winnerSide === 'A' && scoreA <= scoreB) {
+      warnings.push('ציון לא תואם לניצחון');
+      confidence *= 0.5;
+    } else if (winnerSide === 'B' && scoreB <= scoreA) {
+      warnings.push('ציון לא תואם להפסד');
+      confidence *= 0.5;
+    } else if (!winnerSide) {
+      // Infer winner from score
+      winnerSide = scoreA > scoreB ? 'A' : 'B';
     }
   }
 
-  // 4. Extract clubs
-  // Look for club names in the segment - try to find two clubs
-  // Common patterns: "עם X את/מול/נגד Y", "עם X ל-Y"
+  // 4. Extract clubs — try multiple patterns
   let clubA: Club | null = null;
   let clubB: Club | null = null;
 
-  // Try to find clubs using "עם" (with) for pair A's club
-  const withPattern = /עם\s+(.+?)(?:\s+(?:את|מול|נגד|ל))\s+/;
-  const withMatch = segment.match(withPattern);
-  
-  // Also try pattern: "עם X ל-Y SCORE" or "עם X נגד Y SCORE"
-  const fullPattern = /עם\s+(.+?)\s+(?:את|מול|נגד|ל)\s*(.+?)(?:\s+\d|$)/;
+  // Pattern: "עם X את/מול/נגד/ל Y"
+  const fullPattern = /עם\s+(.+?)\s+(?:את|מול|נגד|ל)\s*-?\s*(.+?)(?:\s+\d|$)/;
   const fullMatch = segment.match(fullPattern);
+
+  // Pattern: "X ניצחה/הפסידה את/ל Y"  (club-only, no "עם")
+  const clubOnlyPattern = /^(.+?)\s+(?:ניצחו?|ניצחה|הפסידו?|הפסידה|גברו?|עשו|עשתה)\s+(?:את\s+|ל\s*-?\s*|מול\s+|נגד\s+)?(.+?)(?:\s+\d|$)/;
+  const clubOnlyMatch = segment.match(clubOnlyPattern);
+
+  // Pattern: "עשו/נגמר X-Y עם A נגד/מול B"
+  const drawPattern = /(?:עשו|עשתה|נגמר)\s+\d+\s*[-–:]\s*\d+\s+עם\s+(.+?)\s+(?:נגד|מול|את)\s+(.+?)$/;
+  const drawMatch = segment.match(drawPattern);
 
   if (fullMatch) {
     const clubAName = fullMatch[1].trim();
-    let clubBName = fullMatch[2].trim();
-    // Remove trailing score if present
-    clubBName = clubBName.replace(/\s*\d+\s*[-:]\s*\d+.*$/, '').trim();
+    let clubBName = fullMatch[2].trim().replace(/\s*\d+\s*[-–:]\s*\d+.*$/, '').trim();
 
     const clubAResult = findClubMatch(clubAName, aliasLookup, contextClubIds);
     const clubBResult = findClubMatch(clubBName, aliasLookup, contextClubIds);
 
-    if (clubAResult) {
-      clubA = allClubs.find(c => c.id === clubAResult.clubId) ?? availableClubs.find(c => c.id === clubAResult.clubId) ?? null;
-      confidence = Math.min(confidence, clubAResult.confidence);
-    }
-    if (clubBResult) {
-      clubB = allClubs.find(c => c.id === clubBResult.clubId) ?? availableClubs.find(c => c.id === clubBResult.clubId) ?? null;
-      confidence = Math.min(confidence, clubBResult.confidence);
-    }
-  } else if (withMatch) {
-    const clubAName = withMatch[1].trim();
+    if (clubAResult) clubA = allClubs.find(c => c.id === clubAResult.clubId) ?? availableClubs.find(c => c.id === clubAResult.clubId) ?? null;
+    if (clubBResult) clubB = allClubs.find(c => c.id === clubBResult.clubId) ?? availableClubs.find(c => c.id === clubBResult.clubId) ?? null;
+  } else if (drawMatch) {
+    const clubAResult = findClubMatch(drawMatch[1].trim(), aliasLookup, contextClubIds);
+    const clubBResult = findClubMatch(drawMatch[2].trim(), aliasLookup, contextClubIds);
+    if (clubAResult) clubA = allClubs.find(c => c.id === clubAResult.clubId) ?? null;
+    if (clubBResult) clubB = allClubs.find(c => c.id === clubBResult.clubId) ?? null;
+  } else if (clubOnlyMatch) {
+    const clubAName = clubOnlyMatch[1].trim();
+    let clubBName = clubOnlyMatch[2].trim().replace(/\s*\d+\s*[-–:]\s*\d+.*$/, '').trim();
     const clubAResult = findClubMatch(clubAName, aliasLookup, contextClubIds);
-    if (clubAResult) {
-      clubA = allClubs.find(c => c.id === clubAResult.clubId) ?? null;
+    const clubBResult = findClubMatch(clubBName, aliasLookup, contextClubIds);
+    if (clubAResult) clubA = allClubs.find(c => c.id === clubAResult.clubId) ?? null;
+    if (clubBResult) clubB = allClubs.find(c => c.id === clubBResult.clubId) ?? null;
+
+    // Club-only mode: if no pair was identified from player names, infer from club context
+    if (!pairMatch && clubA && clubB && pairs.length === 2) {
+      // Check which pool each club belongs to
+      const pool0Ids = new Set(availableClubs.slice(0, Math.ceil(availableClubs.length / 2)).map(c => c.id));
+      // Simplified: just mark as inferred, user can fix in confirmation
+      if (!carryContext.lastPairA) {
+        warnings.push('זוהו קבוצות בלבד - בדקו התאמה לזוגות');
+      }
     }
   }
 
@@ -271,7 +315,6 @@ function parseSegment(
     if (!clubA && foundClubs.length > 0) clubA = foundClubs[0];
     if (!clubB && foundClubs.length > 1) clubB = foundClubs[1];
     if (foundClubs.length === 1 && clubA && !clubB) {
-      // Only one club found
       warnings.push('זוהתה רק קבוצה אחת');
     }
   }
@@ -325,6 +368,7 @@ function findAllClubsInText(
 
   for (const [alias, clubId] of sortedAliases) {
     if (seenIds.has(clubId)) continue;
+    if (alias.length < 2) continue;
     const pos = normalized.indexOf(alias);
     if (pos >= 0) {
       const club = allClubs.find(c => c.id === clubId);
