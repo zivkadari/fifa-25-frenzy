@@ -1174,7 +1174,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   const teamSelector = new TeamSelector(clubsWithOverrides);
                   const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
                   // For manual decider, exclude only clubs used in THIS round (not previous rounds)
-                  const excludeIds = [...new Set([...Array.from(usedClubIdsThisRound)])];
+                  const excludeIds = [...new Set([...consumedClubIdsThisRound])];
                   const candidates = clubsWithOverrides
                     .filter(c => c.stars >= 4 && !excludeIds.includes(c.id))
                     .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name));
