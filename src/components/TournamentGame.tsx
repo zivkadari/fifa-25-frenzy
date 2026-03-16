@@ -631,7 +631,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const drawDeciderTeams = () => {
     const teamSelector = new TeamSelector(clubsWithOverrides);
     const eveningMaxed = Object.keys(usedClubCounts).filter(id => (usedClubCounts[id] ?? 0) >= 1);
-    const excludeIds = [...new Set([...eveningMaxed, ...Array.from(usedClubIdsThisRound)])];
+    const excludeIds = [...new Set([...eveningMaxed, ...consumedClubIdsThisRound])];
     const [club1, club2] = teamSelector.generateBalancedDeciderTeams(excludeIds, 4, 1);
     setSelectedClubs([club1, club2]);
     setUsedClubCounts(prev => ({
@@ -639,7 +639,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       [club1.id]: (prev[club1.id] ?? 0) + 1,
       [club2.id]: (prev[club2.id] ?? 0) + 1,
     }));
-    setUsedClubIdsThisRound(prev => new Set([...Array.from(prev), club1.id, club2.id]));
+    setConsumedClubIdsThisRound(prev => [...prev, club1.id, club2.id]);
     setGamePhase('countdown');
     setCountdown(60);
     toast({
