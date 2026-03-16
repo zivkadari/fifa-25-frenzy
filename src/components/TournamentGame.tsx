@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { ClubSwapDialog } from "@/components/ClubSwapDialog";
 import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
+import { VoiceResultEntry } from "@/components/VoiceResultEntry";
+import { VoiceResultCandidate } from "@/lib/voiceResultParser";
 
 interface TournamentGameProps {
   evening: Evening;
