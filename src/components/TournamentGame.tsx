@@ -115,7 +115,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const pairSchedule = currentEvening.pairSchedule ?? TournamentEngine.generatePairs(evening.players);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [showShareCodeDialog, setShowShareCodeDialog] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>("");
   const [expandedPlayerIds, setExpandedPlayerIds] = useState<Set<string>>(new Set());
   const [showRankings, setShowRankings] = useState(false);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -605,7 +605,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setSelectedClubs(newSelected);
     
     // Close accordion after selection
-    setOpenAccordion(undefined);
+    setOpenAccordion("");
 
     if (newSelected[0] && newSelected[1]) {
       // Persist selected clubs into the current in-progress match
