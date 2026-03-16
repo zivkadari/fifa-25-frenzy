@@ -1235,16 +1235,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                 קוד: {shareCode}
               </Button>
             )}
-            {/* Voice Result Entry - only during active rounds */}
-            {currentMatch && gamePhase === 'team-selection' && !currentRoundData?.completed && (
-              <VoiceResultEntry
-                currentPairs={currentRoundPairs}
-                availableClubs={[...originalTeamPools[0], ...originalTeamPools[1]]}
-                allClubs={clubsWithOverrides}
-                onApplyResults={applyVoiceResults}
-                disabled={!currentMatch || currentRoundData?.completed}
-              />
-            )}
+            {/* Voice mic button moved to team-selection phase below */}
             <Button variant="ghost" size="icon" onClick={onGoHome} aria-label="Home">
               <Home className="h-5 w-5" />
             </Button>
@@ -1465,6 +1456,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   );
                 })}
               </Accordion>
+            )}
+
+            {/* Voice Result Entry - prominent button below team selection */}
+            {currentMatch && !currentRoundData?.completed && (
+              <VoiceResultEntry
+                currentPairs={currentRoundPairs}
+                availableClubs={[...originalTeamPools[0], ...originalTeamPools[1]]}
+                allClubs={clubsWithOverrides}
+                onApplyResults={applyVoiceResults}
+                disabled={!currentMatch || !!currentRoundData?.completed}
+              />
             )}
 
             {/* Old deadlock block removed - handled above in pre-compute */}
