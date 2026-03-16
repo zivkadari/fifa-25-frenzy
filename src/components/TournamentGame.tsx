@@ -71,8 +71,41 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
   const [teamPools, setTeamPools] = useState<[Club[], Club[]]>([[], []]);
   const [selectedClubs, setSelectedClubs] = useState<[Club | null, Club | null]>([null, null]);
   const [usedClubCounts, setUsedClubCounts] = useState<Record<string, number>>({});
-  const [usedClubIdsThisRound, setUsedClubIdsThisRound] = useState<Set<string>>(new Set());
+  // Track consumed club allocations this round as an array (supports duplicate IDs for recycled clubs)
+  const [consumedClubIdsThisRound, setConsumedClubIdsThisRound] = useState<string[]>([]);
   const [recycledClubIds, setRecycledClubIds] = useState<Set<string>>(new Set()); // Track clubs that were recycled (reused because star rating exhausted)
+
+  /**
+   * Allocation-aware pool filter: removes only consumed allocation instances, not all occurrences of a club ID.
+   * If a club appears N times in the pool (due to recycling) and was consumed M times, N-M instances remain.
+   */
+  const filterPoolByAllocations = (pool: Club[], consumedIds: string[], extraExcludeId?: string): Club[] => {
+    // Count how many times each club ID was consumed
+    const consumedCounts = new Map<string, number>();
+    consumedIds.forEach(id => consumedCounts.set(id, (consumedCounts.get(id) || 0) + 1));
+
+    // Track how many instances of each club ID we've already emitted
+    const emittedCounts = new Map<string, number>();
+    
+    // Count how many times each club ID appears in the pool (total allocations)
+    const poolCounts = new Map<string, number>();
+    pool.forEach(c => poolCounts.set(c.id, (poolCounts.get(c.id) || 0) + 1));
+
+    return pool.filter(club => {
+      if (extraExcludeId && club.id === extraExcludeId) return false;
+      
+      const totalAllocations = poolCounts.get(club.id) || 0;
+      const consumed = consumedCounts.get(club.id) || 0;
+      const remaining = totalAllocations - consumed;
+      const emitted = emittedCounts.get(club.id) || 0;
+
+      if (emitted < remaining) {
+        emittedCounts.set(club.id, emitted + 1);
+        return true;
+      }
+      return false;
+    });
+  };
   const [gamePhase, setGamePhase] = useState<'team-selection' | 'countdown' | 'result-entry'>('team-selection');
   const [countdown, setCountdown] = useState(60);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
