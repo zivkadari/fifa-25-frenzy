@@ -493,13 +493,25 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       setOriginalTeamPools([basePools[0], basePools[1]]);
       // Restore recycled club IDs from round
       setRecycledClubIds(new Set(round.recycledClubIds ?? []));
-      // Only filter by clubs used THIS round (the pool was already generated with
-      // cross-evening exclusions; re-filtering by counts removes recycled clubs).
+      // Use allocation-aware filtering
       const filtered: [Club[], Club[]] = [
-        basePools[0].filter(c => !usedThisRound.has(c.id)),
-        basePools[1].filter(c => !usedThisRound.has(c.id)),
+        filterPoolByAllocations(basePools[0], consumedThisRound),
+        filterPoolByAllocations(basePools[1], consumedThisRound),
       ];
       setTeamPools(filtered);
+
+      // DEV diagnostics
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEV] loadCurrentRound pool check (allocation-aware)', {
+          roundIndex: idx,
+          pair0_assigned: basePools[0].map(c => c.id),
+          pair1_assigned: basePools[1].map(c => c.id),
+          recycledClubIds: round.recycledClubIds ?? [],
+          consumedThisRound,
+          pair0_remaining: filtered[0].map(c => c.id),
+          pair1_remaining: filtered[1].map(c => c.id),
+        });
+      }
 
       // DEV invariant check: verify pool sizes
       if (process.env.NODE_ENV !== 'production') {
