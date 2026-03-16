@@ -469,20 +469,30 @@ export class TeamSelector {
    * Replaces the hardcoded generateTeamPoolsFor4/5/6Rounds methods.
    */
   generateTeamPoolsFromConfig(pairs: Pair[], config: PoolConfig, excludeClubIds: string[] = []): TeamPoolResult {
-    const pools: Club[][] = [];
+    // Initialize one pool per pair
+    const pools: Club[][] = pairs.map(() => []);
     const banned = new Set<string>(excludeClubIds);
     const usedClubsMap = new Map<string, Club>();
     const recycledClubIds = new Set<string>();
+    // Round-level allocated set: no club may appear in more than one pair's pool
+    const allocatedThisRound = new Set<string>();
 
     excludeClubIds.forEach(id => {
       const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
+    /**
+     * Pick a club for a specific pair's pool, ensuring round-level uniqueness.
+     * The club must not already be allocated to ANY pair in this round.
+     */
     const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
-      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars, pool);
+      // Filter source to exclude clubs already allocated in this round (cross-pair uniqueness)
+      const roundSafeSource = sourceClubs.filter(c => !allocatedThisRound.has(c.id));
+      const result = pickClubWithFallback(roundSafeSource, banned, usedClubsMap, stars, pool);
       if (result.club) {
         banned.add(result.club.id);
+        allocatedThisRound.add(result.club.id);
         usedClubsMap.set(result.club.id, result.club);
         if (result.isRecycled) {
           recycledClubIds.add(result.club.id);
@@ -491,31 +501,47 @@ export class TeamSelector {
       return result.club;
     };
 
-    pairs.forEach(() => {
-      const pool: Club[] = [];
+    // === INTERLEAVED ALLOCATION: round-robin per tier across pairs ===
 
-      // Prime teams first
-      if (config.include_prime && config.prime_count > 0) {
-        for (let i = 0; i < config.prime_count; i++) {
-          const prime = pickAndBan(pool, getPrimeTeams(this.clubs), 5);
-          if (prime) pool.push(prime);
+    // 1. Prime teams (interleaved)
+    if (config.include_prime && config.prime_count > 0) {
+      for (let i = 0; i < config.prime_count; i++) {
+        for (let p = 0; p < pairs.length; p++) {
+          const prime = pickAndBan(pools[p], getPrimeTeams(this.clubs), 5);
+          if (prime) pools[p].push(prime);
         }
       }
+    }
 
-      // Distribution entries
-      for (const entry of config.distribution) {
-        const source = entry.include_national
-          ? [...getClubsOnly(entry.stars, this.clubs), ...getNationalTeamsByStars(entry.stars, this.clubs)]
-          : getClubsOnly(entry.stars, this.clubs);
+    // 2. Distribution entries (interleaved per tier)
+    for (const entry of config.distribution) {
+      const source = entry.include_national
+        ? [...getClubsOnly(entry.stars, this.clubs), ...getNationalTeamsByStars(entry.stars, this.clubs)]
+        : getClubsOnly(entry.stars, this.clubs);
 
-        for (let i = 0; i < entry.count; i++) {
-          const club = pickAndBan(pool, source, entry.stars);
-          if (club) pool.push(club);
+      for (let i = 0; i < entry.count; i++) {
+        for (let p = 0; p < pairs.length; p++) {
+          const club = pickAndBan(pools[p], source, entry.stars);
+          if (club) pools[p].push(club);
         }
       }
+    }
 
-      pools.push(pool);
-    });
+    // DEV diagnostics: check for cross-pool duplicates
+    if (process.env.NODE_ENV !== 'production' && pools.length === 2) {
+      const ids0 = new Set(pools[0].map(c => c.id));
+      const ids1 = new Set(pools[1].map(c => c.id));
+      const duplicates = [...ids0].filter(id => ids1.has(id));
+      if (duplicates.length > 0) {
+        console.error('[DEV] DUPLICATE clubs across pools in same round!', duplicates);
+      }
+      console.log('[DEV] generateTeamPoolsFromConfig result', {
+        pair0: pools[0].map(c => `${c.name}(${c.id})`),
+        pair1: pools[1].map(c => `${c.name}(${c.id})`),
+        recycled: Array.from(recycledClubIds),
+        duplicatesAcrossPools: duplicates,
+      });
+    }
 
     return { pools, recycledClubIds };
   }
