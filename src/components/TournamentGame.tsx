@@ -1091,7 +1091,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   const pairName = pair.players.map(p => p.name).join(' ו');
                   lines.push(pairName);
                   allPools[index].forEach((club) => {
-                    const used = usedClubIdsThisRound.has(club.id) ? ' ✓' : '';
+                    const used = consumedClubIdsThisRound.includes(club.id) ? ' ✓' : '';
                     lines.push(`${club.name}${used}`);
                   });
                   lines.push('');
