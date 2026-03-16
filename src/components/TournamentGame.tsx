@@ -293,9 +293,22 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     const poolResult = poolConfig
       ? teamSelector.generateTeamPoolsFromConfig(roundPairs, poolConfig, actuallyPlayedClubIds)
       : teamSelector.generateTeamPools(roundPairs, actuallyPlayedClubIds, maxMatches);
-    console.log('Generated pools:', poolResult.pools);
-
-    // Track recycled clubs for this round
+    // DEV diagnostics: verify no cross-pool duplicates
+    if (process.env.NODE_ENV !== 'production') {
+      const ids0 = new Set(poolResult.pools[0].map(c => c.id));
+      const ids1 = new Set(poolResult.pools[1].map(c => c.id));
+      const duplicates = [...ids0].filter(id => ids1.has(id));
+      console.log('[DEV] startNextRound pool generation', {
+        roundIndex: roundIndex,
+        pair0_clubs: poolResult.pools[0].map(c => `${c.name}(${c.stars}★)`),
+        pair1_clubs: poolResult.pools[1].map(c => `${c.name}(${c.stars}★)`),
+        recycled: Array.from(poolResult.recycledClubIds),
+        duplicatesAcrossPools: duplicates,
+      });
+      if (duplicates.length > 0) {
+        console.error('[DEV] ERROR: Duplicate clubs across pools!', duplicates);
+      }
+    }
     setRecycledClubIds(poolResult.recycledClubIds);
 
     // Persist pools and recycled club IDs on the round so they don't change on navigation
