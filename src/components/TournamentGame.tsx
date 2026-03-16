@@ -1103,6 +1103,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     }
   }, [currentMatch, currentRoundData, currentEvening, currentRound, currentRoundPairs, consumedClubIdsThisRound, usedClubCounts, originalTeamPools, onUpdateEvening, toast]);
 
+  const handleRoundWinnerConfirm = () => {
     setShowRoundWinnerDialog(false);
     handleRoundComplete();
   };
