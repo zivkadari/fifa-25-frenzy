@@ -477,21 +477,15 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     });
     setUsedClubCounts(counts);
 
-    // Build per-round usage so far (completed matches AND in-progress matches with selected clubs)
-    const usedThisRound = new Set<string>();
+    // Build per-round consumed club IDs (only from completed matches — tracks allocation instances)
+    const consumedThisRound: string[] = [];
     round.matches.forEach((match) => {
-      // Include clubs from completed matches
       if (match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
-        usedThisRound.add(match.clubs[0].id);
-        usedThisRound.add(match.clubs[1].id);
-      }
-      // Also include clubs from in-progress match (selected but not yet completed)
-      if (!match.completed && match.clubs[0]?.id && match.clubs[1]?.id) {
-        usedThisRound.add(match.clubs[0].id);
-        usedThisRound.add(match.clubs[1].id);
+        consumedThisRound.push(match.clubs[0].id);
+        consumedThisRound.push(match.clubs[1].id);
       }
     });
-    setUsedClubIdsThisRound(usedThisRound);
+    setConsumedClubIdsThisRound(consumedThisRound);
 
     // Generate/restore team pools for this round (persisted to avoid changes on navigation)
     const basePools: [Club[], Club[]] | null = (round.teamPools as [Club[], Club[]] | undefined) ?? null;
