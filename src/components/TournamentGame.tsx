@@ -820,16 +820,18 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       return next;
     });
 
-    // Re-add clubs to teamPools if they exist in original pools
-    setTeamPools(prev => {
-      const newPools: [Club[], Club[]] = [[...prev[0]], [...prev[1]]];
-      [0, 1].forEach(pairIdx => {
-        const club = match.clubs[pairIdx];
-        if (club?.id && originalTeamPools[pairIdx].some(c => c.id === club.id) && !newPools[pairIdx].some(c => c.id === club.id)) {
-          newPools[pairIdx].push(club);
-        }
-      });
-      return newPools;
+    // Recompute teamPools from originalTeamPools using updated consumed list
+    // (the setConsumedClubIdsThisRound above is async, so compute inline)
+    setConsumedClubIdsThisRound(prev => {
+      const updatedConsumed = [...prev];
+      if (c1?.id) { const i = updatedConsumed.indexOf(c1.id); if (i >= 0) updatedConsumed.splice(i, 1); }
+      if (c2?.id) { const i = updatedConsumed.indexOf(c2.id); if (i >= 0) updatedConsumed.splice(i, 1); }
+      // Also update teamPools based on updated consumed list
+      setTeamPools([
+        filterPoolByAllocations(originalTeamPools[0], updatedConsumed),
+        filterPoolByAllocations(originalTeamPools[1], updatedConsumed)
+      ]);
+      return updatedConsumed;
     });
 
     // Remove match and recalculate scores
