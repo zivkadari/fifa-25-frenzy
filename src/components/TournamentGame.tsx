@@ -1458,6 +1458,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               </Accordion>
             )}
 
+            {/* Voice Result Entry - prominent button below team selection */}
+            {currentMatch && !currentRoundData?.completed && (
+              <VoiceResultEntry
+                currentPairs={currentRoundPairs}
+                availableClubs={[...originalTeamPools[0], ...originalTeamPools[1]]}
+                allClubs={clubsWithOverrides}
+                onApplyResults={applyVoiceResults}
+                disabled={!currentMatch || !!currentRoundData?.completed}
+              />
+            )}
+
             {/* Old deadlock block removed - handled above in pre-compute */}
 
             {/* Loading State */}
