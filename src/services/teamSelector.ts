@@ -146,58 +146,60 @@ export class TeamSelector {
    * In round 3, recycling is allowed if needed (but never duplicate within same round).
    */
   generateTeamPoolsFor5Rounds(pairs: Pair[], excludeClubIds: string[] = []): TeamPoolResult {
-    const pools: Club[][] = [];
+    const pools: Club[][] = pairs.map(() => []);
     const banned = new Set<string>(excludeClubIds);
     const usedClubsMap = new Map<string, Club>();
     const recycledClubIds = new Set<string>();
+    const allocatedThisRound = new Set<string>();
     
-    // Track used clubs from excludeClubIds for fallback
     excludeClubIds.forEach(id => {
       const club = this.clubs.find(c => c.id === id);
       if (club) usedClubsMap.set(id, club);
     });
 
     const pickAndBan = (pool: Club[], sourceClubs: Club[], stars?: number): Club | null => {
-      const result = pickClubWithFallback(sourceClubs, banned, usedClubsMap, stars, pool);
+      const roundSafeSource = sourceClubs.filter(c => !allocatedThisRound.has(c.id));
+      const result = pickClubWithFallback(roundSafeSource, banned, usedClubsMap, stars, pool);
       if (result.club) {
         banned.add(result.club.id);
+        allocatedThisRound.add(result.club.id);
         usedClubsMap.set(result.club.id, result.club);
-        if (result.isRecycled) {
-          recycledClubIds.add(result.club.id);
-        }
+        if (result.isRecycled) recycledClubIds.add(result.club.id);
       }
       return result.club;
     };
 
-    pairs.forEach(() => {
-      const pool: Club[] = [];
+    // Interleaved: 1x Prime
+    for (let p = 0; p < pairs.length; p++) {
+      const prime = pickAndBan(pools[p], getPrimeTeams(this.clubs), 5);
+      if (prime) pools[p].push(prime);
+    }
 
-      // 1 Prime team (5 stars)
-      const prime = pickAndBan(pool, getPrimeTeams(this.clubs), 5);
-      if (prime) pool.push(prime);
-
-      // 3 clubs/national teams with 5 stars
-      const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
-      for (let i = 0; i < 3; i++) {
-        const team5 = pickAndBan(pool, fiveStarPool, 5);
-        if (team5) pool.push(team5);
+    // Interleaved: 3x 5-star
+    const fiveStarPool = [...getClubsOnly(5, this.clubs), ...getNationalTeamsByStars(5, this.clubs)];
+    for (let i = 0; i < 3; i++) {
+      for (let p = 0; p < pairs.length; p++) {
+        const team = pickAndBan(pools[p], fiveStarPool, 5);
+        if (team) pools[p].push(team);
       }
+    }
 
-      // 3 clubs/national teams with 4.5 stars
-      const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
-      for (let i = 0; i < 3; i++) {
-        const team45 = pickAndBan(pool, available45, 4.5);
-        if (team45) pool.push(team45);
+    // Interleaved: 3x 4.5-star
+    const available45 = [...getClubsOnly(4.5, this.clubs), ...getNationalTeamsByStars(4.5, this.clubs)];
+    for (let i = 0; i < 3; i++) {
+      for (let p = 0; p < pairs.length; p++) {
+        const team = pickAndBan(pools[p], available45, 4.5);
+        if (team) pools[p].push(team);
       }
+    }
 
-      // 2 clubs with 4 stars
-      for (let i = 0; i < 2; i++) {
-        const club4 = pickAndBan(pool, getClubsOnly(4, this.clubs), 4);
-        if (club4) pool.push(club4);
+    // Interleaved: 2x 4-star
+    for (let i = 0; i < 2; i++) {
+      for (let p = 0; p < pairs.length; p++) {
+        const team = pickAndBan(pools[p], getClubsOnly(4, this.clubs), 4);
+        if (team) pools[p].push(team);
       }
-
-      pools.push(pool);
-    });
+    }
 
     return { pools, recycledClubIds };
   }
