@@ -1255,10 +1255,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
                   // Note: Do NOT filter by usedClubCounts — recycled clubs from previous rounds
                   // are legitimately part of this round's pool and must remain selectable.
                   const otherPairSelectedId = selectedClubs[pairIndex === 0 ? 1 : 0]?.id || '';
-                  const filtered = pool.filter((club) =>
-                    !usedClubIdsThisRound.has(club.id) &&
-                    club.id !== otherPairSelectedId
-                  );
+                  const filtered = filterPoolByAllocations(pool, consumedClubIdsThisRound, otherPairSelectedId);
 
                   return (
                     <AccordionItem 
