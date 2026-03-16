@@ -319,6 +319,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     // Reset game state for new round
     setSelectedClubs([null, null]);
     setGamePhase('team-selection');
+    setConsumedClubIdsThisRound([]);
     
     // Start first match
     setCurrentMatch(firstMatch);
