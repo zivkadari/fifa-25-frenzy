@@ -806,10 +806,17 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       if (c2?.id) updated[c2.id] = Math.max(0, (updated[c2.id] ?? 0) - 1);
       return updated;
     });
-    setUsedClubIdsThisRound(prev => {
-      const next = new Set(prev);
-      if (c1?.id) next.delete(c1.id);
-      if (c2?.id) next.delete(c2.id);
+    setConsumedClubIdsThisRound(prev => {
+      const next = [...prev];
+      // Remove one instance of each club (not all)
+      if (c1?.id) {
+        const idx1 = next.indexOf(c1.id);
+        if (idx1 >= 0) next.splice(idx1, 1);
+      }
+      if (c2?.id) {
+        const idx2 = next.indexOf(c2.id);
+        if (idx2 >= 0) next.splice(idx2, 1);
+      }
       return next;
     });
 
