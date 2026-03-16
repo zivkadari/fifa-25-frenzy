@@ -1238,7 +1238,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
               // Re-check: if both filtered are empty, the deadlock block above handles it
               const computeFiltered2 = (pool: Club[], pairIdx: number) => {
                 const otherSelId = selectedClubs[pairIdx === 0 ? 1 : 0]?.id || '';
-                return pool.filter(c => !usedClubIdsThisRound.has(c.id) && c.id !== otherSelId);
+                return filterPoolByAllocations(pool, consumedClubIdsThisRound, otherSelId);
               };
               const f0 = computeFiltered2(teamPools[0], 0);
               const f1 = computeFiltered2(teamPools[1], 1);
