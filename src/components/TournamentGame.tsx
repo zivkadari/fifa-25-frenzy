@@ -806,24 +806,10 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       if (c2?.id) updated[c2.id] = Math.max(0, (updated[c2.id] ?? 0) - 1);
       return updated;
     });
-    setConsumedClubIdsThisRound(prev => {
-      const next = [...prev];
-      // Remove one instance of each club (not all)
-      if (c1?.id) {
-        const idx1 = next.indexOf(c1.id);
-        if (idx1 >= 0) next.splice(idx1, 1);
-      }
-      if (c2?.id) {
-        const idx2 = next.indexOf(c2.id);
-        if (idx2 >= 0) next.splice(idx2, 1);
-      }
-      return next;
-    });
-
     // Recompute teamPools from originalTeamPools using updated consumed list
-    // (the setConsumedClubIdsThisRound above is async, so compute inline)
     setConsumedClubIdsThisRound(prev => {
       const updatedConsumed = [...prev];
+      // Remove one instance of each club (not all)
       if (c1?.id) { const i = updatedConsumed.indexOf(c1.id); if (i >= 0) updatedConsumed.splice(i, 1); }
       if (c2?.id) { const i = updatedConsumed.indexOf(c2.id); if (i >= 0) updatedConsumed.splice(i, 1); }
       // Also update teamPools based on updated consumed list
