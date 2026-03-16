@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mic, MicOff, Check, X, AlertTriangle, Trash2, Square } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Mic, Check, X, AlertTriangle, Trash2, Square, ChevronDown, Pencil } from 'lucide-react';
 import { Pair, Club } from '@/types/tournament';
 import { parseVoiceResults, VoiceResultCandidate } from '@/lib/voiceResultParser';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +23,74 @@ function isSpeechRecognitionSupported(): boolean {
   return !!(
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition
+  );
+}
+
+/** Searchable club selector as a simple filterable dropdown */
+function ClubSelector({
+  value,
+  clubs,
+  onChange,
+  placeholder = 'בחר קבוצה',
+}: {
+  value: Club | null;
+  clubs: Club[];
+  onChange: (club: Club | null) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return clubs;
+    const q = search.toLowerCase();
+    return clubs.filter(c => c.name.toLowerCase().includes(q) || c.id.includes(q));
+  }, [clubs, search]);
+
+  return (
+    <div className="relative">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(!open)}
+        className="w-full justify-between text-xs h-7 px-2"
+      >
+        <span className="truncate">{value?.name ?? placeholder}</span>
+        <ChevronDown className="h-3 w-3 shrink-0 ml-1" />
+      </Button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-hidden flex flex-col">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="חפש..."
+            className="h-7 text-xs border-0 border-b rounded-none focus-visible:ring-0"
+            autoFocus
+          />
+          <div className="overflow-y-auto flex-1">
+            {filtered.length === 0 && (
+              <p className="text-xs text-muted-foreground p-2 text-center">לא נמצא</p>
+            )}
+            {filtered.map(club => (
+              <button
+                key={club.id}
+                className={`w-full text-right text-xs px-2 py-1.5 hover:bg-accent transition-colors flex items-center justify-between ${value?.id === club.id ? 'bg-accent' : ''}`}
+                onClick={() => {
+                  onChange(club);
+                  setOpen(false);
+                  setSearch('');
+                }}
+              >
+                <span className="truncate">{club.name}</span>
+                <span className="text-muted-foreground shrink-0 ml-1">
+                  {club.isPrime ? 'Pr' : `${club.stars}★`}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -42,7 +112,6 @@ export function VoiceResultEntry({
 
   const supported = isSpeechRecognitionSupported();
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -99,7 +168,6 @@ export function VoiceResultEntry({
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        console.log('[Voice] Recognition started');
         setIsListening(true);
       };
 
@@ -133,7 +201,6 @@ export function VoiceResultEntry({
       };
 
       recognition.onend = () => {
-        console.log('[Voice] Recognition ended, transcript:', finalTranscriptRef.current);
         setIsListening(false);
         const text = finalTranscriptRef.current.trim();
         if (text) {
@@ -150,8 +217,51 @@ export function VoiceResultEntry({
     }
   }, [supported, processTranscript, toast]);
 
+  // === Candidate editing functions ===
+  const updateCandidate = (id: string, updates: Partial<VoiceResultCandidate>) => {
+    setCandidates(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const updated = { ...c, ...updates };
+      // Auto-infer winner from score
+      if (updates.scoreA !== undefined || updates.scoreB !== undefined) {
+        const sA = updates.scoreA ?? c.scoreA;
+        const sB = updates.scoreB ?? c.scoreB;
+        if (sA !== null && sB !== null) {
+          if (sA > sB) updated.winnerSide = 'A';
+          else if (sB > sA) updated.winnerSide = 'B';
+          else updated.winnerSide = 'draw';
+        }
+      }
+      return updated;
+    }));
+  };
+
   const removeCandidate = (id: string) => {
     setCandidates(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateCandidateClub = (id: string, side: 'A' | 'B', club: Club | null) => {
+    setCandidates(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      if (side === 'A') return { ...c, pairAClub: club };
+      return { ...c, pairBClub: club };
+    }));
+  };
+
+  const updateCandidatePair = (id: string, pairId: string) => {
+    const pair = currentPairs.find(p => p.id === pairId);
+    const otherPair = currentPairs.find(p => p.id !== pairId);
+    if (!pair) return;
+    setCandidates(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      return {
+        ...c,
+        pairAId: pair.id,
+        pairAPlayers: pair.players.map(p => p.name).join(' + '),
+        pairBId: otherPair?.id,
+        pairBPlayers: otherPair ? otherPair.players.map(p => p.name).join(' + ') : '?',
+      };
+    }));
   };
 
   const handleConfirm = () => {
@@ -161,7 +271,7 @@ export function VoiceResultEntry({
     if (validCandidates.length === 0) {
       toast({
         title: 'אין תוצאות תקינות',
-        description: 'כל התוצאות חסרות מידע. נסה שוב או הכנס ידנית.',
+        description: 'כל התוצאות חסרות מידע. השלם את השדות החסרים או נסה שוב.',
         variant: 'destructive',
       });
       return;
@@ -178,25 +288,21 @@ export function VoiceResultEntry({
     setTranscript('');
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-400';
-    if (confidence >= 0.5) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 0.8) return 'גבוהה';
-    if (confidence >= 0.5) return 'בינונית';
-    return 'נמוכה';
+  const getConfidenceBadge = (confidence: number) => {
+    if (confidence >= 0.8) return <Badge variant="outline" className="text-xs text-green-400 border-green-400/30">גבוהה</Badge>;
+    if (confidence >= 0.5) return <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400/30">בינונית</Badge>;
+    return <Badge variant="outline" className="text-xs text-red-400 border-red-400/30">נמוכה</Badge>;
   };
 
   if (!supported) {
     return null;
   }
 
+  const validCount = candidates.filter(c => c.pairAClub && c.pairBClub && c.scoreA !== null && c.scoreB !== null).length;
+
   return (
     <>
-      {/* Main Voice Button - full width, prominent */}
+      {/* Main Voice Button */}
       {!isListening ? (
         <Button
           variant="outline"
@@ -247,91 +353,41 @@ export function VoiceResultEntry({
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={(open) => { if (!open) handleCancel(); }}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mic className="h-5 w-5" />
-              אישור תוצאות
+              אישור תוצאות ({candidates.length})
             </DialogTitle>
             <DialogDescription>
-              בדקו את התוצאות שזוהו ואשרו להחלה
+              בדקו ותקנו את התוצאות לפני אישור
             </DialogDescription>
           </DialogHeader>
 
           {/* Transcript */}
-          <div className="bg-muted rounded-md p-3 text-sm" dir="rtl">
+          <div className="bg-muted rounded-md p-2 text-sm">
             <p className="text-xs text-muted-foreground mb-1">תמלול:</p>
-            <p className="text-foreground">{transcript}</p>
+            <p className="text-foreground text-xs">{transcript}</p>
           </div>
 
-          {/* Parsed Results */}
+          {/* Parsed Results - Editable */}
           <div className="space-y-3">
             {candidates.map((candidate) => {
               const isValid = candidate.pairAClub && candidate.pairBClub && candidate.scoreA !== null && candidate.scoreB !== null;
               return (
-                <Card key={candidate.id} className={`p-3 ${isValid ? 'border-border' : 'border-destructive/50'}`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${getConfidenceColor(candidate.confidence)}`}
-                      >
-                        ביטחון: {getConfidenceLabel(candidate.confidence)}
-                      </Badge>
-                      {!isValid && (
-                        <Badge variant="destructive" className="text-xs">חסר מידע</Badge>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-destructive"
-                      onClick={() => removeCandidate(candidate.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-1 text-sm" dir="rtl">
-                    <div className="flex items-center justify-between">
-                      <span className="text-foreground font-medium">{candidate.pairAPlayers}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {candidate.pairAClub?.name ?? '❓'}
-                      </Badge>
-                    </div>
-                    <div className="text-center text-lg font-bold text-neon-green">
-                      {candidate.scoreA ?? '?'} - {candidate.scoreB ?? '?'}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-foreground font-medium">{candidate.pairBPlayers}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {candidate.pairBClub?.name ?? '❓'}
-                      </Badge>
-                    </div>
-                    {candidate.winnerSide && (
-                      <p className="text-xs text-center text-muted-foreground mt-1">
-                        {candidate.winnerSide === 'A' && `🏆 ${candidate.pairAPlayers}`}
-                        {candidate.winnerSide === 'B' && `🏆 ${candidate.pairBPlayers}`}
-                        {candidate.winnerSide === 'draw' && '🤝 תיקו'}
-                      </p>
-                    )}
-                  </div>
-
-                  {candidate.warnings.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {candidate.warnings.map((warning, idx) => (
-                        <div key={idx} className="flex items-center gap-1 text-xs text-yellow-400">
-                          <AlertTriangle className="h-3 w-3 shrink-0" />
-                          <span>{warning}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-1" dir="rtl">
-                    "{candidate.transcriptFragment}"
-                  </p>
-                </Card>
+                <CandidateEditor
+                  key={candidate.id}
+                  candidate={candidate}
+                  isValid={!!isValid}
+                  currentPairs={currentPairs}
+                  availableClubs={availableClubs}
+                  allClubs={allClubs}
+                  onUpdateClub={updateCandidateClub}
+                  onUpdateScore={(id, side, val) => updateCandidate(id, side === 'A' ? { scoreA: val } : { scoreB: val })}
+                  onUpdatePair={updateCandidatePair}
+                  onRemove={removeCandidate}
+                  getConfidenceBadge={getConfidenceBadge}
+                />
               );
             })}
           </div>
@@ -342,23 +398,166 @@ export function VoiceResultEntry({
             </p>
           )}
 
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex gap-2 sm:flex-row">
             <Button variant="outline" onClick={handleCancel} className="flex-1">
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 ml-1" />
               ביטול
             </Button>
             <Button
               variant="gaming"
               onClick={handleConfirm}
-              disabled={candidates.filter(c => c.pairAClub && c.pairBClub && c.scoreA !== null && c.scoreB !== null).length === 0}
+              disabled={validCount === 0}
               className="flex-1"
             >
-              <Check className="h-4 w-4 mr-1" />
-              אישור ({candidates.filter(c => c.pairAClub && c.pairBClub && c.scoreA !== null && c.scoreB !== null).length})
+              <Check className="h-4 w-4 ml-1" />
+              אישור ({validCount})
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/** Editable candidate card */
+function CandidateEditor({
+  candidate,
+  isValid,
+  currentPairs,
+  availableClubs,
+  allClubs,
+  onUpdateClub,
+  onUpdateScore,
+  onUpdatePair,
+  onRemove,
+  getConfidenceBadge,
+}: {
+  candidate: VoiceResultCandidate;
+  isValid: boolean;
+  currentPairs: Pair[];
+  availableClubs: Club[];
+  allClubs: Club[];
+  onUpdateClub: (id: string, side: 'A' | 'B', club: Club | null) => void;
+  onUpdateScore: (id: string, side: 'A' | 'B', val: number | null) => void;
+  onUpdatePair: (id: string, pairId: string) => void;
+  onRemove: (id: string) => void;
+  getConfidenceBadge: (confidence: number) => React.ReactNode;
+}) {
+  return (
+    <Card className={`p-3 ${isValid ? 'border-border' : 'border-destructive/50'}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {getConfidenceBadge(candidate.confidence)}
+          {!isValid && (
+            <Badge variant="destructive" className="text-xs">השלם שדות</Badge>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-destructive"
+          onClick={() => onRemove(candidate.id)}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {/* Pair selector */}
+      {currentPairs.length > 0 && (
+        <div className="mb-2">
+          <Select
+            value={candidate.pairAId || ''}
+            onValueChange={(val) => onUpdatePair(candidate.id, val)}
+          >
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue placeholder="בחר זוג" />
+            </SelectTrigger>
+            <SelectContent>
+              {currentPairs.map(pair => (
+                <SelectItem key={pair.id} value={pair.id} className="text-xs">
+                  {pair.players.map(p => p.name).join(' + ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Team A */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-16 shrink-0">{candidate.pairAPlayers.split(' + ')[0] || 'זוג א'}</span>
+          <div className="flex-1">
+            <ClubSelector
+              value={candidate.pairAClub}
+              clubs={availableClubs.length > 0 ? availableClubs : allClubs}
+              onChange={(club) => onUpdateClub(candidate.id, 'A', club)}
+              placeholder="קבוצה א'"
+            />
+          </div>
+        </div>
+
+        {/* Score */}
+        <div className="flex items-center justify-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            max={99}
+            value={candidate.scoreA ?? ''}
+            onChange={(e) => onUpdateScore(candidate.id, 'A', e.target.value === '' ? null : parseInt(e.target.value))}
+            className="w-14 h-8 text-center text-lg font-bold"
+          />
+          <span className="text-muted-foreground font-bold">-</span>
+          <Input
+            type="number"
+            min={0}
+            max={99}
+            value={candidate.scoreB ?? ''}
+            onChange={(e) => onUpdateScore(candidate.id, 'B', e.target.value === '' ? null : parseInt(e.target.value))}
+            className="w-14 h-8 text-center text-lg font-bold"
+          />
+        </div>
+
+        {/* Team B */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground w-16 shrink-0">{candidate.pairBPlayers.split(' + ')[0] || 'זוג ב'}</span>
+          <div className="flex-1">
+            <ClubSelector
+              value={candidate.pairBClub}
+              clubs={availableClubs.length > 0 ? availableClubs : allClubs}
+              onChange={(club) => onUpdateClub(candidate.id, 'B', club)}
+              placeholder="קבוצה ב'"
+            />
+          </div>
+        </div>
+
+        {/* Winner indicator */}
+        {candidate.winnerSide && candidate.scoreA !== null && candidate.scoreB !== null && (
+          <p className="text-xs text-center text-muted-foreground">
+            {candidate.winnerSide === 'A' && `🏆 ${candidate.pairAPlayers}`}
+            {candidate.winnerSide === 'B' && `🏆 ${candidate.pairBPlayers}`}
+            {candidate.winnerSide === 'draw' && '🤝 תיקו'}
+          </p>
+        )}
+      </div>
+
+      {/* Warnings */}
+      {candidate.warnings.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {candidate.warnings.map((warning, idx) => (
+            <div key={idx} className="flex items-center gap-1 text-xs text-yellow-400">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span>{warning}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Fragment */}
+      <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-1">
+        "{candidate.transcriptFragment}"
+      </p>
+    </Card>
   );
 }

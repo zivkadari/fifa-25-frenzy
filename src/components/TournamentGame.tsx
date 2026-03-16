@@ -997,7 +997,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     if (!roundData) return;
 
     let latestEvening = currentEvening;
-    let latestRound = currentRoundData;
+    let latestRound = currentEvening.rounds[currentRound];
     let latestConsumed = [...consumedClubIdsThisRound];
     let latestUsedCounts = { ...usedClubCounts };
 
