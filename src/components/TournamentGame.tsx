@@ -605,7 +605,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
     setSelectedClubs(newSelected);
     
     // Close accordion after selection
-    setOpenAccordion(undefined);
+    setOpenAccordion("");
 
     if (newSelected[0] && newSelected[1]) {
       // Persist selected clubs into the current in-progress match

@@ -609,7 +609,7 @@ const handleGoHome = () => {
           <EveningSummary
             evening={currentEvening}
             onSaveToHistory={handleSaveToHistory}
-            onBackToHome={() => window.history.back()}
+            onBackToHome={handleGoHome}
           />
         ) : null;
       
