@@ -522,7 +522,7 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
           pair1_assigned: basePools[1].length,
           pair0_remaining: filtered[0].length,
           pair1_remaining: filtered[1].length,
-          usedThisRound: Array.from(usedThisRound),
+          consumedThisRound,
           expectedPoolSize: maxMatches,
         });
         if (basePools[0].length < maxMatches || basePools[1].length < maxMatches) {
