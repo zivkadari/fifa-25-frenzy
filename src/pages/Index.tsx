@@ -28,8 +28,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
 import { PairsGameModeSelection } from "@/components/PairsGameModeSelection";
 import { TierQuestionFlow } from "@/components/TierQuestionFlow";
+import { FPSetup } from "@/components/FPSetup";
+import { FPGame } from "@/components/FPGame";
+import { FPSummary } from "@/components/FPSummary";
+import { FPEvening } from "@/types/fivePlayerTypes";
+import { createFPEvening } from "@/services/fivePlayerEngine";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow' | 'fp-setup' | 'fp-game' | 'fp-summary';
 
 const Index = () => {
   const location = useLocation();
