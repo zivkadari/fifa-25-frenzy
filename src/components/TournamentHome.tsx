@@ -37,6 +37,7 @@ interface TournamentHomeProps {
 export const TournamentHome = ({ 
   onStartNew, 
   onViewHistory, 
+  onViewFPHistory,
   onResume, 
   onCloseTournament,
   onManageTeams,
