@@ -107,7 +107,8 @@ function generateFairPermutations(players: Player[]): Player[][] {
  * Generate team banks for all 10 pairs.
  * Each pair gets exactly 6 clubs: 2×5★, 2×4.5★, 2×4★.
  * Constraints:
- *  - A team may appear at most `maxAppearances` times in the entire evening (default 2)
+ *  - 5★ teams may appear at most `maxAppearances` times (default 2)
+ *  - 4.5★ and 4★ teams may appear at most once
  *  - Interleaved allocation (fair)
  */
 export function generateTeamBanks(
@@ -123,12 +124,18 @@ export function generateTeamBanks(
   const clubs45 = shuffleArray(allClubs.filter(c => c.stars === 4.5 && !c.isPrime));
   const clubs4 = shuffleArray(allClubs.filter(c => c.stars === 4 && !c.isPrime));
 
+  // Per-tier max appearances: 5★ uses the parameter, 4.5★ and 4★ always 1
+  const max5 = maxAppearances;
+  const max45 = 1;
+  const max4 = 1;
+
   // We need 10 pairs × 2 teams per tier = 20 slots per tier
-  // With max N appearances per team, we need at least ceil(20/N) unique teams per tier
-  const minNeeded = Math.ceil(20 / maxAppearances);
-  if (clubs5.length < minNeeded) return `לא מספיק קבוצות/נבחרות 5 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs5.length})`;
-  if (clubs45.length < minNeeded) return `לא מספיק קבוצות/נבחרות 4.5 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs45.length})`;
-  if (clubs4.length < minNeeded) return `לא מספיק קבוצות/נבחרות 4 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs4.length})`;
+  const minNeeded5 = Math.ceil(20 / max5);
+  const minNeeded45 = Math.ceil(20 / max45);
+  const minNeeded4 = Math.ceil(20 / max4);
+  if (clubs5.length < minNeeded5) return `לא מספיק קבוצות/נבחרות 5 כוכבים (צריך לפחות ${minNeeded5}, יש ${clubs5.length})`;
+  if (clubs45.length < minNeeded45) return `לא מספיק קבוצות/נבחרות 4.5 כוכבים (צריך לפחות ${minNeeded45}, יש ${clubs45.length})`;
+  if (clubs4.length < minNeeded4) return `לא מספיק קבוצות/נבחרות 4 כוכבים (צריך לפחות ${minNeeded4}, יש ${clubs4.length})`;
 
   const banks: FPTeamBank[] = pairs.map(p => ({
     pairId: p.id,
@@ -136,7 +143,7 @@ export function generateTeamBanks(
     usedClubIds: [],
   }));
 
-  // Track global team usage count (max N appearances)
+  // Track global team usage count
   const globalClubCount = new Map<string, number>();
   // Track per-player club assignments
   const playerClubs = new Map<string, Set<string>>(); // playerId -> set of clubIds
@@ -144,16 +151,14 @@ export function generateTeamBanks(
     playerClubs.set(p.id, new Set());
   }
 
-  const tiers: { pool: Club[]; countPerPair: number }[] = [
-    { pool: clubs5, countPerPair: 2 },
-    { pool: clubs45, countPerPair: 2 },
-    { pool: clubs4, countPerPair: 2 },
+  const tiers: { pool: Club[]; countPerPair: number; maxForTier: number }[] = [
+    { pool: clubs5, countPerPair: 2, maxForTier: max5 },
+    { pool: clubs45, countPerPair: 2, maxForTier: max45 },
+    { pool: clubs4, countPerPair: 2, maxForTier: max4 },
   ];
 
   for (const tier of tiers) {
     for (let pass = 0; pass < tier.countPerPair; pass++) {
-      // Interleaved: one club per pair per pass
-      // Randomize pair order each pass for fairness
       const pairOrder = shuffleArray([...Array(10).keys()]);
       for (const pairIdx of pairOrder) {
         const pair = pairs[pairIdx];
@@ -163,16 +168,14 @@ export function generateTeamBanks(
         const p1Clubs = playerClubs.get(p1Id)!;
         const p2Clubs = playerClubs.get(p2Id)!;
 
-        // Find a valid club from this tier
         let assigned = false;
         for (const club of tier.pool) {
           const count = globalClubCount.get(club.id) || 0;
-          if (count >= maxAppearances) continue;
+          if (count >= tier.maxForTier) continue;
           if (p1Clubs.has(club.id)) continue;
           if (p2Clubs.has(club.id)) continue;
           if (bank.clubs.some(c => c.id === club.id)) continue;
 
-          // Assign
           bank.clubs.push(club);
           globalClubCount.set(club.id, count + 1);
           p1Clubs.add(club.id);
