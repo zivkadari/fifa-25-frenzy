@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { TeamsManager } from "@/components/TeamsManager";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { SinglesClubAssignment } from "@/components/SinglesClubAssignment";
@@ -56,6 +56,8 @@ const Index = () => {
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
   // 5-Player Doubles state
   const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
+  const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
+  const [showFpDeadlock, setShowFpDeadlock] = useState(false);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
@@ -678,9 +680,12 @@ const handleGoHome = () => {
             <FPSetup
               onBack={() => window.history.back()}
               onStart={(players) => {
-                const result = createFPEvening(players, clubsWithOverrides);
+                // Try strict (max 2 appearances)
+                const result = createFPEvening(players, clubsWithOverrides, 2);
                 if (typeof result === 'string') {
-                  toast({ title: result, variant: "destructive" });
+                  // Strict failed – show deadlock dialog
+                  setFpDeadlockPlayers(players);
+                  setShowFpDeadlock(true);
                   return;
                 }
                 setFpEvening(result);
@@ -747,6 +752,44 @@ const handleGoHome = () => {
           {renderCurrentState()}
         </div>
       )}
+
+      {/* FP Deadlock Dialog */}
+      <Dialog open={showFpDeadlock} onOpenChange={setShowFpDeadlock}>
+        <DialogContent className="bg-gaming-bg border-border" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">לא ניתן ליצור ליגה</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              אין מספיק קבוצות/נבחרות זמינות כדי ליצור בנקים חוקיים לכל 10 הזוגות תחת האילוצים המחמירים (מקסימום 2 הופעות לקבוצה).
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            ניתן לנסות שוב עם אילוץ מרוכך: לאפשר לכל קבוצה להופיע עד 3 פעמים בערב.
+          </p>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setShowFpDeadlock(false); setFpDeadlockPlayers(null); }}>
+              ביטול
+            </Button>
+            <Button
+              variant="gaming"
+              onClick={() => {
+                if (!fpDeadlockPlayers) return;
+                const result = createFPEvening(fpDeadlockPlayers, clubsWithOverrides, 3);
+                if (typeof result === 'string') {
+                  toast({ title: result, variant: "destructive" });
+                  return;
+                }
+                setShowFpDeadlock(false);
+                setFpDeadlockPlayers(null);
+                setFpEvening(result);
+                StorageService.saveFPActive(result);
+                goTo('fp-game');
+              }}
+            >
+              נסה עם מקסימום 3 הופעות
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
