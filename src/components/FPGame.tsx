@@ -114,65 +114,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const availableClubsA = bankA.clubs.filter(c => !bankA.usedClubIds.includes(c.id));
   const availableClubsB = bankB.clubs.filter(c => !bankB.usedClubIds.includes(c.id));
 
-  const canSubmit = selectedClubA && selectedClubB && scoreA !== '' && scoreB !== '';
 
-  const canSubmit = selectedClubA && selectedClubB && scoreA !== '' && scoreB !== '';
-
-  const handleSubmitResult = useCallback(() => {
-    if (!selectedClubA || !selectedClubB || scoreA === '' || scoreB === '') return;
-    const sA = parseInt(scoreA, 10);
-    const sB = parseInt(scoreB, 10);
-    if (isNaN(sA) || isNaN(sB) || sA < 0 || sB < 0) {
-      toast({ title: "ציון לא תקין", variant: "destructive" });
-      return;
-    }
-
-    const updatedSchedule = [...currentEvening.schedule];
-    updatedSchedule[currentEvening.currentMatchIndex] = {
-      ...currentMatch,
-      clubA: selectedClubA,
-      clubB: selectedClubB,
-      scoreA: sA,
-      scoreB: sB,
-      completed: true,
-    };
-
-    // Mark clubs as used in banks
-    const updatedBanks = currentEvening.teamBanks.map(bank => {
-      if (bank.pairId === currentMatch.pairA.id && !bank.usedClubIds.includes(selectedClubA.id)) {
-        return { ...bank, usedClubIds: [...bank.usedClubIds, selectedClubA.id] };
-      }
-      if (bank.pairId === currentMatch.pairB.id && !bank.usedClubIds.includes(selectedClubB.id)) {
-        return { ...bank, usedClubIds: [...bank.usedClubIds, selectedClubB.id] };
-      }
-      return bank;
-    });
-
-    const nextIndex = currentEvening.currentMatchIndex + 1;
-    const isComplete = nextIndex >= totalMatches;
-
-    const updated: FPEvening = {
-      ...currentEvening,
-      schedule: updatedSchedule,
-      teamBanks: updatedBanks,
-      currentMatchIndex: isComplete ? currentEvening.currentMatchIndex : nextIndex,
-      completed: isComplete,
-    };
-
-    setCurrentEvening(updated);
-    onUpdateEvening(updated);
-    setSelectedClubA(null);
-    setSelectedClubB(null);
-    setScoreA('');
-    setScoreB('');
-
-    if (isComplete) {
-      onComplete(updated);
-    }
-  }, [currentEvening, currentMatch, selectedClubA, selectedClubB, scoreA, scoreB, totalMatches, onComplete, onUpdateEvening, toast]);
-
-  const pairStats = calculatePairStats(currentEvening);
-  const playerStats = calculatePlayerStats(currentEvening);
 
   const pairName = (pair: { players: [{ name: string }, { name: string }] }) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
