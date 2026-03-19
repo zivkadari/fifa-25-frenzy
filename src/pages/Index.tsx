@@ -34,8 +34,9 @@ import { FPSummary } from "@/components/FPSummary";
 import { FPEvening } from "@/types/fivePlayerTypes";
 import { createFPEvening } from "@/services/fivePlayerEngine";
 import { FPHistory } from "@/components/FPHistory";
+import { FPBankOverview } from "@/components/FPBankOverview";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow' | 'fp-setup' | 'fp-game' | 'fp-summary' | 'fp-history';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow' | 'fp-setup' | 'fp-bank-overview' | 'fp-game' | 'fp-summary' | 'fp-history';
 
 const Index = () => {
   const location = useLocation();
