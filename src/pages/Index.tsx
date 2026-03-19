@@ -671,6 +671,56 @@ const handleGoHome = () => {
             />
           );
         
+        case 'fp-setup':
+          return (
+            <FPSetup
+              onBack={() => window.history.back()}
+              onStart={(players) => {
+                const result = createFPEvening(players, clubsWithOverrides);
+                if (typeof result === 'string') {
+                  toast({ title: result, variant: "destructive" });
+                  return;
+                }
+                setFpEvening(result);
+                StorageService.saveFPActive(result);
+                goTo('fp-game');
+              }}
+            />
+          );
+        
+        case 'fp-game':
+          return fpEvening ? (
+            <FPGame
+              evening={fpEvening}
+              onBack={() => window.history.back()}
+              onComplete={(ev) => {
+                StorageService.clearFPActive();
+                setFpEvening(ev);
+                goTo('fp-summary');
+              }}
+              onGoHome={() => goTo('home')}
+              onUpdateEvening={(ev) => {
+                setFpEvening(ev);
+                if (!ev.completed) StorageService.saveFPActive(ev);
+              }}
+            />
+          ) : null;
+        
+        case 'fp-summary':
+          return fpEvening ? (
+            <FPSummary
+              evening={fpEvening}
+              onSave={(ev) => {
+                StorageService.saveFPEvening(ev);
+                StorageService.clearFPActive();
+              }}
+              onBackToHome={() => {
+                setFpEvening(null);
+                goTo('home');
+              }}
+            />
+          ) : null;
+        
         default:
           return null;
     }
