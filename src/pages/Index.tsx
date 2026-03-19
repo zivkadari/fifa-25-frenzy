@@ -795,7 +795,7 @@ const handleGoHome = () => {
                 goTo('fp-bank-overview');
               }}
             >
-              נסה עם מקסימום 3 הופעות
+              נסה עם מקסימום 3 הופעות (5 כוכבים בלבד)
             </Button>
           </DialogFooter>
         </DialogContent>
