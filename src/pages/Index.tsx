@@ -53,6 +53,8 @@ const Index = () => {
   const [pendingWinsToComplete, setPendingWinsToComplete] = useState<number>(4);
   const [pendingTeamId, setPendingTeamId] = useState<string | undefined>(undefined);
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
+  // 5-Player Doubles state
+  const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
