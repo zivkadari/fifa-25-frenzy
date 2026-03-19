@@ -96,4 +96,55 @@ export class StorageService {
       console.error('Failed to clear active evening:', error);
     }
   }
+
+  // --- 5-Player Doubles persistence ---
+  static saveFPEvening(evening: FPEvening): void {
+    try {
+      const existing = this.loadFPEvenings();
+      localStorage.setItem(FP_STORAGE_KEY, JSON.stringify([...existing, evening]));
+    } catch (error) {
+      console.error('Failed to save FP evening:', error);
+    }
+  }
+
+  static loadFPEvenings(): FPEvening[] {
+    try {
+      const stored = localStorage.getItem(FP_STORAGE_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch {
+      return [];
+    }
+  }
+
+  static deleteFPEvening(eveningId: string): void {
+    try {
+      const existing = this.loadFPEvenings();
+      localStorage.setItem(FP_STORAGE_KEY, JSON.stringify(existing.filter(e => e.id !== eveningId)));
+    } catch {}
+  }
+
+  static saveFPActive(evening: FPEvening): void {
+    try {
+      localStorage.setItem(FP_ACTIVE_KEY, JSON.stringify(evening));
+    } catch {}
+  }
+
+  static loadFPActive(): FPEvening | null {
+    try {
+      const stored = localStorage.getItem(FP_ACTIVE_KEY);
+      if (!stored) return null;
+      const parsed = JSON.parse(stored) as FPEvening;
+      if (!parsed || !parsed.id || parsed.mode !== 'five-player-doubles') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  static clearFPActive(): void {
+    try {
+      localStorage.removeItem(FP_ACTIVE_KEY);
+    } catch {}
+  }
 }
