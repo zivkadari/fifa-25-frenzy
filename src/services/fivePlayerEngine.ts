@@ -167,7 +167,7 @@ export function generateTeamBanks(
         let assigned = false;
         for (const club of tier.pool) {
           const count = globalClubCount.get(club.id) || 0;
-          if (count >= 2) continue;
+          if (count >= maxAppearances) continue;
           if (p1Clubs.has(club.id)) continue;
           if (p2Clubs.has(club.id)) continue;
           if (bank.clubs.some(c => c.id === club.id)) continue;
