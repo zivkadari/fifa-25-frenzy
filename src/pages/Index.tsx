@@ -416,6 +416,7 @@ const handleGoHome = () => {
           <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
+            onViewFPHistory={() => goTo('fp-history')}
             onResume={
               fpEvening && !fpEvening.completed
                 ? () => goTo('fp-game')
