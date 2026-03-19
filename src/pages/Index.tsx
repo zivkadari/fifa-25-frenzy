@@ -752,6 +752,44 @@ const handleGoHome = () => {
           {renderCurrentState()}
         </div>
       )}
+
+      {/* FP Deadlock Dialog */}
+      <Dialog open={showFpDeadlock} onOpenChange={setShowFpDeadlock}>
+        <DialogContent className="bg-gaming-bg border-border" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">לא ניתן ליצור ליגה</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              אין מספיק קבוצות/נבחרות זמינות כדי ליצור בנקים חוקיים לכל 10 הזוגות תחת האילוצים המחמירים (מקסימום 2 הופעות לקבוצה).
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            ניתן לנסות שוב עם אילוץ מרוכך: לאפשר לכל קבוצה להופיע עד 3 פעמים בערב.
+          </p>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setShowFpDeadlock(false); setFpDeadlockPlayers(null); }}>
+              ביטול
+            </Button>
+            <Button
+              variant="gaming"
+              onClick={() => {
+                if (!fpDeadlockPlayers) return;
+                const result = createFPEvening(fpDeadlockPlayers, clubsWithOverrides, 3);
+                if (typeof result === 'string') {
+                  toast({ title: result, variant: "destructive" });
+                  return;
+                }
+                setShowFpDeadlock(false);
+                setFpDeadlockPlayers(null);
+                setFpEvening(result);
+                StorageService.saveFPActive(result);
+                goTo('fp-game');
+              }}
+            >
+              נסה עם מקסימום 3 הופעות
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
