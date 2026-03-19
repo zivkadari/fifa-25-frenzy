@@ -792,7 +792,7 @@ const handleGoHome = () => {
                 setFpDeadlockPlayers(null);
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
-                goTo('fp-game');
+                goTo('fp-bank-overview');
               }}
             >
               נסה עם מקסימום 3 הופעות
