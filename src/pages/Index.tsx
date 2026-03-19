@@ -77,11 +77,15 @@ const Index = () => {
 useEffect(() => {
     let mounted = true;
 
-    // Load active tournament but stay on home screen (user can choose to resume)
+    // Load active regular tournament
     const active = StorageService.loadActiveEvening();
     if (active && !active.completed) {
       setCurrentEvening(active);
-      // Don't auto-navigate to game - let user click "Resume Evening"
+    }
+    // Load active FP tournament
+    const fpActive = StorageService.loadFPActive();
+    if (fpActive && !fpActive.completed) {
+      setFpEvening(fpActive);
     }
 
     const loadHistory = async () => {
