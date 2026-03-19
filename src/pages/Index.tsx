@@ -691,10 +691,19 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
-                goTo('fp-game');
+                goTo('fp-bank-overview');
               }}
             />
           );
+        
+        case 'fp-bank-overview':
+          return fpEvening ? (
+            <FPBankOverview
+              evening={fpEvening}
+              onBack={() => window.history.back()}
+              onContinue={() => goTo('fp-game')}
+            />
+          ) : null;
         
         case 'fp-game':
           return fpEvening ? (
