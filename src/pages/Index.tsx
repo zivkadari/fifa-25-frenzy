@@ -722,6 +722,11 @@ const handleGoHome = () => {
             />
           ) : null;
         
+        case 'fp-history':
+          return (
+            <FPHistory onBack={() => window.history.back()} />
+          );
+        
         default:
           return null;
     }
