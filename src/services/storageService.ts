@@ -154,4 +154,34 @@ export class StorageService {
       localStorage.removeItem(FP_ACTIVE_KEY);
     } catch {}
   }
+
+  // --- Saved 5-Player Groups ---
+  static loadFPGroups(): FPSavedGroup[] {
+    try {
+      const stored = localStorage.getItem(FP_GROUPS_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch { return []; }
+  }
+
+  static saveFPGroups(groups: FPSavedGroup[]): void {
+    try {
+      localStorage.setItem(FP_GROUPS_KEY, JSON.stringify(groups));
+    } catch {}
+  }
+
+  static addFPGroup(group: FPSavedGroup): void {
+    const groups = this.loadFPGroups();
+    this.saveFPGroups([...groups, group]);
+  }
+
+  static updateFPGroup(group: FPSavedGroup): void {
+    const groups = this.loadFPGroups().map(g => g.id === group.id ? group : g);
+    this.saveFPGroups(groups);
+  }
+
+  static deleteFPGroup(groupId: string): void {
+    const groups = this.loadFPGroups().filter(g => g.id !== groupId);
+    this.saveFPGroups(groups);
+  }
 }
