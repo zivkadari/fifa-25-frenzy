@@ -136,7 +136,7 @@ export function generateTeamBanks(
     usedClubIds: [],
   }));
 
-  // Track global club usage count (max 2)
+  // Track global team usage count (max N appearances)
   const globalClubCount = new Map<string, number>();
   // Track per-player club assignments
   const playerClubs = new Map<string, Set<string>>(); // playerId -> set of clubIds
