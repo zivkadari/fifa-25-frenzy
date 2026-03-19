@@ -769,7 +769,7 @@ const handleGoHome = () => {
           <DialogHeader>
             <DialogTitle className="text-foreground">לא ניתן ליצור ליגה</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              אין מספיק קבוצות/נבחרות זמינות כדי ליצור בנקים חוקיים לכל 10 הזוגות תחת האילוצים המחמירים (מקסימום 2 הופעות לקבוצה).
+               אין מספיק קבוצות/נבחרות זמינות כדי ליצור בנקים חוקיים לכל 10 הזוגות תחת האילוצים המחמירים (מקסימום 2 הופעות לקבוצת 5 כוכבים, הופעה אחת ל-4/4.5 כוכבים).
             </DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
