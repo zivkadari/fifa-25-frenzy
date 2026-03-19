@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trophy, History, Gamepad2, User, Users, X, UserPlus, Star, Settings } from "lucide-react";
+import { Trophy, History, Gamepad2, User, Users, X, UserPlus, Star, Settings, Users2 } from "lucide-react";
 import alphaChampionImage from "@/assets/alpha-champion.png";
 import { Link } from "react-router-dom";
 import {
@@ -24,6 +24,7 @@ import {
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
+  onViewFPHistory?: () => void;
   onResume?: () => void;
   onCloseTournament?: () => void;
   onManageTeams?: () => void;
@@ -36,6 +37,7 @@ interface TournamentHomeProps {
 export const TournamentHome = ({ 
   onStartNew, 
   onViewHistory, 
+  onViewFPHistory,
   onResume, 
   onCloseTournament,
   onManageTeams,
@@ -133,6 +135,13 @@ export const TournamentHome = ({
           <History className="h-5 w-5" />
           History
         </Button>
+
+        {onViewFPHistory && (
+          <Button variant="outline" size="lg" onClick={onViewFPHistory} className="w-full border-neon-green/30 hover:bg-neon-green/10">
+            <Users2 className="h-5 w-5" />
+            היסטוריית ליגות 5 שחקנים
+          </Button>
+        )}
 
         {/* Admin Options - single dropdown */}
         {isAdmin && (

@@ -28,8 +28,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getClubsWithOverrides, FIFA_CLUBS } from "@/data/clubs";
 import { PairsGameModeSelection } from "@/components/PairsGameModeSelection";
 import { TierQuestionFlow } from "@/components/TierQuestionFlow";
+import { FPSetup } from "@/components/FPSetup";
+import { FPGame } from "@/components/FPGame";
+import { FPSummary } from "@/components/FPSummary";
+import { FPEvening } from "@/types/fivePlayerTypes";
+import { createFPEvening } from "@/services/fivePlayerEngine";
+import { FPHistory } from "@/components/FPHistory";
 
-type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow';
+type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow' | 'fp-setup' | 'fp-game' | 'fp-summary' | 'fp-history';
 
 const Index = () => {
   const location = useLocation();
@@ -48,6 +54,8 @@ const Index = () => {
   const [pendingWinsToComplete, setPendingWinsToComplete] = useState<number>(4);
   const [pendingTeamId, setPendingTeamId] = useState<string | undefined>(undefined);
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
+  // 5-Player Doubles state
+  const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
@@ -70,11 +78,15 @@ const Index = () => {
 useEffect(() => {
     let mounted = true;
 
-    // Load active tournament but stay on home screen (user can choose to resume)
+    // Load active regular tournament
     const active = StorageService.loadActiveEvening();
     if (active && !active.completed) {
       setCurrentEvening(active);
-      // Don't auto-navigate to game - let user click "Resume Evening"
+    }
+    // Load active FP tournament
+    const fpActive = StorageService.loadFPActive();
+    if (fpActive && !fpActive.completed) {
+      setFpEvening(fpActive);
     }
 
     const loadHistory = async () => {
@@ -404,8 +416,21 @@ const handleGoHome = () => {
           <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
-            onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
-            onCloseTournament={currentEvening && !currentEvening.completed ? handleCloseTournament : undefined}
+            onViewFPHistory={() => goTo('fp-history')}
+            onResume={
+              fpEvening && !fpEvening.completed
+                ? () => goTo('fp-game')
+                : currentEvening && !currentEvening.completed
+                  ? () => goTo('game')
+                  : undefined
+            }
+            onCloseTournament={
+              fpEvening && !fpEvening.completed
+                ? () => { StorageService.clearFPActive(); setFpEvening(null); }
+                : currentEvening && !currentEvening.completed
+                  ? handleCloseTournament
+                  : undefined
+            }
             onManageTeams={() => goTo('teams')}
             onJoinEvening={isAuthed ? () => goTo('join') : undefined}
             isAuthed={isAuthed}
@@ -416,7 +441,7 @@ const handleGoHome = () => {
       
       case 'tournament-type':
         return (
-          <TournamentTypeSelection
+           <TournamentTypeSelection
             onBack={() => window.history.back()}
             onSelectPairs={() => {
               setSelectedTournamentType('pairs');
@@ -425,6 +450,9 @@ const handleGoHome = () => {
             onSelectSingles={() => {
               setSelectedTournamentType('singles');
               goTo('singles-setup');
+            }}
+            onSelectFivePlayer={() => {
+              goTo('fp-setup');
             }}
           />
         );
@@ -643,6 +671,61 @@ const handleGoHome = () => {
               onBack={() => window.history.back()}
               onJoinSuccess={handleJoinSuccess}
             />
+          );
+        
+        case 'fp-setup':
+          return (
+            <FPSetup
+              onBack={() => window.history.back()}
+              onStart={(players) => {
+                const result = createFPEvening(players, clubsWithOverrides);
+                if (typeof result === 'string') {
+                  toast({ title: result, variant: "destructive" });
+                  return;
+                }
+                setFpEvening(result);
+                StorageService.saveFPActive(result);
+                goTo('fp-game');
+              }}
+            />
+          );
+        
+        case 'fp-game':
+          return fpEvening ? (
+            <FPGame
+              evening={fpEvening}
+              onBack={() => window.history.back()}
+              onComplete={(ev) => {
+                StorageService.clearFPActive();
+                setFpEvening(ev);
+                goTo('fp-summary');
+              }}
+              onGoHome={() => goTo('home')}
+              onUpdateEvening={(ev) => {
+                setFpEvening(ev);
+                if (!ev.completed) StorageService.saveFPActive(ev);
+              }}
+            />
+          ) : null;
+        
+        case 'fp-summary':
+          return fpEvening ? (
+            <FPSummary
+              evening={fpEvening}
+              onSave={(ev) => {
+                StorageService.saveFPEvening(ev);
+                StorageService.clearFPActive();
+              }}
+              onBackToHome={() => {
+                setFpEvening(null);
+                goTo('home');
+              }}
+            />
+          ) : null;
+        
+        case 'fp-history':
+          return (
+            <FPHistory onBack={() => window.history.back()} />
           );
         
         default:

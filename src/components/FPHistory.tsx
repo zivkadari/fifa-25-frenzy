@@ -1,0 +1,190 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ArrowLeft, Calendar, Trophy, Trash2, Users2 } from "lucide-react";
+import { FPEvening } from "@/types/fivePlayerTypes";
+import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
+import { StorageService } from "@/services/storageService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+
+interface FPHistoryProps {
+  onBack: () => void;
+}
+
+export const FPHistory = ({ onBack }: FPHistoryProps) => {
+  const [evenings, setEvenings] = useState<FPEvening[]>([]);
+
+  useEffect(() => {
+    setEvenings(StorageService.loadFPEvenings());
+  }, []);
+
+  const sorted = [...evenings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const handleDelete = (id: string) => {
+    StorageService.deleteFPEvening(id);
+    setEvenings(StorageService.loadFPEvenings());
+  };
+
+  return (
+    <div className="min-h-[100svh] bg-gaming-bg p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" dir="rtl">
+      <div className="max-w-md mx-auto">
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-5 w-5 rotate-180" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">היסטוריית ליגות 5 שחקנים</h1>
+            <p className="text-xs text-muted-foreground">{sorted.length} ליגות</p>
+          </div>
+        </div>
+
+        {sorted.length === 0 && (
+          <Card className="bg-gaming-surface/50 border-border/50 p-6">
+            <p className="text-center text-muted-foreground">אין היסטוריה עדיין</p>
+          </Card>
+        )}
+
+        <div className="space-y-3">
+          {sorted.map(ev => {
+            const pairStats = calculatePairStats(ev);
+            const playerStats = calculatePlayerStats(ev);
+            const topPair = pairStats[0];
+            const topPlayer = playerStats[0];
+            const completedCount = ev.schedule.filter(m => m.completed).length;
+
+            return (
+              <Collapsible key={ev.id}>
+                <Card className="bg-gradient-card border-neon-green/20 shadow-card">
+                  <CollapsibleTrigger className="w-full p-4 text-right">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(ev.date).toLocaleDateString('he-IL')}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {completedCount}/30 משחקים
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {ev.players.map(p => p.name).join(', ')}
+                        </p>
+                      </div>
+                      {topPair && (
+                        <div className="text-left">
+                          <Trophy className="h-4 w-4 text-yellow-400 inline ml-1" />
+                          <span className="text-xs text-foreground">
+                            {topPair.pair.players[0].name} & {topPair.pair.players[1].name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-3">
+                      <Tabs defaultValue="pairs">
+                        <TabsList className="w-full grid grid-cols-2">
+                          <TabsTrigger value="pairs">זוגות</TabsTrigger>
+                          <TabsTrigger value="players">שחקנים</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="pairs">
+                          <div className="overflow-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-right text-xs">#</TableHead>
+                                  <TableHead className="text-right text-xs">זוג</TableHead>
+                                  <TableHead className="text-center text-xs">נ</TableHead>
+                                  <TableHead className="text-center text-xs">ת</TableHead>
+                                  <TableHead className="text-center text-xs">ה</TableHead>
+                                  <TableHead className="text-center text-xs font-bold">נק׳</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {pairStats.map((s, idx) => (
+                                  <TableRow key={s.pair.id}>
+                                    <TableCell className="text-xs">{idx + 1}</TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap">
+                                      {s.pair.players[0].name} & {s.pair.players[1].name}
+                                    </TableCell>
+                                    <TableCell className="text-center text-xs">{s.wins}</TableCell>
+                                    <TableCell className="text-center text-xs">{s.draws}</TableCell>
+                                    <TableCell className="text-center text-xs">{s.losses}</TableCell>
+                                    <TableCell className="text-center text-xs font-bold text-neon-green">{s.points}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="players">
+                          <div className="overflow-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-right text-xs">#</TableHead>
+                                  <TableHead className="text-right text-xs">שחקן</TableHead>
+                                  <TableHead className="text-center text-xs">מש׳</TableHead>
+                                  <TableHead className="text-center text-xs">נ</TableHead>
+                                  <TableHead className="text-center text-xs font-bold">נק׳</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {playerStats.map((s, idx) => (
+                                  <TableRow key={s.player.id}>
+                                    <TableCell className="text-xs">{idx + 1}</TableCell>
+                                    <TableCell className="text-xs">{s.player.name}</TableCell>
+                                    <TableCell className="text-center text-xs">{s.played}</TableCell>
+                                    <TableCell className="text-center text-xs">{s.wins}</TableCell>
+                                    <TableCell className="text-center text-xs font-bold text-neon-green">{s.points}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive w-full">
+                            <Trash2 className="h-3 w-3" /> מחק
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>מחק ליגה?</AlertDialogTitle>
+                            <AlertDialogDescription>פעולה זו לא ניתנת לביטול.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>ביטול</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(ev.id)} className="bg-destructive">מחק</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
