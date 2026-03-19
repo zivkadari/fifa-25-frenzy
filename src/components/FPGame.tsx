@@ -113,8 +113,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
 
   const availableClubsA = bankA.clubs.filter(c => !bankA.usedClubIds.includes(c.id));
   const availableClubsB = bankB.clubs.filter(c => !bankB.usedClubIds.includes(c.id));
-
-
+  const canSubmit = selectedClubA && selectedClubB && scoreA !== '' && scoreB !== '';
 
   const pairName = (pair: { players: [{ name: string }, { name: string }] }) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
