@@ -680,9 +680,12 @@ const handleGoHome = () => {
             <FPSetup
               onBack={() => window.history.back()}
               onStart={(players) => {
-                const result = createFPEvening(players, clubsWithOverrides);
+                // Try strict (max 2 appearances)
+                const result = createFPEvening(players, clubsWithOverrides, 2);
                 if (typeof result === 'string') {
-                  toast({ title: result, variant: "destructive" });
+                  // Strict failed – show deadlock dialog
+                  setFpDeadlockPlayers(players);
+                  setShowFpDeadlock(true);
                   return;
                 }
                 setFpEvening(result);
