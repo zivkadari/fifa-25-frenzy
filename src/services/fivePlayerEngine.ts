@@ -107,26 +107,28 @@ function generateFairPermutations(players: Player[]): Player[][] {
  * Generate team banks for all 10 pairs.
  * Each pair gets exactly 6 clubs: 2×5★, 2×4.5★, 2×4★.
  * Constraints:
- *  - A club may appear at most 2 times in the entire evening
- *  - A player may never receive the same club twice (across different pairs)
+ *  - A team may appear at most `maxAppearances` times in the entire evening (default 2)
  *  - Interleaved allocation (fair)
  */
 export function generateTeamBanks(
   pairs: FPPair[],
   players: Player[],
-  clubsOverride?: Club[]
+  clubsOverride?: Club[],
+  maxAppearances: number = 2
 ): FPTeamBank[] | string {
   const allClubs = clubsOverride || FIFA_CLUBS;
   
-  const clubs5 = shuffleArray(allClubs.filter(c => c.stars === 5 && !c.isNational && !c.isPrime));
-  const clubs45 = shuffleArray(allClubs.filter(c => c.stars === 4.5 && !c.isNational && !c.isPrime));
-  const clubs4 = shuffleArray(allClubs.filter(c => c.stars === 4 && !c.isNational && !c.isPrime));
+  // Include both clubs and national teams, exclude only Prime
+  const clubs5 = shuffleArray(allClubs.filter(c => c.stars === 5 && !c.isPrime));
+  const clubs45 = shuffleArray(allClubs.filter(c => c.stars === 4.5 && !c.isPrime));
+  const clubs4 = shuffleArray(allClubs.filter(c => c.stars === 4 && !c.isPrime));
 
-  // We need 10 pairs × 2 clubs per tier = 20 slots per tier
-  // But max 2 appearances per club, so we need at least 10 unique clubs per tier
-  if (clubs5.length < 10) return `לא מספיק קבוצות 5 כוכבים (צריך לפחות 10, יש ${clubs5.length})`;
-  if (clubs45.length < 10) return `לא מספיק קבוצות 4.5 כוכבים (צריך לפחות 10, יש ${clubs45.length})`;
-  if (clubs4.length < 10) return `לא מספיק קבוצות 4 כוכבים (צריך לפחות 10, יש ${clubs4.length})`;
+  // We need 10 pairs × 2 teams per tier = 20 slots per tier
+  // With max N appearances per team, we need at least ceil(20/N) unique teams per tier
+  const minNeeded = Math.ceil(20 / maxAppearances);
+  if (clubs5.length < minNeeded) return `לא מספיק קבוצות/נבחרות 5 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs5.length})`;
+  if (clubs45.length < minNeeded) return `לא מספיק קבוצות/נבחרות 4.5 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs45.length})`;
+  if (clubs4.length < minNeeded) return `לא מספיק קבוצות/נבחרות 4 כוכבים (צריך לפחות ${minNeeded}, יש ${clubs4.length})`;
 
   const banks: FPTeamBank[] = pairs.map(p => ({
     pairId: p.id,
