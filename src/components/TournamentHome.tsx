@@ -24,6 +24,7 @@ import {
 interface TournamentHomeProps {
   onStartNew: () => void;
   onViewHistory: () => void;
+  onViewFPHistory?: () => void;
   onResume?: () => void;
   onCloseTournament?: () => void;
   onManageTeams?: () => void;
