@@ -1,7 +1,10 @@
 import { Evening } from '@/types/tournament';
+import { FPEvening } from '@/types/fivePlayerTypes';
 
 const STORAGE_KEY = 'ea-fc-25-tournaments';
 const ACTIVE_EVENING_KEY = 'ea-fc-25-active-evening';
+const FP_STORAGE_KEY = 'ea-fc-25-fp-tournaments';
+const FP_ACTIVE_KEY = 'ea-fc-25-fp-active';
 
 export class StorageService {
   static saveEvening(evening: Evening): void {
