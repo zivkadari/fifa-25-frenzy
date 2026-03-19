@@ -295,12 +295,12 @@ export function calculatePlayerStats(evening: FPEvening): FPPlayerStats[] {
 /**
  * Create a new 5-player doubles evening.
  */
-export function createFPEvening(players: Player[], clubsOverride?: Club[]): FPEvening | string {
+export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2): FPEvening | string {
   if (players.length !== 5) return 'נדרשים בדיוק 5 שחקנים';
 
   const pairs = generateAllPairs(players);
   const schedule = generateSchedule(players, pairs);
-  const banksResult = generateTeamBanks(pairs, players, clubsOverride);
+  const banksResult = generateTeamBanks(pairs, players, clubsOverride, maxAppearances);
 
   if (typeof banksResult === 'string') return banksResult;
 
