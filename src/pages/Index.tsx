@@ -56,6 +56,8 @@ const Index = () => {
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
   // 5-Player Doubles state
   const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
+  const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
+  const [showFpDeadlock, setShowFpDeadlock] = useState(false);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
