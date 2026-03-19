@@ -33,7 +33,75 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     setCurrentEvening(evening);
   }, [evening]);
 
-  const currentMatch = currentEvening.schedule[currentEvening.currentMatchIndex];
+  const currentMatch = currentEvening.schedule[currentEvening.currentMatchIndex] ?? null;
+
+  // Restore selected clubs from match if already chosen
+  useEffect(() => {
+    if (!currentMatch) return;
+    setSelectedClubA(currentMatch.clubA || null);
+    setSelectedClubB(currentMatch.clubB || null);
+    setScoreA(currentMatch.scoreA !== undefined ? String(currentMatch.scoreA) : '');
+    setScoreB(currentMatch.scoreB !== undefined ? String(currentMatch.scoreB) : '');
+    setShowBankA(false);
+    setShowBankB(false);
+  }, [currentEvening.currentMatchIndex]);
+
+  const handleSubmitResult = useCallback(() => {
+    if (!currentMatch || !selectedClubA || !selectedClubB || scoreA === '' || scoreB === '') return;
+    const sA = parseInt(scoreA, 10);
+    const sB = parseInt(scoreB, 10);
+    if (isNaN(sA) || isNaN(sB) || sA < 0 || sB < 0) {
+      toast({ title: "ציון לא תקין", variant: "destructive" });
+      return;
+    }
+
+    const updatedSchedule = [...currentEvening.schedule];
+    updatedSchedule[currentEvening.currentMatchIndex] = {
+      ...currentMatch,
+      clubA: selectedClubA,
+      clubB: selectedClubB,
+      scoreA: sA,
+      scoreB: sB,
+      completed: true,
+    };
+
+    const updatedBanks = currentEvening.teamBanks.map(bank => {
+      if (bank.pairId === currentMatch.pairA.id && !bank.usedClubIds.includes(selectedClubA.id)) {
+        return { ...bank, usedClubIds: [...bank.usedClubIds, selectedClubA.id] };
+      }
+      if (bank.pairId === currentMatch.pairB.id && !bank.usedClubIds.includes(selectedClubB.id)) {
+        return { ...bank, usedClubIds: [...bank.usedClubIds, selectedClubB.id] };
+      }
+      return bank;
+    });
+
+    const totalMatches = currentEvening.schedule.length;
+    const nextIndex = currentEvening.currentMatchIndex + 1;
+    const isComplete = nextIndex >= totalMatches;
+
+    const updated: FPEvening = {
+      ...currentEvening,
+      schedule: updatedSchedule,
+      teamBanks: updatedBanks,
+      currentMatchIndex: isComplete ? currentEvening.currentMatchIndex : nextIndex,
+      completed: isComplete,
+    };
+
+    setCurrentEvening(updated);
+    onUpdateEvening(updated);
+    setSelectedClubA(null);
+    setSelectedClubB(null);
+    setScoreA('');
+    setScoreB('');
+
+    if (isComplete) {
+      onComplete(updated);
+    }
+  }, [currentEvening, currentMatch, selectedClubA, selectedClubB, scoreA, scoreB, onComplete, onUpdateEvening, toast]);
+
+  const pairStats = calculatePairStats(currentEvening);
+  const playerStats = calculatePlayerStats(currentEvening);
+
   if (!currentMatch) return null;
 
   const roundNum = currentMatch.roundIndex + 1;
@@ -46,15 +114,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const availableClubsA = bankA.clubs.filter(c => !bankA.usedClubIds.includes(c.id));
   const availableClubsB = bankB.clubs.filter(c => !bankB.usedClubIds.includes(c.id));
 
-  // Restore selected clubs from match if already chosen
-  useEffect(() => {
-    setSelectedClubA(currentMatch.clubA || null);
-    setSelectedClubB(currentMatch.clubB || null);
-    setScoreA(currentMatch.scoreA !== undefined ? String(currentMatch.scoreA) : '');
-    setScoreB(currentMatch.scoreB !== undefined ? String(currentMatch.scoreB) : '');
-    setShowBankA(false);
-    setShowBankB(false);
-  }, [currentEvening.currentMatchIndex]);
+  const canSubmit = selectedClubA && selectedClubB && scoreA !== '' && scoreB !== '';
 
   const canSubmit = selectedClubA && selectedClubB && scoreA !== '' && scoreB !== '';
 
