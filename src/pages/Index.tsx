@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { TeamsManager } from "@/components/TeamsManager";
 import { TournamentEngine } from "@/services/tournamentEngine";
 import { SinglesClubAssignment } from "@/components/SinglesClubAssignment";
