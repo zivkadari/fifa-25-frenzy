@@ -439,7 +439,7 @@ const handleGoHome = () => {
       
       case 'tournament-type':
         return (
-          <TournamentTypeSelection
+           <TournamentTypeSelection
             onBack={() => window.history.back()}
             onSelectPairs={() => {
               setSelectedTournamentType('pairs');
@@ -448,6 +448,9 @@ const handleGoHome = () => {
             onSelectSingles={() => {
               setSelectedTournamentType('singles');
               goTo('singles-setup');
+            }}
+            onSelectFivePlayer={() => {
+              goTo('fp-setup');
             }}
           />
         );
