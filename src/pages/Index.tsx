@@ -415,8 +415,20 @@ const handleGoHome = () => {
           <TournamentHome
             onStartNew={handleStartNewEvening}
             onViewHistory={handleViewHistory}
-            onResume={currentEvening && !currentEvening.completed ? () => goTo('game') : undefined}
-            onCloseTournament={currentEvening && !currentEvening.completed ? handleCloseTournament : undefined}
+            onResume={
+              fpEvening && !fpEvening.completed
+                ? () => goTo('fp-game')
+                : currentEvening && !currentEvening.completed
+                  ? () => goTo('game')
+                  : undefined
+            }
+            onCloseTournament={
+              fpEvening && !fpEvening.completed
+                ? () => { StorageService.clearFPActive(); setFpEvening(null); }
+                : currentEvening && !currentEvening.completed
+                  ? handleCloseTournament
+                  : undefined
+            }
             onManageTeams={() => goTo('teams')}
             onJoinEvening={isAuthed ? () => goTo('join') : undefined}
             isAuthed={isAuthed}
