@@ -5,11 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown } from "lucide-react";
-import { FPEvening, FPTeamBank } from "@/types/fivePlayerTypes";
+import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save } from "lucide-react";
+import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 
 interface FPGameProps {
   evening: FPEvening;
@@ -45,6 +52,17 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const [showSaved, setShowSaved] = useState(false);
   const scoreRef = useRef<HTMLDivElement>(null);
 
+  // Drill-down state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerType, setDrawerType] = useState<'pair' | 'player'>('pair');
+  const [selectedPairId, setSelectedPairId] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  // Edit match state
+  const [editingMatchIdx, setEditingMatchIdx] = useState<number | null>(null);
+  const [editScoreA, setEditScoreA] = useState('');
+  const [editScoreB, setEditScoreB] = useState('');
+
   useEffect(() => {
     setCurrentEvening(evening);
   }, [evening]);
@@ -64,7 +82,6 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     setWinnerChoice(null);
     setManualScoreSide(null);
     setShowSaved(false);
-    // Determine starting step
     if (hasClubA && hasClubB) {
       setActiveStep('score');
     } else if (hasClubA) {
@@ -80,7 +97,6 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
       return;
     }
     setSelectedClubA(club);
-    // Auto-advance to step 2
     setTimeout(() => setActiveStep('teamB'), 200);
   }, [selectedClubA]);
 
@@ -90,7 +106,6 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
       return;
     }
     setSelectedClubB(club);
-    // Auto-advance to score
     setTimeout(() => {
       setActiveStep('score');
       setTimeout(() => scoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
@@ -170,6 +185,36 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     }, 600);
   }, [currentEvening, currentMatch, selectedClubA, selectedClubB, scoreA, scoreB, onComplete, onUpdateEvening, toast]);
 
+  // Edit existing result
+  const handleSaveEdit = useCallback((matchGlobalIdx: number) => {
+    const sA = parseInt(editScoreA, 10);
+    const sB = parseInt(editScoreB, 10);
+    if (isNaN(sA) || isNaN(sB) || sA < 0 || sB < 0) {
+      toast({ title: "ציון לא תקין", variant: "destructive" });
+      return;
+    }
+
+    const updatedSchedule = [...currentEvening.schedule];
+    const match = updatedSchedule[matchGlobalIdx];
+    if (!match) return;
+
+    updatedSchedule[matchGlobalIdx] = {
+      ...match,
+      scoreA: sA,
+      scoreB: sB,
+    };
+
+    const updated: FPEvening = {
+      ...currentEvening,
+      schedule: updatedSchedule,
+    };
+
+    setCurrentEvening(updated);
+    onUpdateEvening(updated);
+    setEditingMatchIdx(null);
+    toast({ title: "התוצאה עודכנה בהצלחה" });
+  }, [currentEvening, editScoreA, editScoreB, onUpdateEvening, toast]);
+
   const pairStats = calculatePairStats(currentEvening);
   const playerStats = calculatePlayerStats(currentEvening);
 
@@ -198,13 +243,11 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     );
   };
 
-  const stepNumber = (step: MatchStep) => step === 'teamA' ? 1 : step === 'teamB' ? 2 : 3;
-  const currentStepNum = stepNumber(activeStep);
+  const currentStepNum = activeStep === 'teamA' ? 1 : activeStep === 'teamB' ? 2 : 3;
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center gap-2 mb-3">
       {(['teamA', 'teamB', 'score'] as MatchStep[]).map((step, i) => {
-        const num = i + 1;
         const isActive = activeStep === step;
         const isDone = step === 'teamA' ? !!selectedClubA
           : step === 'teamB' ? !!selectedClubB
@@ -227,7 +270,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
                     : 'bg-gaming-surface/50 text-muted-foreground border border-border/30'
               }`}
             >
-              {isDone && !isActive ? <Check className="h-3 w-3" /> : <span>{num}</span>}
+              {isDone && !isActive ? <Check className="h-3 w-3" /> : <span>{i + 1}</span>}
               <span>{labels[i]}</span>
             </button>
           </div>
@@ -449,7 +492,6 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
 
         {isActive && !isLocked && (
           <div className="space-y-3">
-            {/* Mode toggle */}
             <div className="flex gap-1 justify-center">
               <button
                 onClick={() => { setScoreMode('quick'); setWinnerChoice(null); }}
@@ -490,6 +532,213 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     );
   };
 
+  // Get matches for a specific pair
+  const getMatchesForPair = (pairId: string): FPMatch[] => {
+    return currentEvening.schedule.filter(
+      m => m.completed && (m.pairA.id === pairId || m.pairB.id === pairId)
+    );
+  };
+
+  // Get matches for a specific player
+  const getMatchesForPlayer = (playerId: string): FPMatch[] => {
+    return currentEvening.schedule.filter(
+      m => m.completed && (
+        m.pairA.players.some(p => p.id === playerId) ||
+        m.pairB.players.some(p => p.id === playerId)
+      )
+    );
+  };
+
+  const openPairDetails = (pairId: string) => {
+    setSelectedPairId(pairId);
+    setSelectedPlayerId(null);
+    setDrawerType('pair');
+    setDrawerOpen(true);
+  };
+
+  const openPlayerDetails = (playerId: string) => {
+    setSelectedPlayerId(playerId);
+    setSelectedPairId(null);
+    setDrawerType('player');
+    setDrawerOpen(true);
+  };
+
+  const renderMatchRow = (match: FPMatch, perspectivePairId?: string, perspectivePlayerId?: string) => {
+    const isEditing = editingMatchIdx === match.globalIndex;
+    
+    // Determine "our" side
+    let isOurSideA = true;
+    if (perspectivePairId) {
+      isOurSideA = match.pairA.id === perspectivePairId;
+    } else if (perspectivePlayerId) {
+      isOurSideA = match.pairA.players.some(p => p.id === perspectivePlayerId);
+    }
+
+    const ourScore = isOurSideA ? match.scoreA : match.scoreB;
+    const theirScore = isOurSideA ? match.scoreB : match.scoreA;
+    const ourPair = isOurSideA ? match.pairA : match.pairB;
+    const theirPair = isOurSideA ? match.pairB : match.pairA;
+    const ourClub = isOurSideA ? match.clubA : match.clubB;
+    const theirClub = isOurSideA ? match.clubB : match.clubA;
+
+    const result = ourScore !== undefined && theirScore !== undefined
+      ? ourScore > theirScore ? 'W' : ourScore < theirScore ? 'L' : 'D'
+      : null;
+
+    const resultColor = result === 'W' ? 'text-neon-green' : result === 'L' ? 'text-destructive' : 'text-muted-foreground';
+    const resultLabel = result === 'W' ? 'ניצחון' : result === 'L' ? 'הפסד' : 'תיקו';
+
+    if (isEditing) {
+      return (
+        <div key={match.id} className="bg-gaming-surface/60 rounded-lg p-3 border border-neon-green/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">סיבוב {match.roundIndex + 1} • משחק {match.matchIndex + 1}</span>
+            <div className="flex gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => setEditingMatchIdx(null)}
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-foreground">
+            {pairName(match.pairA)} vs {pairName(match.pairB)}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground mb-1">{pairName(match.pairA)}</p>
+              <Input
+                type="number"
+                min="0"
+                value={editScoreA}
+                onChange={e => setEditScoreA(e.target.value)}
+                className="w-16 h-9 text-center text-lg font-bold bg-gaming-surface border-border"
+                inputMode="numeric"
+              />
+            </div>
+            <span className="text-lg font-bold text-muted-foreground mt-4">:</span>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground mb-1">{pairName(match.pairB)}</p>
+              <Input
+                type="number"
+                min="0"
+                value={editScoreB}
+                onChange={e => setEditScoreB(e.target.value)}
+                className="w-16 h-9 text-center text-lg font-bold bg-gaming-surface border-border"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+          <Button
+            variant="gaming"
+            size="sm"
+            className="w-full"
+            onClick={() => handleSaveEdit(match.globalIndex)}
+            disabled={editScoreA === '' || editScoreB === ''}
+          >
+            <Save className="h-3.5 w-3.5" />
+            שמור שינויים
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div key={match.id} className="bg-gaming-surface/40 rounded-lg p-2.5 border border-border/30">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">סיבוב {match.roundIndex + 1} • משחק {match.matchIndex + 1}</span>
+          <div className="flex items-center gap-1.5">
+            <Badge className={`text-[10px] px-1.5 py-0 ${
+              result === 'W' ? 'bg-neon-green/20 text-neon-green border-neon-green/30'
+              : result === 'L' ? 'bg-destructive/20 text-destructive border-destructive/30'
+              : 'bg-muted/20 text-muted-foreground border-border/40'
+            }`}>
+              {resultLabel}
+            </Badge>
+            <button
+              onClick={() => {
+                setEditingMatchIdx(match.globalIndex);
+                setEditScoreA(String(match.scoreA ?? ''));
+                setEditScoreB(String(match.scoreB ?? ''));
+              }}
+              className="p-1 rounded hover:bg-gaming-surface/80 transition-colors"
+            >
+              <Edit2 className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex-1">
+            <p className="text-xs text-foreground font-medium">vs {pairName(theirPair)}</p>
+            {ourClub && theirClub && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {ourClub.name} vs {theirClub.name}
+              </p>
+            )}
+          </div>
+          <span className={`text-lg font-bold ${resultColor}`}>
+            {ourScore}-{theirScore}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDrawerContent = () => {
+    if (drawerType === 'pair' && selectedPairId) {
+      const pair = currentEvening.pairs.find(p => p.id === selectedPairId);
+      if (!pair) return null;
+      const matches = getMatchesForPair(selectedPairId);
+      const stats = pairStats.find(s => s.pair.id === selectedPairId);
+
+      return (
+        <>
+          <DrawerHeader>
+            <DrawerTitle className="text-foreground text-right">{pairName(pair)}</DrawerTitle>
+            <DrawerDescription className="text-right">
+              {stats && `${stats.points} נק׳ • ${stats.wins}נ ${stats.draws}ת ${stats.losses}ה • הפ: ${stats.goalDiff > 0 ? '+' : ''}${stats.goalDiff}`}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 max-h-[60vh] overflow-auto">
+            {matches.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-4">אין משחקים עדיין</p>
+            )}
+            {matches.map(m => renderMatchRow(m, selectedPairId, undefined))}
+          </div>
+        </>
+      );
+    }
+
+    if (drawerType === 'player' && selectedPlayerId) {
+      const player = currentEvening.players.find(p => p.id === selectedPlayerId);
+      if (!player) return null;
+      const matches = getMatchesForPlayer(selectedPlayerId);
+      const stats = playerStats.find(s => s.player.id === selectedPlayerId);
+
+      return (
+        <>
+          <DrawerHeader>
+            <DrawerTitle className="text-foreground text-right">{player.name}</DrawerTitle>
+            <DrawerDescription className="text-right">
+              {stats && `${stats.points} נק׳ • ${stats.played} משחקים • ${stats.wins}נ ${stats.draws}ת ${stats.losses}ה`}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2 max-h-[60vh] overflow-auto">
+            {matches.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-4">אין משחקים עדיין</p>
+            )}
+            {matches.map(m => renderMatchRow(m, undefined, selectedPlayerId))}
+          </div>
+        </>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="min-h-[100svh] bg-gaming-bg p-3 pb-[max(1rem,env(safe-area-inset-bottom))]" dir="rtl">
       <div className="max-w-md mx-auto">
@@ -519,7 +768,6 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
           </TabsList>
 
           <TabsContent value="match" className="space-y-2">
-            {/* Saved confirmation overlay */}
             {showSaved && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                 <div className="bg-gaming-surface border border-neon-green/40 rounded-xl px-8 py-5 flex flex-col items-center gap-2 animate-in zoom-in-95 fade-in duration-300">
@@ -529,14 +777,12 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
               </div>
             )}
 
-            {/* Sitting out */}
             <Card className="bg-gaming-surface/50 border-border/50 p-2">
               <p className="text-center text-sm text-muted-foreground">
                 יושב בחוץ: <strong className="text-foreground">{currentMatch.sittingOut.name}</strong>
               </p>
             </Card>
 
-            {/* Match header */}
             <Card className="bg-gradient-card border-neon-green/20 p-3 shadow-card">
               <div className="text-center">
                 <p className="text-base font-bold text-foreground">{pairName(currentMatch.pairA)}</p>
@@ -545,25 +791,20 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
               </div>
             </Card>
 
-            {/* Step indicator */}
             {renderStepIndicator()}
 
-            {/* Step 1: Team A */}
             {renderTeamBank(
               bankA, selectedClubA, handleSelectClubA,
               `בנק ${pairName(currentMatch.pairA)}`, 'teamA'
             )}
 
-            {/* Step 2: Team B */}
             {renderTeamBank(
               bankB, selectedClubB, handleSelectClubB,
               `בנק ${pairName(currentMatch.pairB)}`, 'teamB'
             )}
 
-            {/* Step 3: Score */}
             {renderScoreEntry()}
 
-            {/* Submit */}
             <Button
               variant="gaming"
               className={`w-full transition-all duration-200 ${canSubmit ? 'scale-[1.02] shadow-lg shadow-neon-green/20' : ''}`}
@@ -579,6 +820,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
               <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-neon-green" /> טבלת זוגות
               </h3>
+              <p className="text-[10px] text-muted-foreground mb-2">לחץ על זוג לפרטי משחקים</p>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -594,7 +836,11 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
                 </TableHeader>
                 <TableBody>
                   {pairStats.map((s, idx) => (
-                    <TableRow key={s.pair.id}>
+                    <TableRow
+                      key={s.pair.id}
+                      className="cursor-pointer hover:bg-gaming-surface/30 transition-colors"
+                      onClick={() => openPairDetails(s.pair.id)}
+                    >
                       <TableCell className="text-xs">{idx + 1}</TableCell>
                       <TableCell className="text-xs font-medium whitespace-nowrap">
                         {s.pair.players[0].name} & {s.pair.players[1].name}
@@ -617,6 +863,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
               <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                 <Users className="h-4 w-4 text-neon-green" /> טבלת שחקנים
               </h3>
+              <p className="text-[10px] text-muted-foreground mb-2">לחץ על שחקן לפרטי משחקים</p>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -632,7 +879,11 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
                 </TableHeader>
                 <TableBody>
                   {playerStats.map((s, idx) => (
-                    <TableRow key={s.player.id}>
+                    <TableRow
+                      key={s.player.id}
+                      className="cursor-pointer hover:bg-gaming-surface/30 transition-colors"
+                      onClick={() => openPlayerDetails(s.player.id)}
+                    >
                       <TableCell className="text-xs">{idx + 1}</TableCell>
                       <TableCell className="text-xs font-medium">{s.player.name}</TableCell>
                       <TableCell className="text-center text-xs">{s.played}</TableCell>
@@ -649,6 +900,13 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Details Drawer */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="bg-gaming-bg border-border" dir="rtl">
+          {renderDrawerContent()}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };
