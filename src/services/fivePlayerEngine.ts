@@ -168,20 +168,26 @@ export function generateTeamBanks(
         const p1Clubs = playerClubs.get(p1Id)!;
         const p2Clubs = playerClubs.get(p2Id)!;
 
-        let assigned = false;
-        for (const club of tier.pool) {
+        // Filter valid candidates, then sort by usage count (prefer unused teams first)
+        const candidates = tier.pool.filter(club => {
           const count = globalClubCount.get(club.id) || 0;
-          if (count >= tier.maxForTier) continue;
-          if (p1Clubs.has(club.id)) continue;
-          if (p2Clubs.has(club.id)) continue;
-          if (bank.clubs.some(c => c.id === club.id)) continue;
+          if (count >= tier.maxForTier) return false;
+          if (p1Clubs.has(club.id)) return false;
+          if (p2Clubs.has(club.id)) return false;
+          if (bank.clubs.some(c => c.id === club.id)) return false;
+          return true;
+        });
+        candidates.sort((a, b) => (globalClubCount.get(a.id) || 0) - (globalClubCount.get(b.id) || 0));
 
+        let assigned = false;
+        if (candidates.length > 0) {
+          const club = candidates[0];
+          const count = globalClubCount.get(club.id) || 0;
           bank.clubs.push(club);
           globalClubCount.set(club.id, count + 1);
           p1Clubs.add(club.id);
           p2Clubs.add(club.id);
           assigned = true;
-          break;
         }
 
         if (!assigned) {
