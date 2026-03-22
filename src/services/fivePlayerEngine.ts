@@ -320,7 +320,7 @@ export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAp
     id: `fp-evening-${Date.now()}`,
     date: new Date().toISOString(),
     mode: 'five-player-doubles',
-    players,
+    players: shuffledPlayers,
     pairs,
     schedule,
     teamBanks: banksResult,
