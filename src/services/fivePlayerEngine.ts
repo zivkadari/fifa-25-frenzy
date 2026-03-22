@@ -307,9 +307,12 @@ export function calculatePlayerStats(evening: FPEvening): FPPlayerStats[] {
 export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2): FPEvening | string {
   if (players.length !== 5) return 'נדרשים בדיוק 5 שחקנים';
 
-  const pairs = generateAllPairs(players);
-  const schedule = generateSchedule(players, pairs);
-  const banksResult = generateTeamBanks(pairs, players, clubsOverride, maxAppearances);
+  // Shuffle player order randomly so setup input order doesn't create schedule bias
+  const shuffledPlayers = shuffleArray([...players]);
+
+  const pairs = generateAllPairs(shuffledPlayers);
+  const schedule = generateSchedule(shuffledPlayers, pairs);
+  const banksResult = generateTeamBanks(pairs, shuffledPlayers, clubsOverride, maxAppearances);
 
   if (typeof banksResult === 'string') return banksResult;
 
