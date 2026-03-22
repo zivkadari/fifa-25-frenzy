@@ -27,9 +27,9 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
   };
 
   const formatPairBank = (pair: FPPair, bank: FPTeamBank) => {
-    const lines = [`*${pairName(pair)}*`];
+    const lines = [`*${pair.players[0].name} & ${pair.players[1].name}*`];
     bank.clubs.forEach(club => {
-      lines.push(`- ${club.name} (${renderStars(club.stars)})`);
+      lines.push(club.name);
     });
     return lines.join('\n');
   };
@@ -40,7 +40,7 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
       if (!bank) return '';
       return formatPairBank(pair, bank);
     });
-    return `🏆 *ליגת 5 שחקנים*\n${evening.players.map(p => p.name).join(', ')}\n\n${sections.join('\n\n')}`;
+    return `🏆 *5 Player League*\n${evening.players.map(p => p.name).join(', ')}\n\n${sections.join('\n\n')}`;
   };
 
   const handleCopyPair = async (pair: FPPair, bank: FPTeamBank) => {
