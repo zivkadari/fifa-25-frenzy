@@ -44,6 +44,7 @@ const LEAGUE_ORDER = [
   "Czech Republic",
   "Greece",
   "Scotland",
+  "Belgium",
   "International",
   "Prime",
 ];
