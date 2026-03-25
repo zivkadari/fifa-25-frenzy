@@ -63,6 +63,7 @@ const LEAGUE_FLAGS: Record<string, string> = {
   "Czech Republic": "🇨🇿",
   "Greece": "🇬🇷",
   "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "Belgium": "🇧🇪",
   "International": "🌍",
   "Prime": "🏆",
 };
