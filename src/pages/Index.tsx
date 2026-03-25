@@ -700,8 +700,13 @@ const handleGoHome = () => {
           return fpEvening ? (
             <FPBankOverview
               evening={fpEvening}
+              allClubs={clubsWithOverrides}
               onBack={() => window.history.back()}
               onContinue={() => goTo('fp-game')}
+              onUpdateEvening={(ev) => {
+                setFpEvening(ev);
+                StorageService.saveFPActive(ev);
+              }}
             />
           ) : null;
         
