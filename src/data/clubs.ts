@@ -107,6 +107,7 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'olympiacos', name: 'Olympiacos', stars: 4, league: 'Greece' },
   { id: 'aek-athens', name: 'AEK Athens', stars: 4, league: 'Greece' },
   { id: 'celtic', name: 'Celtic', stars: 4, league: 'Scotland' },
+  { id: 'club-brugge', name: 'Club Brugge', stars: 4, league: 'Belgium' },
 
   // 🗺️ International (National Teams)
   { id: 'france', name: 'France', stars: 5, league: 'International', isNational: true },
