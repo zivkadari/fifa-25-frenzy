@@ -2,20 +2,36 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Check, Play } from "lucide-react";
+import { ArrowLeft, Copy, Check, Play, Edit2, ArrowLeftRight, X, AlertCircle } from "lucide-react";
 import { FPEvening, FPTeamBank, FPPair } from "@/types/fivePlayerTypes";
+import { Club } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface FPBankOverviewProps {
   evening: FPEvening;
+  allClubs: Club[];
   onContinue: () => void;
   onBack: () => void;
+  onUpdateEvening: (evening: FPEvening) => void;
 }
 
-export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewProps) => {
+export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdateEvening }: FPBankOverviewProps) => {
   const { toast } = useToast();
   const [copiedPairId, setCopiedPairId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+
+  // Edit state
+  const [editingPairId, setEditingPairId] = useState<string | null>(null);
+  const [editingClubIdx, setEditingClubIdx] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState<'replace' | 'swap' | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const pairName = (pair: FPPair) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
@@ -26,6 +42,17 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
     return '★'.repeat(full) + (half ? '☆' : '');
   };
 
+  // --- Match order template from first round ---
+  const roundTemplate = evening.schedule.filter(m => m.roundIndex === 0);
+
+  const formatMatchOrder = () => {
+    return roundTemplate.map((m, i) => {
+      const sitting = m.sittingOut.name;
+      return `${i + 1}. ${pairName(m.pairA)} vs ${pairName(m.pairB)}  🪑 ${sitting}`;
+    }).join('\n');
+  };
+
+  // --- Format helpers ---
   const formatPairBank = (pair: FPPair, bank: FPTeamBank) => {
     const lines = [`*${pair.players[0].name} & ${pair.players[1].name}*`];
     bank.clubs.forEach(club => {
@@ -35,12 +62,13 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
   };
 
   const formatAllBanks = () => {
+    const matchOrder = `📋 *סדר משחקים (חוזר כל סבב)*\n${formatMatchOrder()}`;
     const sections = evening.pairs.map(pair => {
       const bank = evening.teamBanks.find(b => b.pairId === pair.id);
       if (!bank) return '';
       return formatPairBank(pair, bank);
     });
-    return `🏆 *5 Player League*\n${evening.players.map(p => p.name).join(', ')}\n\n${sections.join('\n\n')}`;
+    return `🏆 *5 Player League*\n${evening.players.map(p => p.name).join(', ')}\n\n${matchOrder}\n\n${sections.join('\n\n')}`;
   };
 
   const handleCopyPair = async (pair: FPPair, bank: FPTeamBank) => {
@@ -63,6 +91,252 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
       toast({ title: "שגיאה בהעתקה", variant: "destructive" });
     }
   };
+
+  // --- Validation helpers ---
+  const getGlobalClubCount = (clubId: string, excludePairId?: string, excludeClubIdx?: number): number => {
+    let count = 0;
+    for (const bank of evening.teamBanks) {
+      for (let i = 0; i < bank.clubs.length; i++) {
+        if (bank.clubs[i].id === clubId) {
+          if (bank.pairId === excludePairId && i === excludeClubIdx) continue;
+          count++;
+        }
+      }
+    }
+    return count;
+  };
+
+  const getPlayerClubIds = (playerId: string, excludePairId?: string, excludeClubIdx?: number): Set<string> => {
+    const ids = new Set<string>();
+    for (const pair of evening.pairs) {
+      if (!pair.players.some(p => p.id === playerId)) continue;
+      const bank = evening.teamBanks.find(b => b.pairId === pair.id);
+      if (!bank) continue;
+      for (let i = 0; i < bank.clubs.length; i++) {
+        if (pair.id === excludePairId && i === excludeClubIdx) continue;
+        ids.add(bank.clubs[i].id);
+      }
+    }
+    return ids;
+  };
+
+  const getMaxAppearancesForTier = (stars: number): number => {
+    if (stars === 5) return 2;
+    return 1;
+  };
+
+  const validateReplacement = (pairId: string, clubIdx: number, newClub: Club): string | null => {
+    const bank = evening.teamBanks.find(b => b.pairId === pairId)!;
+    const oldClub = bank.clubs[clubIdx];
+    const pair = evening.pairs.find(p => p.id === pairId)!;
+
+    // Must be same star tier
+    if (newClub.stars !== oldClub.stars) {
+      return `הקבוצה חייבת להיות ${oldClub.stars} כוכבים (הקבוצה שנבחרה היא ${newClub.stars} כוכבים)`;
+    }
+
+    // Check not already in this bank
+    if (bank.clubs.some((c, i) => i !== clubIdx && c.id === newClub.id)) {
+      return 'הקבוצה כבר קיימת בבנק הזה';
+    }
+
+    // Player-level no-repeat
+    for (const p of pair.players) {
+      const playerClubs = getPlayerClubIds(p.id, pairId, clubIdx);
+      if (playerClubs.has(newClub.id)) {
+        return `${p.name} כבר מקבל/ת את הקבוצה הזו בזוג אחר`;
+      }
+    }
+
+    // Global max appearances
+    const maxApp = getMaxAppearancesForTier(newClub.stars);
+    const currentCount = getGlobalClubCount(newClub.id, pairId, clubIdx);
+    if (currentCount >= maxApp) {
+      return `הקבוצה כבר מופיעה ${currentCount} פעמים (מקסימום ${maxApp})`;
+    }
+
+    return null;
+  };
+
+  const validateSwap = (
+    pairId1: string, clubIdx1: number,
+    pairId2: string, clubIdx2: number
+  ): string | null => {
+    const bank1 = evening.teamBanks.find(b => b.pairId === pairId1)!;
+    const bank2 = evening.teamBanks.find(b => b.pairId === pairId2)!;
+    const club1 = bank1.clubs[clubIdx1];
+    const club2 = bank2.clubs[clubIdx2];
+    const pair1 = evening.pairs.find(p => p.id === pairId1)!;
+    const pair2 = evening.pairs.find(p => p.id === pairId2)!;
+
+    // Must be same star tier
+    if (club1.stars !== club2.stars) {
+      return 'ניתן להחליף רק בין קבוצות מאותו דירוג כוכבים';
+    }
+
+    // Check club2 not already in bank1 (excluding the slot being swapped)
+    if (bank1.clubs.some((c, i) => i !== clubIdx1 && c.id === club2.id)) {
+      return `${club2.name} כבר קיימת בבנק של ${pairName(pair1)}`;
+    }
+    if (bank2.clubs.some((c, i) => i !== clubIdx2 && c.id === club1.id)) {
+      return `${club1.name} כבר קיימת בבנק של ${pairName(pair2)}`;
+    }
+
+    // Player-level no-repeat for pair1 getting club2
+    for (const p of pair1.players) {
+      const playerClubs = getPlayerClubIds(p.id, pairId1, clubIdx1);
+      // Also exclude the swap source
+      if (pair2.players.some(pp => pp.id === p.id)) {
+        // shared player - need to also exclude clubIdx2 from pair2
+        playerClubs.delete(club2.id); // will be removed from pair2
+      }
+      if (playerClubs.has(club2.id)) {
+        return `${p.name} כבר מקבל/ת את ${club2.name} בזוג אחר`;
+      }
+    }
+
+    // Player-level no-repeat for pair2 getting club1
+    for (const p of pair2.players) {
+      const playerClubs = getPlayerClubIds(p.id, pairId2, clubIdx2);
+      if (pair1.players.some(pp => pp.id === p.id)) {
+        playerClubs.delete(club1.id);
+      }
+      if (playerClubs.has(club1.id)) {
+        return `${p.name} כבר מקבל/ת את ${club1.name} בזוג אחר`;
+      }
+    }
+
+    return null;
+  };
+
+  // --- Actions ---
+  const handleReplace = (newClub: Club) => {
+    if (editingPairId === null || editingClubIdx === null) return;
+    const error = validateReplacement(editingPairId, editingClubIdx, newClub);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+
+    const updatedBanks = evening.teamBanks.map(bank => {
+      if (bank.pairId !== editingPairId) return bank;
+      const newClubs = [...bank.clubs];
+      newClubs[editingClubIdx] = newClub;
+      return { ...bank, clubs: newClubs };
+    });
+
+    const updated = { ...evening, teamBanks: updatedBanks };
+    onUpdateEvening(updated);
+    closeEdit();
+    toast({ title: "הקבוצה הוחלפה בהצלחה" });
+  };
+
+  const handleSwap = (targetPairId: string, targetClubIdx: number) => {
+    if (editingPairId === null || editingClubIdx === null) return;
+    const error = validateSwap(editingPairId, editingClubIdx, targetPairId, targetClubIdx);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+
+    const bank1 = evening.teamBanks.find(b => b.pairId === editingPairId)!;
+    const bank2 = evening.teamBanks.find(b => b.pairId === targetPairId)!;
+    const club1 = bank1.clubs[editingClubIdx];
+    const club2 = bank2.clubs[targetClubIdx];
+
+    const updatedBanks = evening.teamBanks.map(bank => {
+      if (bank.pairId === editingPairId) {
+        const newClubs = [...bank.clubs];
+        newClubs[editingClubIdx] = club2;
+        return { ...bank, clubs: newClubs };
+      }
+      if (bank.pairId === targetPairId) {
+        const newClubs = [...bank.clubs];
+        newClubs[targetClubIdx] = club1;
+        return { ...bank, clubs: newClubs };
+      }
+      return bank;
+    });
+
+    const updated = { ...evening, teamBanks: updatedBanks };
+    onUpdateEvening(updated);
+    closeEdit();
+    toast({ title: "הקבוצות הוחלפו בהצלחה" });
+  };
+
+  const openEdit = (pairId: string, clubIdx: number) => {
+    setEditingPairId(pairId);
+    setEditingClubIdx(clubIdx);
+    setEditMode(null);
+    setValidationError(null);
+  };
+
+  const closeEdit = () => {
+    setEditingPairId(null);
+    setEditingClubIdx(null);
+    setEditMode(null);
+    setValidationError(null);
+  };
+
+  // Get replacement candidates for the current editing context
+  const getReplacementCandidates = (): Club[] => {
+    if (editingPairId === null || editingClubIdx === null) return [];
+    const bank = evening.teamBanks.find(b => b.pairId === editingPairId)!;
+    const oldClub = bank.clubs[editingClubIdx];
+    const tier = oldClub.stars;
+
+    return allClubs
+      .filter(c => c.stars === tier && !c.isPrime && c.id !== oldClub.id)
+      .map(c => {
+        const error = validateReplacement(editingPairId, editingClubIdx, c);
+        return { club: c, error };
+      })
+      .sort((a, b) => {
+        // Valid first, then alphabetical
+        if (!a.error && b.error) return -1;
+        if (a.error && !b.error) return 1;
+        return a.club.name.localeCompare(b.club.name);
+      })
+      .map(({ club }) => club);
+  };
+
+  // Get swap targets from other pairs
+  const getSwapTargets = (): { pairId: string; pairLabel: string; clubIdx: number; club: Club; error: string | null }[] => {
+    if (editingPairId === null || editingClubIdx === null) return [];
+    const bank = evening.teamBanks.find(b => b.pairId === editingPairId)!;
+    const oldClub = bank.clubs[editingClubIdx];
+    const tier = oldClub.stars;
+    const targets: { pairId: string; pairLabel: string; clubIdx: number; club: Club; error: string | null }[] = [];
+
+    for (const otherBank of evening.teamBanks) {
+      if (otherBank.pairId === editingPairId) continue;
+      const otherPair = evening.pairs.find(p => p.id === otherBank.pairId)!;
+      for (let i = 0; i < otherBank.clubs.length; i++) {
+        if (otherBank.clubs[i].stars !== tier) continue;
+        const error = validateSwap(editingPairId, editingClubIdx, otherBank.pairId, i);
+        targets.push({
+          pairId: otherBank.pairId,
+          pairLabel: pairName(otherPair),
+          clubIdx: i,
+          club: otherBank.clubs[i],
+          error,
+        });
+      }
+    }
+
+    // Valid first
+    targets.sort((a, b) => {
+      if (!a.error && b.error) return -1;
+      if (a.error && !b.error) return 1;
+      return a.club.name.localeCompare(b.club.name);
+    });
+
+    return targets;
+  };
+
+  const editingBank = editingPairId ? evening.teamBanks.find(b => b.pairId === editingPairId) : null;
+  const editingClub = editingBank && editingClubIdx !== null ? editingBank.clubs[editingClubIdx] : null;
+  const editingPair = editingPairId ? evening.pairs.find(p => p.id === editingPairId) : null;
 
   return (
     <div className="min-h-[100svh] bg-gaming-bg p-3 pb-[max(1rem,env(safe-area-inset-bottom))]" dir="rtl">
@@ -91,6 +365,24 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
           </Button>
         </div>
 
+        {/* Match order template */}
+        <Card className="bg-gradient-card border-border/40 p-3 shadow-card">
+          <h2 className="text-sm font-semibold text-foreground mb-2">📋 סדר משחקים (חוזר כל סבב)</h2>
+          <div className="space-y-1.5">
+            {roundTemplate.map((m, i) => (
+              <div key={m.id} className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground font-mono w-4">{i + 1}.</span>
+                <span className="text-foreground font-medium">{pairName(m.pairA)}</span>
+                <span className="text-muted-foreground">vs</span>
+                <span className="text-foreground font-medium">{pairName(m.pairB)}</span>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground mr-auto">
+                  🪑 {m.sittingOut.name}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+
         {/* Pair banks */}
         {evening.pairs.map((pair, idx) => {
           const bank = evening.teamBanks.find(b => b.pairId === pair.id);
@@ -116,15 +408,24 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
-                {bank.clubs.map(club => (
+                {bank.clubs.map((club, clubIdx) => (
                   <div
-                    key={club.id}
-                    className="flex items-center justify-between bg-gaming-surface/60 rounded-md px-2 py-1.5 border border-border/30"
+                    key={`${club.id}-${clubIdx}`}
+                    className="flex items-center justify-between bg-gaming-surface/60 rounded-md px-2 py-1.5 border border-border/30 group"
                   >
-                    <span className="text-xs text-foreground truncate">{club.name}</span>
-                    <span className="text-yellow-400 text-[10px] mr-1 whitespace-nowrap">
-                      {renderStars(club.stars)}
-                    </span>
+                    <span className="text-xs text-foreground truncate flex-1">{club.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-400 text-[10px] whitespace-nowrap">
+                        {renderStars(club.stars)}
+                      </span>
+                      <button
+                        onClick={() => openEdit(pair.id, clubIdx)}
+                        className="p-0.5 rounded hover:bg-accent/50 transition-colors opacity-50 group-hover:opacity-100"
+                        title="שנה קבוצה"
+                      >
+                        <Edit2 className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -143,6 +444,112 @@ export const FPBankOverview = ({ evening, onContinue, onBack }: FPBankOverviewPr
           התחל משחקים
         </Button>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPairId} onOpenChange={(open) => { if (!open) closeEdit(); }}>
+        <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {editMode === 'replace' ? 'החלף קבוצה' : editMode === 'swap' ? 'החלף עם זוג אחר' : 'עריכת קבוצה'}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {editingPair && editingClub && (
+                <span>{pairName(editingPair)} · {editingClub.name} ({renderStars(editingClub.stars)})</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {validationError && (
+            <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
+          {!editMode && (
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => { setEditMode('replace'); setValidationError(null); }}
+              >
+                <Edit2 className="h-4 w-4" />
+                החלף עם קבוצה אחרת
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => { setEditMode('swap'); setValidationError(null); }}
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                החלף עם זוג אחר
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-muted-foreground"
+                onClick={closeEdit}
+              >
+                <X className="h-4 w-4" />
+                ביטול
+              </Button>
+            </div>
+          )}
+
+          {editMode === 'replace' && (
+            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
+              <Button variant="ghost" size="sm" onClick={() => { setEditMode(null); setValidationError(null); }} className="text-xs mb-1">
+                ← חזור
+              </Button>
+              {getReplacementCandidates().map(club => {
+                const error = validateReplacement(editingPairId!, editingClubIdx!, club);
+                return (
+                  <button
+                    key={club.id}
+                    onClick={() => !error && handleReplace(club)}
+                    disabled={!!error}
+                    className={`w-full flex items-center justify-between p-2 rounded-md text-xs border transition-all ${
+                      error
+                        ? 'border-border/20 bg-gaming-surface/20 opacity-40 cursor-not-allowed'
+                        : 'border-border/40 bg-gaming-surface/60 hover:border-neon-green/50 cursor-pointer active:scale-[0.98]'
+                    }`}
+                    title={error || undefined}
+                  >
+                    <span className="text-foreground">{club.name}</span>
+                    <span className="text-yellow-400 text-[10px]">{renderStars(club.stars)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {editMode === 'swap' && (
+            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto">
+              <Button variant="ghost" size="sm" onClick={() => { setEditMode(null); setValidationError(null); }} className="text-xs mb-1">
+                ← חזור
+              </Button>
+              {getSwapTargets().map((target, i) => (
+                <button
+                  key={`${target.pairId}-${target.clubIdx}-${i}`}
+                  onClick={() => !target.error && handleSwap(target.pairId, target.clubIdx)}
+                  disabled={!!target.error}
+                  className={`w-full flex items-center justify-between p-2 rounded-md text-xs border transition-all ${
+                    target.error
+                      ? 'border-border/20 bg-gaming-surface/20 opacity-40 cursor-not-allowed'
+                      : 'border-border/40 bg-gaming-surface/60 hover:border-neon-green/50 cursor-pointer active:scale-[0.98]'
+                  }`}
+                  title={target.error || undefined}
+                >
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="text-foreground">{target.club.name}</span>
+                    <span className="text-muted-foreground text-[10px]">{target.pairLabel}</span>
+                  </div>
+                  <span className="text-yellow-400 text-[10px]">{renderStars(target.club.stars)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
