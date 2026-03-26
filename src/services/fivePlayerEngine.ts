@@ -51,42 +51,101 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
     return pairLookup.get(`${p1.id}-${p2.id}`) || pairLookup.get(`${p2.id}-${p1.id}`)!;
   };
 
-  // Pre-compute: for each sit-out slot, the 3 valid pairings
+  // Pre-compute: for each sit-out slot, the 3 valid pairings of the 4 active players
   const slotPairings: [Player, Player, Player, Player][][] = [];
   for (let slot = 0; slot < 5; slot++) {
     const active = players.filter((_, i) => i !== slot);
     slotPairings.push(getThreePairings(active));
   }
 
-  const schedule: FPMatch[] = [];
-  let globalIdx = 0;
+  // Find a permutation of pairing indices [0,1,2] per slot such that
+  // each block of 5 matches covers all 10 unique pairs exactly once.
+  // We try all 3^5 = 243 combinations for block 0, then derive blocks 1 and 2 by rotation.
+  const allPairIds = new Set(pairs.map(p => p.id));
 
-  // 2 cycles × 3 blocks = 6 rounds total
-  for (let cycle = 0; cycle < 2; cycle++) {
-    for (let block = 0; block < 3; block++) {
-      const round = cycle * 3 + block;
-      for (let slot = 0; slot < 5; slot++) {
-        const matchIdx = slot;
-        const sittingOut = players[slot];
-        const [pA1, pA2, pB1, pB2] = slotPairings[slot][block];
-        const pairA = findPair(pA1, pA2);
-        const pairB = findPair(pB1, pB2);
+  function getPairIdsForBlock(pairingIndices: number[]): Set<string> {
+    const ids = new Set<string>();
+    for (let slot = 0; slot < 5; slot++) {
+      const [pA1, pA2, pB1, pB2] = slotPairings[slot][pairingIndices[slot]];
+      ids.add(findPair(pA1, pA2).id);
+      ids.add(findPair(pB1, pB2).id);
+    }
+    return ids;
+  }
 
-        schedule.push({
-          id: `fp-match-${round}-${matchIdx}`,
-          roundIndex: round,
-          matchIndex: matchIdx,
-          globalIndex: globalIdx++,
-          pairA,
-          pairB,
-          sittingOut,
-          completed: false,
-        });
+  function setsEqual(a: Set<string>, b: Set<string>): boolean {
+    if (a.size !== b.size) return false;
+    for (const v of a) if (!b.has(v)) return false;
+    return true;
+  }
+
+  // Find a valid assignment: for each block, pick pairing index per slot
+  // such that all 3 blocks cover all 10 pairs, and each slot rotates through all 3 pairings.
+  // Since each slot must use each pairing index exactly once across the 3 blocks,
+  // we need a permutation offset per slot: block b -> pairingIndex = (offset[slot] + b) % 3
+  let offsets: number[] = [0, 0, 0, 0, 0];
+  let found = false;
+
+  // Try all 3^5 = 243 offset combinations
+  for (let o0 = 0; o0 < 3 && !found; o0++) {
+    for (let o1 = 0; o1 < 3 && !found; o1++) {
+      for (let o2 = 0; o2 < 3 && !found; o2++) {
+        for (let o3 = 0; o3 < 3 && !found; o3++) {
+          for (let o4 = 0; o4 < 3 && !found; o4++) {
+            const offs = [o0, o1, o2, o3, o4];
+            let valid = true;
+            for (let block = 0; block < 3; block++) {
+              const indices = offs.map(o => (o + block) % 3);
+              const pairIds = getPairIdsForBlock(indices);
+              if (!setsEqual(pairIds, allPairIds)) {
+                valid = false;
+                break;
+              }
+            }
+            if (valid) {
+              offsets = offs;
+              found = true;
+            }
+          }
+        }
       }
     }
   }
 
-  return schedule;
+  // Build cycle 1 (15 matches: 3 blocks × 5 matches)
+  const cycle1: FPMatch[] = [];
+  let globalIdx = 0;
+
+  for (let block = 0; block < 3; block++) {
+    for (let slot = 0; slot < 5; slot++) {
+      const pairingIdx = (offsets[slot] + block) % 3;
+      const sittingOut = players[slot];
+      const [pA1, pA2, pB1, pB2] = slotPairings[slot][pairingIdx];
+      const pairA = findPair(pA1, pA2);
+      const pairB = findPair(pB1, pB2);
+
+      cycle1.push({
+        id: `fp-match-${block}-${slot}`,
+        roundIndex: block,
+        matchIndex: slot,
+        globalIndex: globalIdx++,
+        pairA,
+        pairB,
+        sittingOut,
+        completed: false,
+      });
+    }
+  }
+
+  // Cycle 2 is an exact repeat of cycle 1
+  const cycle2: FPMatch[] = cycle1.map(m => ({
+    ...m,
+    id: `fp-match-${m.roundIndex + 3}-${m.matchIndex}`,
+    roundIndex: m.roundIndex + 3,
+    globalIndex: globalIdx++,
+  }));
+
+  return [...cycle1, ...cycle2];
 }
 
 /**
