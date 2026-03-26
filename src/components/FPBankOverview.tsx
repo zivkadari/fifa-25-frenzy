@@ -62,7 +62,7 @@ export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdate
   };
 
   const formatAllBanks = () => {
-    const matchOrder = `📋 *סדר משחקים (חוזר כל סבב)*\n${formatMatchOrder()}`;
+    const matchOrder = `📋 *סדר משחקים (מחזור 1 מתוך 2)*\n${formatMatchOrder()}`;
     const sections = evening.pairs.map(pair => {
       const bank = evening.teamBanks.find(b => b.pairId === pair.id);
       if (!bank) return '';
