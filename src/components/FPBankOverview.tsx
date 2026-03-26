@@ -42,11 +42,11 @@ export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdate
     return '★'.repeat(full) + (half ? '☆' : '');
   };
 
-  // --- Match order template from first round ---
-  const roundTemplate = evening.schedule.filter(m => m.roundIndex === 0);
+  // --- First cycle = matches 0-14 (15 matches) ---
+  const firstCycle = evening.schedule.filter(m => m.globalIndex < 15);
 
   const formatMatchOrder = () => {
-    return roundTemplate.map((m, i) => {
+    return firstCycle.map((m, i) => {
       const sitting = m.sittingOut.name;
       return `${i + 1}. ${pairName(m.pairA)} vs ${pairName(m.pairB)}  🪑 ${sitting}`;
     }).join('\n');
