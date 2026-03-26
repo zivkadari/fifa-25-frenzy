@@ -367,11 +367,11 @@ export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdate
 
         {/* Match order template */}
         <Card className="bg-gradient-card border-border/40 p-3 shadow-card">
-          <h2 className="text-sm font-semibold text-foreground mb-2">📋 סדר משחקים (חוזר כל סבב)</h2>
+          <h2 className="text-sm font-semibold text-foreground mb-2">📋 סדר משחקים (מחזור 1 מתוך 2)</h2>
           <div className="space-y-1.5">
-            {roundTemplate.map((m, i) => (
+            {firstCycle.map((m, i) => (
               <div key={m.id} className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground font-mono w-4">{i + 1}.</span>
+                <span className="text-muted-foreground font-mono w-5">{i + 1}.</span>
                 <span className="text-foreground font-medium">{pairName(m.pairA)}</span>
                 <span className="text-muted-foreground">vs</span>
                 <span className="text-foreground font-medium">{pairName(m.pairB)}</span>
