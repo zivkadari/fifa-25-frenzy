@@ -19,24 +19,24 @@ export function generateAllPairs(players: Player[]): FPPair[] {
 }
 
 /**
- * The structural template for one round.
- * Players indexed as 0=A, 1=B, 2=C, 3=D, 4=E.
- * Each entry: [pairA_indices, pairB_indices, sittingOut_index]
- * In each round, every player plays 4 matches and sits out exactly once.
+ * For 4 active players, return the 3 possible pair-vs-pair groupings.
+ * Each grouping is [[a,b],[c,d]] indices into the active array.
  */
-const ROUND_TEMPLATE: [number, number, number, number, number][] = [
-  // [playerA1, playerA2, playerB1, playerB2, sittingOut]
-  [0, 1, 2, 3, 4], // AB vs CD, E sits
-  [0, 2, 3, 4, 1], // AC vs DE, B sits
-  [0, 3, 1, 4, 2], // AD vs BE, C sits
-  [0, 4, 1, 2, 3], // AE vs BC, D sits
-  [1, 3, 2, 4, 0], // BD vs CE, A sits
-];
+function getThreePairings(active: Player[]): [Player, Player, Player, Player][] {
+  const [a, b, c, d] = active;
+  return [
+    [a, b, c, d], // (0,1) vs (2,3)
+    [a, c, b, d], // (0,2) vs (1,3)
+    [a, d, b, c], // (0,3) vs (1,2)
+  ];
+}
 
 /**
- * Generate the full 30-match schedule across 6 rounds.
- * For each round we use the same structural template but rotate the player assignment
- * to distribute bench appearances fairly and avoid consecutive sit-outs.
+ * Generate the full 30-match schedule: 2 cycles × 15 matches.
+ * Each cycle = 3 blocks of 5 matches.
+ * Within every 5-match block, match slot i always has the same player sitting out.
+ * Across the 3 blocks in a cycle, the pairing rotates through the 3 valid groupings.
+ * The second cycle repeats the same rotation.
  */
 export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] {
   const pairLookup = new Map<string, FPPair>();
@@ -51,56 +51,42 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
     return pairLookup.get(`${p1.id}-${p2.id}`) || pairLookup.get(`${p2.id}-${p1.id}`)!;
   };
 
-  // 6 permutations of the 5 players to vary which position each player takes across rounds
-  // This ensures sit-out distribution is fair and minimizes consecutive sit-outs
-  const permutations = generateFairPermutations(players);
+  // Pre-compute: for each sit-out slot, the 3 valid pairings
+  const slotPairings: [Player, Player, Player, Player][][] = [];
+  for (let slot = 0; slot < 5; slot++) {
+    const active = players.filter((_, i) => i !== slot);
+    slotPairings.push(getThreePairings(active));
+  }
 
   const schedule: FPMatch[] = [];
   let globalIdx = 0;
 
-  for (let round = 0; round < 6; round++) {
-    const perm = permutations[round];
-    for (let matchIdx = 0; matchIdx < 5; matchIdx++) {
-      const tmpl = ROUND_TEMPLATE[matchIdx];
-      const pairA = findPair(perm[tmpl[0]], perm[tmpl[1]]);
-      const pairB = findPair(perm[tmpl[2]], perm[tmpl[3]]);
-      const sittingOut = perm[tmpl[4]];
+  // 2 cycles × 3 blocks = 6 rounds total
+  for (let cycle = 0; cycle < 2; cycle++) {
+    for (let block = 0; block < 3; block++) {
+      const round = cycle * 3 + block;
+      for (let slot = 0; slot < 5; slot++) {
+        const matchIdx = slot;
+        const sittingOut = players[slot];
+        const [pA1, pA2, pB1, pB2] = slotPairings[slot][block];
+        const pairA = findPair(pA1, pA2);
+        const pairB = findPair(pB1, pB2);
 
-      schedule.push({
-        id: `fp-match-${round}-${matchIdx}`,
-        roundIndex: round,
-        matchIndex: matchIdx,
-        globalIndex: globalIdx++,
-        pairA,
-        pairB,
-        sittingOut,
-        completed: false,
-      });
+        schedule.push({
+          id: `fp-match-${round}-${matchIdx}`,
+          roundIndex: round,
+          matchIndex: matchIdx,
+          globalIndex: globalIdx++,
+          pairA,
+          pairB,
+          sittingOut,
+          completed: false,
+        });
+      }
     }
   }
 
   return schedule;
-}
-
-/**
- * Generate 6 permutations of players that distribute bench appearances fairly.
- * Each permutation maps index 0-4 to a player.
- * The template has fixed sit-out indices [4, 1, 2, 3, 0] per round.
- * We rotate players through positions so each player sits out ~6 times total
- * (once per round) and consecutive sit-outs within the match sequence are minimized.
- */
-function generateFairPermutations(players: Player[]): Player[][] {
-  // Use Latin-square-like rotation: shift start position each round
-  const perms: Player[][] = [];
-  const n = 5;
-  for (let round = 0; round < 6; round++) {
-    const perm: Player[] = [];
-    for (let i = 0; i < n; i++) {
-      perm.push(players[(i + round) % n]);
-    }
-    perms.push(perm);
-  }
-  return perms;
 }
 
 /**
