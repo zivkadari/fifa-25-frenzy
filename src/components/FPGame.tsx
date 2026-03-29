@@ -10,6 +10,7 @@ import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes"
 import { Club } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
+import { FPScheduleReorder } from "@/components/FPScheduleReorder";
 import {
   Drawer,
   DrawerContent,
