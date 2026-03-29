@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save } from "lucide-react";
+import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save, ListOrdered } from "lucide-react";
 import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
+import { FPScheduleReorder } from "@/components/FPScheduleReorder";
 import {
   Drawer,
   DrawerContent,
@@ -761,8 +762,12 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
         </div>
 
         <Tabs defaultValue="match" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-2">
+          <TabsList className="w-full grid grid-cols-4 mb-2">
             <TabsTrigger value="match">משחק</TabsTrigger>
+            <TabsTrigger value="schedule">
+              <ListOrdered className="h-3.5 w-3.5 ml-1" />
+              סדר
+            </TabsTrigger>
             <TabsTrigger value="pairs">זוגות</TabsTrigger>
             <TabsTrigger value="players">שחקנים</TabsTrigger>
           </TabsList>
@@ -813,6 +818,18 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
             >
               {currentEvening.currentMatchIndex + 1 >= totalMatches ? 'סיים ליגה' : 'שמור תוצאה ← הבא'}
             </Button>
+          </TabsContent>
+
+          <TabsContent value="schedule">
+            <Card className="bg-gradient-card border-neon-green/20 p-3 shadow-card">
+              <FPScheduleReorder
+                evening={currentEvening}
+                onUpdateEvening={(updated) => {
+                  setCurrentEvening(updated);
+                  onUpdateEvening(updated);
+                }}
+              />
+            </Card>
           </TabsContent>
 
           <TabsContent value="pairs">
