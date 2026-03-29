@@ -820,6 +820,18 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
             </Button>
           </TabsContent>
 
+          <TabsContent value="schedule">
+            <Card className="bg-gradient-card border-neon-green/20 p-3 shadow-card">
+              <FPScheduleReorder
+                evening={currentEvening}
+                onUpdateEvening={(updated) => {
+                  setCurrentEvening(updated);
+                  onUpdateEvening(updated);
+                }}
+              />
+            </Card>
+          </TabsContent>
+
           <TabsContent value="pairs">
             <Card className="bg-gradient-card border-neon-green/20 p-3 shadow-card overflow-auto">
               <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
