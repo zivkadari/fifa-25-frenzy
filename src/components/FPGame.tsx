@@ -762,8 +762,12 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
         </div>
 
         <Tabs defaultValue="match" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-2">
+          <TabsList className="w-full grid grid-cols-4 mb-2">
             <TabsTrigger value="match">משחק</TabsTrigger>
+            <TabsTrigger value="schedule">
+              <ListOrdered className="h-3.5 w-3.5 ml-1" />
+              סדר
+            </TabsTrigger>
             <TabsTrigger value="pairs">זוגות</TabsTrigger>
             <TabsTrigger value="players">שחקנים</TabsTrigger>
           </TabsList>
