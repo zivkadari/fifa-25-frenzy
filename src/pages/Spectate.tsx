@@ -19,6 +19,7 @@ import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
+import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
 const POLL_INTERVAL = 4000;
@@ -285,22 +286,8 @@ function PersonalizedSpectateView({
 
         {/* Completed: Final Player Ranking */}
         {evening.completed && (() => {
-          const tierLabels = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
-          const tierEmojis = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
-          const tierColors = [
-            'from-yellow-400/25 to-yellow-600/10 border-yellow-400/50 ring-yellow-400/20',
-            'from-slate-300/20 to-slate-400/10 border-slate-300/40',
-            'from-amber-600/20 to-amber-700/10 border-amber-600/40',
-            'from-border/30 to-border/10 border-border/40',
-            'from-border/20 to-border/5 border-border/30',
-          ];
-          const tierText = [
-            'text-yellow-400',
-            'text-slate-300',
-            'text-amber-500',
-            'text-muted-foreground',
-            'text-muted-foreground',
-          ];
+          const top5 = playerStats.slice(0, 5);
+          const tierIndices = computeTierIndices(top5.map(s => s.points));
           return (
             <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card space-y-3">
               <div className="text-center">
@@ -309,17 +296,18 @@ function PersonalizedSpectateView({
                 <p className="text-[11px] text-muted-foreground">דירוג שחקנים סופי</p>
               </div>
               <div className="space-y-2">
-                {playerStats.slice(0, 5).map((s, idx) => {
+                {top5.map((s, idx) => {
+                  const ti = tierIndices[idx];
                   const isMe = s.player.id === selectedPlayerId;
                   return (
                     <div
                       key={s.player.id}
-                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${tierColors[idx]} ${idx === 0 ? 'ring-1' : ''} ${isMe ? 'ring-1 ring-neon-green/40' : ''}`}
+                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${TIER_COLORS[ti]} ${ti === 0 ? 'ring-1' : ''} ${isMe ? 'ring-1 ring-neon-green/40' : ''}`}
                     >
-                      <span className="text-lg">{tierEmojis[idx]}</span>
+                      <span className="text-lg">{TIER_EMOJIS[ti]}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-bold tracking-wider ${tierText[idx]}`}>{tierLabels[idx]}</span>
+                          <span className={`text-xs font-bold tracking-wider ${TIER_TEXT[ti]}`}>{TIER_LABELS[ti]}</span>
                           {isMe && <span className="text-[9px] text-neon-green">●</span>}
                         </div>
                         <p className={`text-sm font-bold leading-tight ${isMe ? 'text-neon-green' : 'text-foreground'}`}>
@@ -327,7 +315,7 @@ function PersonalizedSpectateView({
                         </p>
                       </div>
                       <div className="text-left shrink-0">
-                        <p className={`text-sm font-bold ${tierText[idx]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
+                        <p className={`text-sm font-bold ${TIER_TEXT[ti]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
                         <p className="text-[10px] text-muted-foreground">{s.wins}נ {s.draws}ת {s.losses}ה</p>
                       </div>
                     </div>

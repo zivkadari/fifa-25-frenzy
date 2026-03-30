@@ -9,7 +9,7 @@ interface PersonalSummaryCardProps {
   isCompleted?: boolean;
 }
 
-const tierLabels = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
+import { TIER_LABELS } from "@/lib/tierRanking";
 
 export default function PersonalSummaryCard({ personal, onSwitchPlayer, isCompleted }: PersonalSummaryCardProps) {
   const { player, stats, rank, matchesLeft, winRate, currentStreak, isPlayingNow, isSittingOutNow, currentPartner, currentOpponents, nextPartner, nextOpponents, bestPartner, toughestOpponent } = personal;
@@ -22,7 +22,7 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer, isComple
     ? `${currentStreak.count} תיקו ברצף`
     : null;
 
-  const tierLabel = rank >= 1 && rank <= 5 ? tierLabels[rank - 1] : null;
+  const tierLabel = rank >= 1 && rank <= 5 ? TIER_LABELS[rank - 1] : null;
 
   if (isCompleted) {
     return (
