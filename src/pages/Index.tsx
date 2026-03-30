@@ -708,6 +708,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 StorageService.saveFPActive(ev);
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
