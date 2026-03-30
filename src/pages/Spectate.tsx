@@ -88,11 +88,15 @@ export default function Spectate() {
     }
   }, [code, state]);
 
+  const isCompleted = evening?.completed === true;
+
   useEffect(() => {
     fetchEvening();
+    // Don't poll for completed tournaments
+    if (isCompleted) return;
     const interval = setInterval(fetchEvening, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchEvening]);
+  }, [fetchEvening, isCompleted]);
 
   // Validate stored player still exists in evening
   useEffect(() => {
