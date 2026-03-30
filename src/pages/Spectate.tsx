@@ -286,22 +286,8 @@ function PersonalizedSpectateView({
 
         {/* Completed: Final Player Ranking */}
         {evening.completed && (() => {
-          const tierLabels = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
-          const tierEmojis = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
-          const tierColors = [
-            'from-yellow-400/25 to-yellow-600/10 border-yellow-400/50 ring-yellow-400/20',
-            'from-slate-300/20 to-slate-400/10 border-slate-300/40',
-            'from-amber-600/20 to-amber-700/10 border-amber-600/40',
-            'from-border/30 to-border/10 border-border/40',
-            'from-border/20 to-border/5 border-border/30',
-          ];
-          const tierText = [
-            'text-yellow-400',
-            'text-slate-300',
-            'text-amber-500',
-            'text-muted-foreground',
-            'text-muted-foreground',
-          ];
+          const top5 = playerStats.slice(0, 5);
+          const tierIndices = computeTierIndices(top5.map(s => s.points));
           return (
             <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card space-y-3">
               <div className="text-center">
