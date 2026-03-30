@@ -210,28 +210,12 @@ function PersonalizedSpectateView({
           </Badge>
         </div>
 
-        {/* Personal summary card */}
+        {/* ── Section 1: Personal Summary Card ── */}
         {personal && (
           <PersonalSummaryCard personal={personal} onSwitchPlayer={onSwitchPlayer} />
         )}
 
-        {/* Progress */}
-        <Card className="bg-gaming-surface/50 border-border/50 p-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {evening.completed ? "הליגה הסתיימה!" : `משחק ${completedCount + 1} מתוך ${totalMatches}`}
-            </span>
-            <span>{completedCount}/{totalMatches} הושלמו</span>
-          </div>
-          <div className="w-full bg-gaming-surface rounded-full h-1.5 mt-1.5">
-            <div
-              className="bg-neon-green rounded-full h-1.5 transition-all duration-500"
-              style={{ width: `${(completedCount / totalMatches) * 100}%` }}
-            />
-          </div>
-        </Card>
-
-        {/* Current match */}
+        {/* ── Section 2: Current Match / Live Status ── */}
         {currentMatch && !evening.completed && (
           <Card className={`bg-gradient-card p-4 shadow-card ${isMyMatch(currentMatch) ? 'border-neon-green/50 ring-1 ring-neon-green/20' : 'border-neon-green/30'}`}>
             <p className="text-[10px] text-muted-foreground text-center mb-1">
@@ -241,20 +225,13 @@ function PersonalizedSpectateView({
             <div className="text-center space-y-1">
               <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
                 {pairName(currentMatch.pairA)}
-                {playerInFPPair(selectedPlayerId, currentMatch.pairA) && (
-                  <span className="text-[10px] mr-1 text-neon-green/70">אתה</span>
-                )}
               </p>
               <p className="text-xs text-muted-foreground">vs</p>
               <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
                 {pairName(currentMatch.pairB)}
-                {playerInFPPair(selectedPlayerId, currentMatch.pairB) && (
-                  <span className="text-[10px] mr-1 text-neon-green/70">אתה</span>
-                )}
               </p>
             </div>
 
-            {/* Teams if selected */}
             {(currentMatch.clubA || currentMatch.clubB) && (
               <div className="flex items-center justify-center gap-3 mt-2 text-xs">
                 {currentMatch.clubA && (
@@ -273,7 +250,6 @@ function PersonalizedSpectateView({
               </div>
             )}
 
-            {/* Score if entered */}
             {currentMatch.scoreA !== undefined && currentMatch.scoreB !== undefined && currentMatch.completed && (
               <div className="text-center mt-2">
                 <span className="text-2xl font-bold text-neon-green">
@@ -288,7 +264,6 @@ function PersonalizedSpectateView({
                 className={`text-[10px] ${currentMatch.sittingOut.id === selectedPlayerId ? 'border-neon-green/30 text-neon-green' : 'border-muted-foreground/30 text-muted-foreground'}`}
               >
                 🪑 יושב בחוץ: {currentMatch.sittingOut.name}
-                {currentMatch.sittingOut.id === selectedPlayerId && " (אתה)"}
               </Badge>
             </div>
           </Card>
@@ -311,62 +286,26 @@ function PersonalizedSpectateView({
           </Card>
         )}
 
-        {/* Upcoming Matches */}
-        {!evening.completed && (() => {
-          const upcoming = evening.schedule.filter((m, i) => !m.completed && i !== evening.currentMatchIndex);
-          if (upcoming.length === 0) return null;
-          return (
-            <div>
-              <Button
-                variant="outline"
-                className="w-full border-border/50 text-muted-foreground"
-                onClick={() => setShowUpcoming(!showUpcoming)}
-              >
-                {showUpcoming ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
-                משחקים הבאים ({upcoming.length})
-              </Button>
-              {showUpcoming && (
-                <Card className="bg-gradient-card border-border/40 p-3 shadow-card mt-2">
-                  <div className="space-y-1.5">
-                    {upcoming.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border text-xs ${
-                          isMyMatch(m) ? 'border-neon-green/30 bg-neon-green/5' : 'border-border/30'
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
-                            {pairName(m.pairA)}
-                          </span>
-                          <span className="text-muted-foreground mx-1">vs</span>
-                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
-                            {pairName(m.pairB)}
-                          </span>
-                        </div>
-                        <span className="text-muted-foreground text-[10px] mr-2">
-                          {m.sittingOut.id === selectedPlayerId ? '🪑 אתה' : `🪑 ${m.sittingOut.name}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-            </div>
-          );
-        })()}
+        {/* ── Section 3: Personal Insights (expandable) ── */}
+        {personal && <PersonalInsights personal={personal} />}
 
-        {/* View All Teams Button */}
-        <Button
-          variant="outline"
-          className="w-full border-border/50 text-muted-foreground"
-          onClick={() => setBankDrawerOpen(true)}
-        >
-          <Eye className="h-4 w-4 ml-1" />
-          צפייה בכל הקבוצות
-        </Button>
+        {/* ── Section 4: Progress ── */}
+        <Card className="bg-gaming-surface/50 border-border/50 p-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              {evening.completed ? "הליגה הסתיימה!" : `משחק ${completedCount + 1} מתוך ${totalMatches}`}
+            </span>
+            <span>{completedCount}/{totalMatches} הושלמו</span>
+          </div>
+          <div className="w-full bg-gaming-surface rounded-full h-1.5 mt-1.5">
+            <div
+              className="bg-neon-green rounded-full h-1.5 transition-all duration-500"
+              style={{ width: `${(completedCount / totalMatches) * 100}%` }}
+            />
+          </div>
+        </Card>
 
-        {/* Standings Tabs */}
+        {/* ── Section 5: Standings ── */}
         <Tabs defaultValue="players">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="pairs">
@@ -411,7 +350,7 @@ function PersonalizedSpectateView({
                         <TableCell className="text-center text-xs">
                           {s.goalDiff > 0 ? "+" : ""}{s.goalDiff}
                         </TableCell>
-                        <TableCell className={`text-center text-xs font-bold ${isMyPair ? 'text-neon-green' : 'text-neon-green'}`}>
+                        <TableCell className="text-center text-xs font-bold text-neon-green">
                           {s.points}
                         </TableCell>
                       </TableRow>
@@ -443,9 +382,6 @@ function PersonalizedSpectateView({
                       <TableRow key={s.player.id} className={isMe ? 'bg-neon-green/10' : ''}>
                         <TableCell className="text-xs font-medium">
                           {s.player.name}
-                          {isMe && (
-                            <span className="text-neon-green text-[9px] mr-1">אתה</span>
-                          )}
                         </TableCell>
                         <TableCell className="text-center text-xs">{s.played}</TableCell>
                         <TableCell className="text-center text-xs">{s.wins}</TableCell>
@@ -466,10 +402,7 @@ function PersonalizedSpectateView({
           </TabsContent>
         </Tabs>
 
-        {/* Personal Insights */}
-        {personal && <PersonalInsights personal={personal} />}
-
-        {/* Recent matches */}
+        {/* ── Section 6: Results (collapsed, ALL results) ── */}
         {completedCount > 0 && (
           <div>
             <Button
@@ -478,14 +411,13 @@ function PersonalizedSpectateView({
               onClick={() => setShowRecent(!showRecent)}
             >
               {showRecent ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
-              תוצאות אחרונות ({Math.min(completedCount, 8)})
+              כל התוצאות ({completedCount})
             </Button>
             {showRecent && (
               <Card className="bg-gradient-card border-border/40 p-3 shadow-card mt-2">
                 <div className="space-y-2">
                   {evening.schedule
                     .filter((m) => m.completed)
-                    .slice(-8)
                     .reverse()
                     .map((m) => {
                       const cycle = Math.floor(m.roundIndex / 2) + 1;
@@ -538,6 +470,61 @@ function PersonalizedSpectateView({
             )}
           </div>
         )}
+
+        {/* ── Section 7: Upcoming Matches (collapsed) ── */}
+        {!evening.completed && (() => {
+          const upcoming = evening.schedule.filter((m, i) => !m.completed && i !== evening.currentMatchIndex);
+          if (upcoming.length === 0) return null;
+          return (
+            <div>
+              <Button
+                variant="outline"
+                className="w-full border-border/50 text-muted-foreground"
+                onClick={() => setShowUpcoming(!showUpcoming)}
+              >
+                {showUpcoming ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                משחקים הבאים ({upcoming.length})
+              </Button>
+              {showUpcoming && (
+                <Card className="bg-gradient-card border-border/40 p-3 shadow-card mt-2">
+                  <div className="space-y-1.5">
+                    {upcoming.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border text-xs ${
+                          isMyMatch(m) ? 'border-neon-green/30 bg-neon-green/5' : 'border-border/30'
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
+                            {pairName(m.pairA)}
+                          </span>
+                          <span className="text-muted-foreground mx-1">vs</span>
+                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
+                            {pairName(m.pairB)}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px] mr-2">
+                          {m.sittingOut.id === selectedPlayerId ? '🪑 אתה' : `🪑 ${m.sittingOut.name}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Section 8: All Teams button ── */}
+        <Button
+          variant="outline"
+          className="w-full border-border/50 text-muted-foreground"
+          onClick={() => setBankDrawerOpen(true)}
+        >
+          <Users className="h-4 w-4 ml-1" />
+          כל הקבוצות
+        </Button>
       </div>
 
       {/* Team Banks Drawer */}
