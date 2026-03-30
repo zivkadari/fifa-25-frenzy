@@ -88,11 +88,15 @@ export default function Spectate() {
     }
   }, [code, state]);
 
+  const isCompleted = evening?.completed === true;
+
   useEffect(() => {
     fetchEvening();
+    // Don't poll for completed tournaments
+    if (isCompleted) return;
     const interval = setInterval(fetchEvening, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchEvening]);
+  }, [fetchEvening, isCompleted]);
 
   // Validate stored player still exists in evening
   useEffect(() => {
@@ -141,6 +145,7 @@ export default function Spectate() {
       setShowUpcoming={setShowUpcoming}
       showRecent={showRecent}
       setShowRecent={setShowRecent}
+      isCompleted={isCompleted}
     />
   );
 }
@@ -157,6 +162,7 @@ interface PersonalizedViewProps {
   setShowUpcoming: (v: boolean) => void;
   showRecent: boolean;
   setShowRecent: (v: boolean) => void;
+  isCompleted: boolean;
 }
 
 function PersonalizedSpectateView({
@@ -164,6 +170,7 @@ function PersonalizedSpectateView({
   bankDrawerOpen, setBankDrawerOpen,
   showUpcoming, setShowUpcoming,
   showRecent, setShowRecent,
+  isCompleted,
 }: PersonalizedViewProps) {
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
@@ -204,10 +211,17 @@ function PersonalizedSpectateView({
               </p>
             </div>
           </div>
-          <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
-            <Eye className="h-3 w-3 ml-1" />
-            צפייה בלבד
-          </Badge>
+          {isCompleted ? (
+            <Badge className="bg-yellow-400/20 text-yellow-300 border-yellow-400/30 text-xs">
+              <Trophy className="h-3 w-3 ml-1" />
+              תוצאות סופיות
+            </Badge>
+          ) : (
+            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
+              <Eye className="h-3 w-3 ml-1" />
+              צפייה בלבד
+            </Badge>
+          )}
         </div>
 
         {/* ── Section 1: Personal Summary Card ── */}

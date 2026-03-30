@@ -739,6 +739,8 @@ const handleGoHome = () => {
               onSave={(ev) => {
                 StorageService.saveFPEvening(ev);
                 StorageService.clearFPActive();
+                // Push final completed state to Supabase so historical spectator links work
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
               }}
               onBackToHome={() => {
                 setFpEvening(null);
