@@ -58,9 +58,14 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer, isComple
         {/* Stats grid */}
         <div className="grid grid-cols-4 gap-2">
           <StatBox label="נקודות" value={stats.points} highlight />
-          <StatBox label="נ/ת/ה" value={`${stats.wins}/${stats.draws}/${stats.losses}`} />
+          <StatBox label="ניצחונות" value={stats.wins} />
+          <StatBox label="תיקו" value={stats.draws} />
+          <StatBox label="הפסדים" value={stats.losses} />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
           <StatBox label="הפ. שערים" value={`${stats.goalDiff > 0 ? '+' : ''}${stats.goalDiff}`} />
           <StatBox label="% ניצחון" value={`${winRate}%`} />
+          <StatBox label="שערים" value={`${stats.goalsFor}:${stats.goalsAgainst}`} />
         </div>
 
         {/* Final streak */}
@@ -142,9 +147,14 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer, isComple
       {/* Stats grid */}
       <div className="grid grid-cols-4 gap-2">
         <StatBox label="נקודות" value={stats.points} highlight />
-        <StatBox label="נ/ת/ה" value={`${stats.wins}/${stats.draws}/${stats.losses}`} />
+        <StatBox label="ניצחונות" value={stats.wins} />
+        <StatBox label="תיקו" value={stats.draws} />
+        <StatBox label="הפסדים" value={stats.losses} />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
         <StatBox label="הפ. שערים" value={`${stats.goalDiff > 0 ? '+' : ''}${stats.goalDiff}`} />
         <StatBox label="% ניצחון" value={`${winRate}%`} />
+        <StatBox label="שערים" value={`${stats.goalsFor}:${stats.goalsAgainst}`} />
       </div>
 
       {/* Streak + matches left */}
