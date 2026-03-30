@@ -145,6 +145,7 @@ export default function Spectate() {
       setShowUpcoming={setShowUpcoming}
       showRecent={showRecent}
       setShowRecent={setShowRecent}
+      isCompleted={isCompleted}
     />
   );
 }
