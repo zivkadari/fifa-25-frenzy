@@ -413,17 +413,17 @@ export default function Spectate() {
                           <p className="text-[10px] text-muted-foreground mb-1.5 text-center">
                             #{m.globalIndex + 1} / {totalMatches} · מחזור {cycle} · בלוק {block} משחק {matchInBlock}
                           </p>
-                          <div className="flex items-center justify-between gap-1 text-xs">
-                            <div className="flex-1 text-right">
+                          <div className="flex items-center justify-between gap-1 text-xs" dir="ltr">
+                            <div className="flex-1 text-left">
                               <p className="text-foreground font-medium leading-tight">{pairName(m.pairA)}</p>
                               {m.clubA && (
                                 <p className="text-muted-foreground text-[10px] leading-tight">{m.clubA.name}</p>
                               )}
                             </div>
-                            <span dir="ltr" className="font-bold text-neon-green font-mono px-1.5 text-sm shrink-0">
+                            <span className="font-bold text-neon-green font-mono px-1.5 text-sm shrink-0">
                               {m.scoreA}–{m.scoreB}
                             </span>
-                            <div className="flex-1 text-left">
+                            <div className="flex-1 text-right">
                               <p className="text-foreground font-medium leading-tight">{pairName(m.pairB)}</p>
                               {m.clubB && (
                                 <p className="text-muted-foreground text-[10px] leading-tight">{m.clubB.name}</p>
