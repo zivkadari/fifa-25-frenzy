@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Trophy, Trash2, Users2 } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Trash2, Users2, Share2, Loader2, ExternalLink } from "lucide-react";
 import { FPEvening } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
+import { RemoteStorageService } from "@/services/remoteStorageService";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +23,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
+
 interface FPHistoryProps {
   onBack: () => void;
 }
 
 export const FPHistory = ({ onBack }: FPHistoryProps) => {
+  const { toast } = useToast();
   const [evenings, setEvenings] = useState<FPEvening[]>([]);
+  const [sharingId, setSharingId] = useState<string | null>(null);
 
   useEffect(() => {
     setEvenings(StorageService.loadFPEvenings());
@@ -38,6 +44,32 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
     StorageService.deleteFPEvening(id);
     setEvenings(StorageService.loadFPEvenings());
   };
+
+  const handleShare = useCallback(async (ev: FPEvening) => {
+    setSharingId(ev.id);
+    try {
+      // Ensure the evening is in Supabase
+      await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, null).catch(() => {});
+      const code = await RemoteStorageService.getShareCode(ev.id);
+      if (!code) {
+        toast({ title: "לא ניתן ליצור קישור", description: "ודא שאתה מחובר", variant: "destructive" });
+        return;
+      }
+      const url = `${window.location.origin}/spectate/${code}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "תוצאות ליגת 5 שחקנים", url });
+          return;
+        } catch {}
+      }
+      await navigator.clipboard.writeText(url);
+      toast({ title: "קישור צפייה הועתק!" });
+    } catch {
+      toast({ title: "שגיאה ביצירת קישור", variant: "destructive" });
+    } finally {
+      setSharingId(null);
+    }
+  }, [toast]);
 
   return (
     <div className="min-h-[100svh] bg-gaming-bg p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" dir="rtl">
@@ -63,8 +95,8 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
             const pairStats = calculatePairStats(ev);
             const playerStats = calculatePlayerStats(ev);
             const topPair = pairStats[0];
-            const topPlayer = playerStats[0];
             const completedCount = ev.schedule.filter(m => m.completed).length;
+            const isSharing = sharingId === ev.id;
 
             return (
               <Collapsible key={ev.id}>
@@ -159,6 +191,22 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                           </div>
                         </TabsContent>
                       </Tabs>
+
+                      {/* Share spectator link */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-neon-green/30 text-neon-green hover:bg-neon-green/10"
+                        onClick={(e) => { e.stopPropagation(); handleShare(ev); }}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Share2 className="h-3 w-3" />
+                        )}
+                        {isSharing ? "יוצר קישור..." : "שתף תצוגת צפייה"}
+                      </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
