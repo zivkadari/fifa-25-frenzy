@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import JoinTournament from "./pages/JoinTournament";
 import AdminClubs from "./pages/AdminClubs";
 import AdminPoolConfig from "./pages/AdminPoolConfig";
+import Spectate from "./pages/Spectate";
 
 const queryClient = new QueryClient();
 
