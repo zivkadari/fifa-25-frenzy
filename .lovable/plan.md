@@ -1,28 +1,24 @@
 
-# שינוי מגבלת הופעות קבוצות לפי דירוג כוכבים
 
-## מה משתנה
-כרגע כל הקבוצות (5★, 4.5★, 4★) חולקות את אותה מגבלת הופעות (`maxAppearances`). צריך לשנות כך ש:
-- **5★**: מותר עד 2 הופעות (כמו היום)
-- **4.5★**: מותר הופעה אחת בלבד
-- **4★**: מותר הופעה אחת בלבד
+## Problem Analysis
 
-## מה זה אומר מבחינת כמויות
-- 10 זוגות × 2 קבוצות per tier = 20 slots per tier
-- 5★ עם max 2 → צריך לפחות 10 קבוצות ייחודיות
-- 4.5★ עם max 1 → צריך לפחות 20 קבוצות ייחודיות
-- 4★ עם max 1 → צריך לפחות 20 קבוצות ייחודיות
+When clicking the share button, the flow is:
+1. `handleShare` → `RemoteStorageService.getShareCode(eveningId)`
+2. `getShareCode` calls the RPC `get_evening_share_code` which queries `evenings` where `id = eveningId AND owner_id = auth.uid()`
+3. If the evening row doesn't exist yet in Supabase, or the user isn't authenticated, it returns null → error toast
 
-## שינויים טכניים
+The root cause: `handleShare` assumes the evening already exists in the `evenings` table. But the upsert happens asynchronously on updates, and if the user clicks share before any update has synced, the row may not exist yet.
 
-### `src/services/fivePlayerEngine.ts` — `generateTeamBanks`
-1. שינוי מבנה ה-tiers כך שכל tier יכלול את ה-`maxAppearances` שלו:
-   - `{ pool: clubs5, countPerPair: 2, maxForTier: maxAppearances }` (ברירת מחדל 2)
-   - `{ pool: clubs45, countPerPair: 2, maxForTier: 1 }`
-   - `{ pool: clubs4, countPerPair: 2, maxForTier: 1 }`
-2. עדכון בדיקת ה-`minNeeded` לכל tier בנפרד לפי ה-max שלו
-3. בלולאת ההקצאה, שימוש ב-`tier.maxForTier` במקום `maxAppearances` הגלובלי
-4. ה-fallback (max 3) יחול רק על 5★; קבוצות 4/4.5 יישארו עם max 1
+## Fix
 
-### `src/pages/Index.tsx` — Deadlock fallback dialog
-- עדכון הטקסט/הסבר ב-dialog כך שיהיה ברור שההרחבה ל-3 הופעות חלה רק על 5★
+**File: `src/components/FPGame.tsx`** — Update `handleShare` to ensure the evening is upserted to Supabase before requesting the share code:
+
+1. Before calling `getShareCode`, first call `RemoteStorageService.upsertEveningLiveWithTeam(currentEvening, teamId)` to guarantee the row exists
+2. Add better error logging to surface what actually fails (auth? missing row?)
+
+**File: `src/services/remoteStorageService.ts`** — Make `getShareCode` more robust:
+1. If the RPC returns null/empty, attempt a direct `.select('share_code')` query as fallback (the owner has SELECT access via RLS)
+2. Log the specific error for debugging
+
+This is a small, targeted fix — no changes to tournament logic, scoring, or UI layout.
+
