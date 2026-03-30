@@ -2,3 +2,6 @@ project_id = "ikbywydyidnkohbdrqdk"
 
 [functions.sync-stats]
 verify_jwt = false
+
+[functions.get-public-evening]
+verify_jwt = false
