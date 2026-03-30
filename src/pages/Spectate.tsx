@@ -351,9 +351,8 @@ export default function Spectate() {
                 </TableHeader>
                 <TableBody>
                   {playerStats.map((s, idx) => (
-                    <TableRow key={s.player.id}>
-                      <TableCell className="text-xs">{idx + 1}</TableCell>
-                      <TableCell className="text-xs font-medium">
+                     <TableRow key={s.player.id}>
+                       <TableCell className="text-xs font-medium">
                         {s.player.name}
                       </TableCell>
                       <TableCell className="text-center text-xs">
