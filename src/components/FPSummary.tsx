@@ -43,30 +43,63 @@ export const FPSummary = ({ evening, onSave, onBackToHome }: FPSummaryProps) => 
           </p>
         </div>
 
-        {/* Winners */}
+        {/* Final Player Ranking: Alpha–Epsilon */}
+        {(() => {
+          const tierLabels = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
+          const tierEmojis = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
+          const tierColors = [
+            'from-yellow-400/25 to-yellow-600/10 border-yellow-400/50 ring-1 ring-yellow-400/20',
+            'from-slate-300/20 to-slate-400/10 border-slate-300/40',
+            'from-amber-600/20 to-amber-700/10 border-amber-600/40',
+            'from-border/30 to-border/10 border-border/40',
+            'from-border/20 to-border/5 border-border/30',
+          ];
+          const tierText = [
+            'text-yellow-400',
+            'text-slate-300',
+            'text-amber-500',
+            'text-muted-foreground',
+            'text-muted-foreground',
+          ];
+          return (
+            <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card space-y-3">
+              <div className="text-center">
+                <Medal className="h-7 w-7 text-yellow-400 mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">דירוג שחקנים סופי</p>
+              </div>
+              <div className="space-y-2">
+                {playerStats.slice(0, 5).map((s, idx) => (
+                  <div
+                    key={s.player.id}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${tierColors[idx]}`}
+                  >
+                    <span className="text-lg">{tierEmojis[idx]}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-xs font-bold tracking-wider ${tierText[idx]}`}>{tierLabels[idx]}</span>
+                      <p className="text-sm font-bold text-foreground leading-tight">{s.player.name}</p>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <p className={`text-sm font-bold ${tierText[idx]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
+                      <p className="text-[10px] text-muted-foreground">{s.wins}נ {s.draws}ת {s.losses}ה</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          );
+        })()}
+
+        {/* Top Pair (secondary) */}
         {topPair && (
-          <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card">
+          <Card className="bg-gradient-card border-neon-green/20 p-3 shadow-card">
             <div className="text-center">
-              <Medal className="h-6 w-6 text-yellow-400 mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">זוג מוביל</p>
-              <p className="text-lg font-bold text-foreground">
+              <Award className="h-5 w-5 text-neon-green mx-auto mb-1" />
+              <p className="text-[10px] text-muted-foreground">זוג מוביל</p>
+              <p className="text-sm font-bold text-foreground">
                 {topPair.pair.players[0].name} & {topPair.pair.players[1].name}
               </p>
-              <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30">
+              <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
                 {topPair.points} נקודות
-              </Badge>
-            </div>
-          </Card>
-        )}
-
-        {topPlayer && (
-          <Card className="bg-gradient-card border-neon-green/20 p-4 shadow-card">
-            <div className="text-center">
-              <Award className="h-6 w-6 text-neon-green mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">שחקן מוביל</p>
-              <p className="text-lg font-bold text-foreground">{topPlayer.player.name}</p>
-              <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30">
-                {topPlayer.points} נקודות
               </Badge>
             </div>
           </Card>
