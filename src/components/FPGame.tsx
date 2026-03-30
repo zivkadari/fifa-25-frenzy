@@ -239,6 +239,8 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     }
     setShareLoading(true);
     try {
+      // Ensure the evening exists in Supabase before fetching the share code
+      await RemoteStorageService.upsertEveningLiveWithTeam(currentEvening as any, null);
       const code = await RemoteStorageService.getShareCode(currentEvening.id);
       if (code) {
         setShareCode(code);
@@ -250,7 +252,8 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
       } else {
         toast({ title: "לא ניתן ליצור קישור. ודא שאתה מחובר.", variant: "destructive" });
       }
-    } catch {
+    } catch (err) {
+      console.error("handleShare error:", err);
       toast({ title: "שגיאה ביצירת קישור", variant: "destructive" });
     } finally {
       setShareLoading(false);

@@ -246,13 +246,24 @@ export class RemoteStorageService {
 
   static async getShareCode(eveningId: string): Promise<string | null> {
     if (!supabase) return null;
-    // Use secure RPC function - only owner can retrieve share_code
+    // Try RPC first (owner-only secure function)
     const { data, error } = await supabase.rpc('get_evening_share_code', { _evening_id: eveningId });
     if (error) {
-      console.error('getShareCode error:', error.message);
+      console.error('getShareCode RPC error:', error.message);
+    }
+    if (data) return data;
+
+    // Fallback: direct select (owner has SELECT via RLS)
+    const { data: row, error: selErr } = await supabase
+      .from(EVENINGS_TABLE)
+      .select('share_code')
+      .eq('id', eveningId)
+      .maybeSingle();
+    if (selErr) {
+      console.error('getShareCode select fallback error:', selErr.message);
       return null;
     }
-    return data || null;
+    return row?.share_code || null;
   }
 
   static async joinEveningByCode(code: string): Promise<string | null> {
