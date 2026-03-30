@@ -63,7 +63,17 @@ export function computePersonalStats(
   const statsEntry = playerStatsList.find(s => s.player.id === playerId);
   if (!statsEntry) return null;
 
-  const rank = playerStatsList.findIndex(s => s.player.id === playerId) + 1;
+  const idx = playerStatsList.findIndex(s => s.player.id === playerId);
+  // Competition ranking: if previous player has same points, share their rank
+  let rank = idx + 1;
+  if (idx > 0 && playerStatsList[idx].points === playerStatsList[idx - 1].points) {
+    // Find the first player with this point total
+    let first = idx;
+    while (first > 0 && playerStatsList[first - 1].points === playerStatsList[idx].points) {
+      first--;
+    }
+    rank = first + 1;
+  }
 
   // Completed matches involving this player
   const myMatches = evening.schedule.filter(m =>
