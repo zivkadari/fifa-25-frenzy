@@ -211,10 +211,17 @@ function PersonalizedSpectateView({
               </p>
             </div>
           </div>
-          <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
-            <Eye className="h-3 w-3 ml-1" />
-            צפייה בלבד
-          </Badge>
+          {isCompleted ? (
+            <Badge className="bg-yellow-400/20 text-yellow-300 border-yellow-400/30 text-xs">
+              <Trophy className="h-3 w-3 ml-1" />
+              תוצאות סופיות
+            </Badge>
+          ) : (
+            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs">
+              <Eye className="h-3 w-3 ml-1" />
+              צפייה בלבד
+            </Badge>
+          )}
         </div>
 
         {/* ── Section 1: Personal Summary Card ── */}
