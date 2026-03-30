@@ -224,6 +224,39 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const pairStats = calculatePairStats(currentEvening);
   const playerStats = calculatePlayerStats(currentEvening);
 
+  const handleShare = useCallback(async () => {
+    if (shareCode) {
+      const url = `${window.location.origin}/spectate/${shareCode}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        toast({ title: "קישור צפייה הועתק!" });
+      } catch {
+        toast({ title: "שגיאה בהעתקה", variant: "destructive" });
+      }
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const code = await RemoteStorageService.getShareCode(currentEvening.id);
+      if (code) {
+        setShareCode(code);
+        const url = `${window.location.origin}/spectate/${code}`;
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        toast({ title: "קישור צפייה הועתק!" });
+      } else {
+        toast({ title: "לא ניתן ליצור קישור. ודא שאתה מחובר.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "שגיאה ביצירת קישור", variant: "destructive" });
+    } finally {
+      setShareLoading(false);
+    }
+  }, [currentEvening.id, shareCode, toast]);
+
   if (!currentMatch) return null;
 
   const roundNum = currentMatch.roundIndex + 1;
