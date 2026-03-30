@@ -383,38 +383,60 @@ export default function Spectate() {
           </TabsContent>
         </Tabs>
 
-        {/* Recent matches */}
+        {/* Recent matches - collapsible, closed by default */}
         {completedCount > 0 && (
-          <Card className="bg-gradient-card border-border/40 p-3 shadow-card">
-            <h3 className="text-sm font-semibold text-foreground mb-2">
-              תוצאות אחרונות
-            </h3>
-            <div className="space-y-1.5">
-              {evening.schedule
-                .filter((m) => m.completed)
-                .slice(-5)
-                .reverse()
-                .map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border border-border/30 text-xs"
-                  >
-                    <div className="flex-1">
-                      <span className="text-foreground font-medium">
-                        {pairName(m.pairA)}
-                      </span>
-                      <span className="text-muted-foreground mx-1">vs</span>
-                      <span className="text-foreground font-medium">
-                        {pairName(m.pairB)}
-                      </span>
-                    </div>
-                    <span dir="ltr" className="font-bold text-foreground mr-2 font-mono">
-                       {m.scoreA}-{m.scoreB}
-                     </span>
-                  </div>
-                ))}
-            </div>
-          </Card>
+          <div>
+            <Button
+              variant="outline"
+              className="w-full border-border/50 text-muted-foreground"
+              onClick={() => setShowRecent(!showRecent)}
+            >
+              {showRecent ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+              תוצאות אחרונות ({Math.min(completedCount, 8)})
+            </Button>
+            {showRecent && (
+              <Card className="bg-gradient-card border-border/40 p-3 shadow-card mt-2">
+                <div className="space-y-2">
+                  {evening.schedule
+                    .filter((m) => m.completed)
+                    .slice(-8)
+                    .reverse()
+                    .map((m) => {
+                      const cycle = Math.floor(m.roundIndex / 2) + 1;
+                      const block = (m.roundIndex % 2) + 1;
+                      const matchInBlock = m.matchIndex + 1;
+                      return (
+                        <div
+                          key={m.id}
+                          className="bg-gaming-surface/40 rounded-lg px-2.5 py-2 border border-border/30"
+                        >
+                          <p className="text-[10px] text-muted-foreground mb-1.5 text-center">
+                            #{m.globalIndex + 1} / {totalMatches} · מחזור {cycle} · בלוק {block} משחק {matchInBlock}
+                          </p>
+                          <div className="flex items-center justify-between gap-1 text-xs">
+                            <div className="flex-1 text-right">
+                              <p className="text-foreground font-medium leading-tight">{pairName(m.pairA)}</p>
+                              {m.clubA && (
+                                <p className="text-muted-foreground text-[10px] leading-tight">{m.clubA.name}</p>
+                              )}
+                            </div>
+                            <span dir="ltr" className="font-bold text-neon-green font-mono px-1.5 text-sm shrink-0">
+                              {m.scoreA}–{m.scoreB}
+                            </span>
+                            <div className="flex-1 text-left">
+                              <p className="text-foreground font-medium leading-tight">{pairName(m.pairB)}</p>
+                              {m.clubB && (
+                                <p className="text-muted-foreground text-[10px] leading-tight">{m.clubB.name}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </Card>
+            )}
+          </div>
         )}
       </div>
 
