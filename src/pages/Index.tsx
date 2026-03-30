@@ -691,6 +691,8 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
+                // Sync to remote for spectator mode
+                RemoteStorageService.upsertEveningLiveWithTeam(result as any, currentTeamId ?? null).catch(() => {});
                 goTo('fp-bank-overview');
               }}
             />
