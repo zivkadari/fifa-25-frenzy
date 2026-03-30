@@ -41,19 +41,24 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer }: Person
       </div>
 
       {/* Status badge */}
-      {!personal.stats.played && !isPlayingNow && !isSittingOutNow ? null : (
-        <div>
-          {isPlayingNow && (
-            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-[11px]">
-              <Zap className="h-3 w-3 ml-1" />
-              אתה משחק עכשיו
-              {currentPartner && <span className="mr-1">עם {currentPartner.name}</span>}
-            </Badge>
-          )}
-          {isSittingOutNow && (
-            <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground text-[11px]">
-              🪑 אתה יושב בחוץ במשחק הזה
-            </Badge>
+      {isPlayingNow && (
+        <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-[11px]">
+          <Zap className="h-3 w-3 ml-1" />
+          משחק עכשיו
+          {currentPartner && <span className="mr-1">עם {currentPartner.name}</span>}
+        </Badge>
+      )}
+      {isSittingOutNow && !isPlayingNow && (
+        <div className="space-y-1">
+          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground text-[11px]">
+            🪑 יושב בחוץ במשחק הנוכחי
+          </Badge>
+          {nextPartner && nextOpponents && (
+            <div className="text-[11px] text-muted-foreground">
+              <TrendingUp className="h-3 w-3 inline ml-1" />
+              הבא: עם <span className="text-foreground font-medium">{nextPartner.name}</span> נגד{' '}
+              <span className="text-foreground font-medium">{nextOpponents[0].name} & {nextOpponents[1].name}</span>
+            </div>
           )}
         </div>
       )}
@@ -86,8 +91,8 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer }: Person
         </div>
       )}
 
-      {/* Next match preview */}
-      {!isPlayingNow && nextPartner && nextOpponents && (
+      {/* Next match preview (only when not sitting out, since sitting-out already shows it) */}
+      {!isPlayingNow && !isSittingOutNow && nextPartner && nextOpponents && (
         <div className="text-[11px] text-muted-foreground">
           <TrendingUp className="h-3 w-3 inline ml-1" />
           הבא: עם <span className="text-foreground font-medium">{nextPartner.name}</span> נגד{' '}
