@@ -1,7 +1,7 @@
 project_id = "ikbywydyidnkohbdrqdk"
 
 [functions.sync-stats]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-public-evening]
 verify_jwt = false

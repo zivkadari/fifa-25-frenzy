@@ -603,34 +603,8 @@ export class RemoteStorageService {
   }
 
   // ========== Share Code Helpers ==========
-  private static generateShareCode(): string {
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const digits = '23456789';
-    let code = '';
-    for (let i = 0; i < 4; i++) code += letters[Math.floor(Math.random() * letters.length)];
-    code += '-';
-    for (let i = 0; i < 4; i++) code += digits[Math.floor(Math.random() * digits.length)];
-    return code;
-  }
-
-  static async ensureShareCode(eveningId: string): Promise<string | null> {
-    if (!supabase) return null;
-    // If there is already a code, return it
-    const existing = await this.getShareCode(eveningId);
-    if (existing) return existing;
-
-    const code = this.generateShareCode().toUpperCase().trim();
-    const { error } = await supabase
-      .from(EVENINGS_TABLE)
-      .update({ share_code: code } as any)
-      .eq('id', eveningId);
-    if (error) {
-      console.error('ensureShareCode error:', error.message);
-      return null;
-    }
-    return code;
-  }
-
+  // Share codes are generated server-side by the database default (gen_random_bytes).
+  // No client-side generation needed.
   // ========== User Profile ==========
   static async getProfile(userId: string): Promise<{ display_name: string; avatar_url: string | null } | null> {
     if (!supabase) return null;
