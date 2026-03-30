@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
