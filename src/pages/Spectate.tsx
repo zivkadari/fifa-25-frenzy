@@ -422,11 +422,11 @@ export default function Spectate() {
         <DrawerContent className="max-h-[85vh]" dir="rtl">
           <DrawerHeader>
             <DrawerTitle className="text-foreground text-right">
-              בנקי קבוצות
-            </DrawerTitle>
-            <DrawerDescription className="text-right">
-              כל בנקי הזוגות בליגה
-            </DrawerDescription>
+               כל הקבוצות
+             </DrawerTitle>
+             <DrawerDescription className="text-right">
+               כל הקבוצות של הזוגות בליגה
+             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6 space-y-3 overflow-auto max-h-[65vh]">
             {evening.pairs.map((pair) => {
