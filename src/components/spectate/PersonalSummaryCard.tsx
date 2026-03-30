@@ -91,8 +91,8 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer }: Person
         </div>
       )}
 
-      {/* Next match preview */}
-      {!isPlayingNow && nextPartner && nextOpponents && (
+      {/* Next match preview (only when not sitting out, since sitting-out already shows it) */}
+      {!isPlayingNow && !isSittingOutNow && nextPartner && nextOpponents && (
         <div className="text-[11px] text-muted-foreground">
           <TrendingUp className="h-3 w-3 inline ml-1" />
           הבא: עם <span className="text-foreground font-medium">{nextPartner.name}</span> נגד{' '}
