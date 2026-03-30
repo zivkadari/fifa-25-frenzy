@@ -274,7 +274,7 @@ export default function Spectate() {
         </Button>
 
         {/* Standings Tabs */}
-        <Tabs defaultValue="pairs">
+        <Tabs defaultValue="players">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="pairs">
               <Trophy className="h-3.5 w-3.5 ml-1" />
