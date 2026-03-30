@@ -226,7 +226,7 @@ function PersonalizedSpectateView({
 
         {/* ── Section 1: Personal Summary Card ── */}
         {personal && (
-          <PersonalSummaryCard personal={personal} onSwitchPlayer={onSwitchPlayer} />
+          <PersonalSummaryCard personal={personal} onSwitchPlayer={onSwitchPlayer} isCompleted={isCompleted} />
         )}
 
         {/* ── Section 2: Current Match / Live Status ── */}
