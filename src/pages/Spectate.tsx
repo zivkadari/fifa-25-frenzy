@@ -407,9 +407,9 @@ export default function Spectate() {
                         {pairName(m.pairB)}
                       </span>
                     </div>
-                    <span className="font-bold text-foreground mr-2">
-                      {m.scoreA}-{m.scoreB}
-                    </span>
+                    <span dir="ltr" className="font-bold text-foreground mr-2 font-mono">
+                       {m.scoreA}-{m.scoreB}
+                     </span>
                   </div>
                 ))}
             </div>
