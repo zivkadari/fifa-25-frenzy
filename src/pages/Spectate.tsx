@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -13,13 +13,21 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { FPEvening, FPMatch, FPPair, FPTeamBank, FPPairStats, FPPlayerStats } from "@/types/fivePlayerTypes";
+import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
+import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
+import PlayerPicker from "@/components/spectate/PlayerPicker";
+import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
+import PersonalInsights from "@/components/spectate/PersonalInsights";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
 const POLL_INTERVAL = 4000;
 
 type SpectateState = "loading" | "error" | "live";
+
+function getStorageKey(code: string) {
+  return `spectate-player-${code}`;
+}
 
 export default function Spectate() {
   const { code } = useParams<{ code: string }>();
@@ -29,7 +37,21 @@ export default function Spectate() {
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(() => {
+    if (!code) return null;
+    return localStorage.getItem(getStorageKey(code)) || null;
+  });
   const lastUpdatedAt = useRef<string>("");
+
+  const selectPlayer = useCallback((playerId: string) => {
+    setSelectedPlayerId(playerId);
+    if (code) localStorage.setItem(getStorageKey(code), playerId);
+  }, [code]);
+
+  const clearPlayer = useCallback(() => {
+    setSelectedPlayerId(null);
+    if (code) localStorage.removeItem(getStorageKey(code));
+  }, [code]);
 
   const fetchEvening = useCallback(async () => {
     if (!code) return;
@@ -45,7 +67,6 @@ export default function Spectate() {
         return;
       }
       const json = await res.json();
-      // Only update if data actually changed
       if (json.updated_at !== lastUpdatedAt.current) {
         lastUpdatedAt.current = json.updated_at;
         const data = json.data as FPEvening;
@@ -53,7 +74,6 @@ export default function Spectate() {
           setEvening(data);
           setState("live");
         } else {
-          // It's a regular evening, not FP - still show error for now
           setState("error");
           setErrorMsg("הטורניר הזה לא נתמך בתצוגת צפייה");
         }
@@ -73,6 +93,14 @@ export default function Spectate() {
     const interval = setInterval(fetchEvening, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchEvening]);
+
+  // Validate stored player still exists in evening
+  useEffect(() => {
+    if (evening && selectedPlayerId) {
+      const exists = evening.players.some(p => p.id === selectedPlayerId);
+      if (!exists) clearPlayer();
+    }
+  }, [evening, selectedPlayerId, clearPlayer]);
 
   if (state === "loading") {
     return (
@@ -97,9 +125,54 @@ export default function Spectate() {
     );
   }
 
+  // Show player picker if no player selected
+  if (!selectedPlayerId) {
+    return <PlayerPicker players={evening.players} onSelect={selectPlayer} />;
+  }
+
+  return (
+    <PersonalizedSpectateView
+      evening={evening}
+      selectedPlayerId={selectedPlayerId}
+      onSwitchPlayer={clearPlayer}
+      bankDrawerOpen={bankDrawerOpen}
+      setBankDrawerOpen={setBankDrawerOpen}
+      showUpcoming={showUpcoming}
+      setShowUpcoming={setShowUpcoming}
+      showRecent={showRecent}
+      setShowRecent={setShowRecent}
+    />
+  );
+}
+
+/* ─── Main personalized view ─── */
+
+interface PersonalizedViewProps {
+  evening: FPEvening;
+  selectedPlayerId: string;
+  onSwitchPlayer: () => void;
+  bankDrawerOpen: boolean;
+  setBankDrawerOpen: (v: boolean) => void;
+  showUpcoming: boolean;
+  setShowUpcoming: (v: boolean) => void;
+  showRecent: boolean;
+  setShowRecent: (v: boolean) => void;
+}
+
+function PersonalizedSpectateView({
+  evening, selectedPlayerId, onSwitchPlayer,
+  bankDrawerOpen, setBankDrawerOpen,
+  showUpcoming, setShowUpcoming,
+  showRecent, setShowRecent,
+}: PersonalizedViewProps) {
+  const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
+  const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
+  const personal = useMemo(
+    () => computePersonalStats(evening, selectedPlayerId, playerStats),
+    [evening, selectedPlayerId, playerStats]
+  );
+
   const currentMatch = evening.schedule[evening.currentMatchIndex] ?? null;
-  const pairStats = calculatePairStats(evening);
-  const playerStats = calculatePlayerStats(evening);
   const totalMatches = evening.schedule.length;
   const completedCount = evening.schedule.filter((m) => m.completed).length;
 
@@ -112,6 +185,8 @@ export default function Spectate() {
     return "★".repeat(full) + (half ? "☆" : "");
   };
 
+  const isMyMatch = (m: FPMatch) => playerInMatch(selectedPlayerId, m);
+
   return (
     <div
       className="min-h-[100svh] bg-gaming-bg p-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
@@ -123,9 +198,7 @@ export default function Spectate() {
           <div className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-neon-green" />
             <div>
-              <h1 className="text-base font-bold text-foreground">
-                ליגת 5 שחקנים
-              </h1>
+              <h1 className="text-base font-bold text-foreground">ליגת 5 שחקנים</h1>
               <p className="text-xs text-muted-foreground">
                 {evening.players.map((p) => p.name).join(", ")}
               </p>
@@ -136,6 +209,11 @@ export default function Spectate() {
             צפייה בלבד
           </Badge>
         </div>
+
+        {/* Personal summary card */}
+        {personal && (
+          <PersonalSummaryCard personal={personal} onSwitchPlayer={onSwitchPlayer} />
+        )}
 
         {/* Progress */}
         <Card className="bg-gaming-surface/50 border-border/50 p-2">
@@ -155,18 +233,24 @@ export default function Spectate() {
 
         {/* Current match */}
         {currentMatch && !evening.completed && (
-          <Card className="bg-gradient-card border-neon-green/30 p-4 shadow-card">
+          <Card className={`bg-gradient-card p-4 shadow-card ${isMyMatch(currentMatch) ? 'border-neon-green/50 ring-1 ring-neon-green/20' : 'border-neon-green/30'}`}>
             <p className="text-[10px] text-muted-foreground text-center mb-1">
               משחק נוכחי • סיבוב {currentMatch.roundIndex + 1} • משחק{" "}
               {currentMatch.matchIndex + 1}
             </p>
             <div className="text-center space-y-1">
-              <p className="text-lg font-bold text-foreground">
+              <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
                 {pairName(currentMatch.pairA)}
+                {playerInFPPair(selectedPlayerId, currentMatch.pairA) && (
+                  <span className="text-[10px] mr-1 text-neon-green/70">אתה</span>
+                )}
               </p>
               <p className="text-xs text-muted-foreground">vs</p>
-              <p className="text-lg font-bold text-foreground">
+              <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
                 {pairName(currentMatch.pairB)}
+                {playerInFPPair(selectedPlayerId, currentMatch.pairB) && (
+                  <span className="text-[10px] mr-1 text-neon-green/70">אתה</span>
+                )}
               </p>
             </div>
 
@@ -201,9 +285,10 @@ export default function Spectate() {
             <div className="text-center mt-2">
               <Badge
                 variant="outline"
-                className="border-muted-foreground/30 text-muted-foreground text-[10px]"
+                className={`text-[10px] ${currentMatch.sittingOut.id === selectedPlayerId ? 'border-neon-green/30 text-neon-green' : 'border-muted-foreground/30 text-muted-foreground'}`}
               >
                 🪑 יושב בחוץ: {currentMatch.sittingOut.name}
+                {currentMatch.sittingOut.id === selectedPlayerId && " (אתה)"}
               </Badge>
             </div>
           </Card>
@@ -246,14 +331,22 @@ export default function Spectate() {
                     {upcoming.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border border-border/30 text-xs"
+                        className={`flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border text-xs ${
+                          isMyMatch(m) ? 'border-neon-green/30 bg-neon-green/5' : 'border-border/30'
+                        }`}
                       >
                         <div className="flex-1">
-                          <span className="text-foreground font-medium">{pairName(m.pairA)}</span>
+                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
+                            {pairName(m.pairA)}
+                          </span>
                           <span className="text-muted-foreground mx-1">vs</span>
-                          <span className="text-foreground font-medium">{pairName(m.pairB)}</span>
+                          <span className={`font-medium ${playerInFPPair(selectedPlayerId, m.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
+                            {pairName(m.pairB)}
+                          </span>
                         </div>
-                        <span className="text-muted-foreground text-[10px] mr-2">🪑 {m.sittingOut.name}</span>
+                        <span className="text-muted-foreground text-[10px] mr-2">
+                          {m.sittingOut.id === selectedPlayerId ? '🪑 אתה' : `🪑 ${m.sittingOut.name}`}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -291,44 +384,39 @@ export default function Spectate() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                     <TableHead className="text-right text-xs">זוג</TableHead>
+                    <TableHead className="text-right text-xs">זוג</TableHead>
                     <TableHead className="text-center text-xs">מש׳</TableHead>
                     <TableHead className="text-center text-xs">נ</TableHead>
                     <TableHead className="text-center text-xs">ת</TableHead>
                     <TableHead className="text-center text-xs">ה</TableHead>
                     <TableHead className="text-center text-xs">הפ</TableHead>
-                    <TableHead className="text-center text-xs font-bold">
-                      נק׳
-                    </TableHead>
+                    <TableHead className="text-center text-xs font-bold">נק׳</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pairStats.map((s, idx) => (
-                     <TableRow key={s.pair.id}>
-                       <TableCell className="text-xs font-medium whitespace-nowrap">
-                        {pairName(s.pair)}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.played}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.wins}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.draws}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.losses}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.goalDiff > 0 ? "+" : ""}
-                        {s.goalDiff}
-                      </TableCell>
-                      <TableCell className="text-center text-xs font-bold text-neon-green">
-                        {s.points}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {pairStats.map((s) => {
+                    const isMyPair = playerInFPPair(selectedPlayerId, s.pair);
+                    return (
+                      <TableRow key={s.pair.id} className={isMyPair ? 'bg-neon-green/10' : ''}>
+                        <TableCell className="text-xs font-medium whitespace-nowrap">
+                          {pairName(s.pair)}
+                          {isMyPair && (
+                            <span className="text-neon-green text-[9px] mr-1">●</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-xs">{s.played}</TableCell>
+                        <TableCell className="text-center text-xs">{s.wins}</TableCell>
+                        <TableCell className="text-center text-xs">{s.draws}</TableCell>
+                        <TableCell className="text-center text-xs">{s.losses}</TableCell>
+                        <TableCell className="text-center text-xs">
+                          {s.goalDiff > 0 ? "+" : ""}{s.goalDiff}
+                        </TableCell>
+                        <TableCell className={`text-center text-xs font-bold ${isMyPair ? 'text-neon-green' : 'text-neon-green'}`}>
+                          {s.points}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Card>
@@ -339,51 +427,49 @@ export default function Spectate() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                     <TableHead className="text-right text-xs">שחקן</TableHead>
+                    <TableHead className="text-right text-xs">שחקן</TableHead>
                     <TableHead className="text-center text-xs">מש׳</TableHead>
                     <TableHead className="text-center text-xs">נ</TableHead>
                     <TableHead className="text-center text-xs">ת</TableHead>
                     <TableHead className="text-center text-xs">ה</TableHead>
                     <TableHead className="text-center text-xs">הפ</TableHead>
-                    <TableHead className="text-center text-xs font-bold">
-                      נק׳
-                    </TableHead>
+                    <TableHead className="text-center text-xs font-bold">נק׳</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {playerStats.map((s, idx) => (
-                     <TableRow key={s.player.id}>
-                       <TableCell className="text-xs font-medium">
-                        {s.player.name}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.played}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.wins}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.draws}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.losses}
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {s.goalDiff > 0 ? "+" : ""}
-                        {s.goalDiff}
-                      </TableCell>
-                      <TableCell className="text-center text-xs font-bold text-neon-green">
-                        {s.points}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {playerStats.map((s) => {
+                    const isMe = s.player.id === selectedPlayerId;
+                    return (
+                      <TableRow key={s.player.id} className={isMe ? 'bg-neon-green/10' : ''}>
+                        <TableCell className="text-xs font-medium">
+                          {s.player.name}
+                          {isMe && (
+                            <span className="text-neon-green text-[9px] mr-1">אתה</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-xs">{s.played}</TableCell>
+                        <TableCell className="text-center text-xs">{s.wins}</TableCell>
+                        <TableCell className="text-center text-xs">{s.draws}</TableCell>
+                        <TableCell className="text-center text-xs">{s.losses}</TableCell>
+                        <TableCell className="text-center text-xs">
+                          {s.goalDiff > 0 ? "+" : ""}{s.goalDiff}
+                        </TableCell>
+                        <TableCell className={`text-center text-xs font-bold ${isMe ? 'text-neon-green' : 'text-neon-green'}`}>
+                          {s.points}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Recent matches - collapsible, closed by default */}
+        {/* Personal Insights */}
+        {personal && <PersonalInsights personal={personal} />}
+
+        {/* Recent matches */}
         {completedCount > 0 && (
           <div>
             <Button
@@ -405,17 +491,29 @@ export default function Spectate() {
                       const cycle = Math.floor(m.roundIndex / 2) + 1;
                       const block = (m.roundIndex % 2) + 1;
                       const matchInBlock = m.matchIndex + 1;
+                      const mine = isMyMatch(m);
                       return (
                         <div
                           key={m.id}
-                          className="bg-gaming-surface/40 rounded-lg px-2.5 py-2 border border-border/30"
+                          className={`rounded-lg px-2.5 py-2 border ${
+                            mine
+                              ? 'bg-neon-green/5 border-neon-green/30'
+                              : 'bg-gaming-surface/40 border-border/30'
+                          }`}
                         >
-                          <p className="text-[10px] text-muted-foreground mb-1.5 text-center">
-                            #{m.globalIndex + 1} / {totalMatches} · מחזור {cycle} · בלוק {block} משחק {matchInBlock}
-                          </p>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p className="text-[10px] text-muted-foreground">
+                              #{m.globalIndex + 1} / {totalMatches} · מחזור {cycle} · בלוק {block} משחק {matchInBlock}
+                            </p>
+                            {mine && (
+                              <span className="text-[9px] text-neon-green font-medium">המשחק שלך</span>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between gap-1 text-xs" dir="ltr">
                             <div className="flex-1 text-left">
-                              <p className="text-foreground font-medium leading-tight">{pairName(m.pairA)}</p>
+                              <p className={`font-medium leading-tight ${playerInFPPair(selectedPlayerId, m.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
+                                {pairName(m.pairA)}
+                              </p>
                               {m.clubA && (
                                 <p className="text-muted-foreground text-[10px] leading-tight">{m.clubA.name}</p>
                               )}
@@ -424,7 +522,9 @@ export default function Spectate() {
                               {m.scoreA}–{m.scoreB}
                             </span>
                             <div className="flex-1 text-right">
-                              <p className="text-foreground font-medium leading-tight">{pairName(m.pairB)}</p>
+                              <p className={`font-medium leading-tight ${playerInFPPair(selectedPlayerId, m.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
+                                {pairName(m.pairB)}
+                              </p>
                               {m.clubB && (
                                 <p className="text-muted-foreground text-[10px] leading-tight">{m.clubB.name}</p>
                               )}
@@ -444,26 +544,22 @@ export default function Spectate() {
       <Drawer open={bankDrawerOpen} onOpenChange={setBankDrawerOpen}>
         <DrawerContent className="max-h-[85vh]" dir="rtl">
           <DrawerHeader>
-            <DrawerTitle className="text-foreground text-right">
-               כל הקבוצות
-             </DrawerTitle>
-             <DrawerDescription className="text-right">
-               כל הקבוצות של הזוגות בליגה
-             </DrawerDescription>
+            <DrawerTitle className="text-foreground text-right">כל הקבוצות</DrawerTitle>
+            <DrawerDescription className="text-right">כל הקבוצות של הזוגות בליגה</DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6 space-y-3 overflow-auto max-h-[65vh]">
             {evening.pairs.map((pair) => {
-              const bank = evening.teamBanks.find(
-                (b) => b.pairId === pair.id
-              );
+              const bank = evening.teamBanks.find((b) => b.pairId === pair.id);
               if (!bank) return null;
+              const isMyPair = playerInFPPair(selectedPlayerId, pair);
               return (
                 <Card
                   key={pair.id}
-                  className="bg-gradient-card border-border/40 p-3 shadow-card"
+                  className={`bg-gradient-card p-3 shadow-card ${isMyPair ? 'border-neon-green/40' : 'border-border/40'}`}
                 >
-                  <p className="text-sm font-semibold text-foreground mb-2">
+                  <p className={`text-sm font-semibold mb-2 ${isMyPair ? 'text-neon-green' : 'text-foreground'}`}>
                     {pairName(pair)}
+                    {isMyPair && <span className="text-[10px] text-neon-green/70 mr-1">● הזוג שלך</span>}
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {bank.clubs.map((club, i) => {
@@ -475,11 +571,7 @@ export default function Spectate() {
                             isUsed ? "opacity-40" : ""
                           }`}
                         >
-                          <span
-                            className={`text-xs text-foreground truncate flex-1 ${
-                              isUsed ? "line-through" : ""
-                            }`}
-                          >
+                          <span className={`text-xs text-foreground truncate flex-1 ${isUsed ? "line-through" : ""}`}>
                             {club.name}
                           </span>
                           <span className="text-yellow-400 text-[10px] whitespace-nowrap mr-1">
