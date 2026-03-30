@@ -303,9 +303,8 @@ export default function Spectate() {
                 </TableHeader>
                 <TableBody>
                   {pairStats.map((s, idx) => (
-                    <TableRow key={s.pair.id}>
-                      <TableCell className="text-xs">{idx + 1}</TableCell>
-                      <TableCell className="text-xs font-medium whitespace-nowrap">
+                     <TableRow key={s.pair.id}>
+                       <TableCell className="text-xs font-medium whitespace-nowrap">
                         {pairName(s.pair)}
                       </TableCell>
                       <TableCell className="text-center text-xs">
