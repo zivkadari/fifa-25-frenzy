@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save, ListOrdered } from "lucide-react";
+import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save, ListOrdered, Share2, Copy, Eye } from "lucide-react";
 import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
 import { FPScheduleReorder } from "@/components/FPScheduleReorder";
+import { RemoteStorageService } from "@/services/remoteStorageService";
 import {
   Drawer,
   DrawerContent,
@@ -64,6 +65,10 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const [editScoreA, setEditScoreA] = useState('');
   const [editScoreB, setEditScoreB] = useState('');
 
+  // Share / spectator link state
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   useEffect(() => {
     setCurrentEvening(evening);
   }, [evening]);
@@ -218,6 +223,39 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
 
   const pairStats = calculatePairStats(currentEvening);
   const playerStats = calculatePlayerStats(currentEvening);
+
+  const handleShare = useCallback(async () => {
+    if (shareCode) {
+      const url = `${window.location.origin}/spectate/${shareCode}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        toast({ title: "קישור צפייה הועתק!" });
+      } catch {
+        toast({ title: "שגיאה בהעתקה", variant: "destructive" });
+      }
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const code = await RemoteStorageService.getShareCode(currentEvening.id);
+      if (code) {
+        setShareCode(code);
+        const url = `${window.location.origin}/spectate/${code}`;
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        toast({ title: "קישור צפייה הועתק!" });
+      } else {
+        toast({ title: "לא ניתן ליצור קישור. ודא שאתה מחובר.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "שגיאה ביצירת קישור", variant: "destructive" });
+    } finally {
+      setShareLoading(false);
+    }
+  }, [currentEvening.id, shareCode, toast]);
 
   if (!currentMatch) return null;
 
@@ -756,9 +794,20 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onGoHome}>
-            <Home className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              disabled={shareLoading}
+              title="שתף קישור צפייה"
+            >
+              {shareCopied ? <Check className="h-4 w-4 text-neon-green" /> : shareCode ? <Eye className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onGoHome}>
+              <Home className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="match" className="w-full">

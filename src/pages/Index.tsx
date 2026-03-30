@@ -691,6 +691,8 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
+                // Sync to remote for spectator mode
+                RemoteStorageService.upsertEveningLiveWithTeam(result as any, currentTeamId ?? null).catch(() => {});
                 goTo('fp-bank-overview');
               }}
             />
@@ -706,6 +708,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 StorageService.saveFPActive(ev);
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
@@ -724,6 +727,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 if (!ev.completed) StorageService.saveFPActive(ev);
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
