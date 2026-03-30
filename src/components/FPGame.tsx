@@ -224,40 +224,46 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const pairStats = calculatePairStats(currentEvening);
   const playerStats = calculatePlayerStats(currentEvening);
 
+  const shareUrl = useCallback((code: string) => `${window.location.origin}/spectate/${code}`, []);
+
+  const doShare = useCallback(async (url: string) => {
+    const shareText = `🏆 בואו לעקוב אחרי הליגה שלנו בלייב!\n${url}`;
+    // Try native share first (works great on mobile → WhatsApp etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText });
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+      toast({ title: "קישור צפייה הועתק!" });
+    } catch {
+      toast({ title: "שגיאה בהעתקה", variant: "destructive" });
+    }
+  }, [toast]);
+
   const handleShare = useCallback(async () => {
     if (shareCode) {
-      const url = `${window.location.origin}/spectate/${shareCode}`;
-      try {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-        toast({ title: "קישור צפייה הועתק!" });
-      } catch {
-        toast({ title: "שגיאה בהעתקה", variant: "destructive" });
-      }
+      await doShare(shareUrl(shareCode));
       return;
     }
     setShareLoading(true);
     try {
-      // Ensure the evening exists in Supabase before fetching the share code
       try {
         await RemoteStorageService.upsertEveningLiveWithTeam(currentEvening as any, null);
       } catch (upsertErr) {
-        console.warn("handleShare upsert warning (evening may already exist):", upsertErr);
+        console.warn("handleShare upsert warning:", upsertErr);
       }
       const code = await RemoteStorageService.getShareCode(currentEvening.id);
       if (code) {
         setShareCode(code);
-        const url = `${window.location.origin}/spectate/${code}`;
-        try {
-          await navigator.clipboard.writeText(url);
-          setShareCopied(true);
-          setTimeout(() => setShareCopied(false), 2000);
-          toast({ title: "קישור צפייה הועתק!" });
-        } catch {
-          // Clipboard failed (e.g. user gesture lost), show URL for manual copy
-          toast({ title: `קישור: ${url}`, description: "לחץ על כפתור העין כדי להעתיק" });
-        }
+        await doShare(shareUrl(code));
       } else {
         toast({ title: "לא ניתן ליצור קישור. ודא שאתה מחובר.", variant: "destructive" });
       }
@@ -267,7 +273,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     } finally {
       setShareLoading(false);
     }
-  }, [currentEvening, shareCode, toast]);
+  }, [currentEvening, shareCode, toast, doShare, shareUrl]);
 
   if (!currentMatch) return null;
 
