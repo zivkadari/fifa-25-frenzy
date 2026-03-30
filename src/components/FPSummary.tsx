@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trophy, Users, Save, Home, Medal, Award } from "lucide-react";
+import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
 import { FPEvening } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
