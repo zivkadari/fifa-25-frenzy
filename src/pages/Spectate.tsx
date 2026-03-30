@@ -296,17 +296,18 @@ function PersonalizedSpectateView({
                 <p className="text-[11px] text-muted-foreground">דירוג שחקנים סופי</p>
               </div>
               <div className="space-y-2">
-                {playerStats.slice(0, 5).map((s, idx) => {
+                {top5.map((s, idx) => {
+                  const ti = tierIndices[idx];
                   const isMe = s.player.id === selectedPlayerId;
                   return (
                     <div
                       key={s.player.id}
-                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${tierColors[idx]} ${idx === 0 ? 'ring-1' : ''} ${isMe ? 'ring-1 ring-neon-green/40' : ''}`}
+                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${TIER_COLORS[ti]} ${ti === 0 ? 'ring-1' : ''} ${isMe ? 'ring-1 ring-neon-green/40' : ''}`}
                     >
-                      <span className="text-lg">{tierEmojis[idx]}</span>
+                      <span className="text-lg">{TIER_EMOJIS[ti]}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-bold tracking-wider ${tierText[idx]}`}>{tierLabels[idx]}</span>
+                          <span className={`text-xs font-bold tracking-wider ${TIER_TEXT[ti]}`}>{TIER_LABELS[ti]}</span>
                           {isMe && <span className="text-[9px] text-neon-green">●</span>}
                         </div>
                         <p className={`text-sm font-bold leading-tight ${isMe ? 'text-neon-green' : 'text-foreground'}`}>
@@ -314,7 +315,7 @@ function PersonalizedSpectateView({
                         </p>
                       </div>
                       <div className="text-left shrink-0">
-                        <p className={`text-sm font-bold ${tierText[idx]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
+                        <p className={`text-sm font-bold ${TIER_TEXT[ti]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
                         <p className="text-[10px] text-muted-foreground">{s.wins}נ {s.draws}ת {s.losses}ה</p>
                       </div>
                     </div>

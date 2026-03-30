@@ -22,7 +22,7 @@ export default function PersonalSummaryCard({ personal, onSwitchPlayer, isComple
     ? `${currentStreak.count} תיקו ברצף`
     : null;
 
-  const tierLabel = rank >= 1 && rank <= 5 ? tierLabels[rank - 1] : null;
+  const tierLabel = rank >= 1 && rank <= 5 ? TIER_LABELS[rank - 1] : null;
 
   if (isCompleted) {
     return (
