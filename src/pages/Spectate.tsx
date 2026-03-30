@@ -338,8 +338,7 @@ export default function Spectate() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right text-xs">#</TableHead>
-                    <TableHead className="text-right text-xs">שחקן</TableHead>
+                     <TableHead className="text-right text-xs">שחקן</TableHead>
                     <TableHead className="text-center text-xs">מש׳</TableHead>
                     <TableHead className="text-center text-xs">נ</TableHead>
                     <TableHead className="text-center text-xs">ת</TableHead>
