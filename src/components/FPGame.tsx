@@ -65,6 +65,10 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const [editScoreA, setEditScoreA] = useState('');
   const [editScoreB, setEditScoreB] = useState('');
 
+  // Share / spectator link state
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   useEffect(() => {
     setCurrentEvening(evening);
   }, [evening]);
