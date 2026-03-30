@@ -162,6 +162,7 @@ interface PersonalizedViewProps {
   setShowUpcoming: (v: boolean) => void;
   showRecent: boolean;
   setShowRecent: (v: boolean) => void;
+  isCompleted: boolean;
 }
 
 function PersonalizedSpectateView({
@@ -169,6 +170,7 @@ function PersonalizedSpectateView({
   bankDrawerOpen, setBankDrawerOpen,
   showUpcoming, setShowUpcoming,
   showRecent, setShowRecent,
+  isCompleted,
 }: PersonalizedViewProps) {
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
