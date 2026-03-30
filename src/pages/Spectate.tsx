@@ -27,6 +27,7 @@ export default function Spectate() {
   const [evening, setEvening] = useState<FPEvening | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
+  const [showUpcoming, setShowUpcoming] = useState(false);
   const lastUpdatedAt = useRef<string>("");
 
   const fetchEvening = useCallback(async () => {
