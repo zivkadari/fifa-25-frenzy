@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Users, Eye, Loader2, AlertCircle, Wallet } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -27,6 +27,7 @@ export default function Spectate() {
   const [evening, setEvening] = useState<FPEvening | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
+  const [showUpcoming, setShowUpcoming] = useState(false);
   const lastUpdatedAt = useRef<string>("");
 
   const fetchEvening = useCallback(async () => {
@@ -224,14 +225,51 @@ export default function Spectate() {
           </Card>
         )}
 
-        {/* Team Banks Button */}
+        {/* Upcoming Matches */}
+        {!evening.completed && (() => {
+          const upcoming = evening.schedule.filter((m, i) => !m.completed && i !== evening.currentMatchIndex);
+          if (upcoming.length === 0) return null;
+          return (
+            <div>
+              <Button
+                variant="outline"
+                className="w-full border-border/50 text-muted-foreground"
+                onClick={() => setShowUpcoming(!showUpcoming)}
+              >
+                {showUpcoming ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                משחקים הבאים ({upcoming.length})
+              </Button>
+              {showUpcoming && (
+                <Card className="bg-gradient-card border-border/40 p-3 shadow-card mt-2">
+                  <div className="space-y-1.5">
+                    {upcoming.map((m) => (
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-2.5 py-1.5 border border-border/30 text-xs"
+                      >
+                        <div className="flex-1">
+                          <span className="text-foreground font-medium">{pairName(m.pairA)}</span>
+                          <span className="text-muted-foreground mx-1">vs</span>
+                          <span className="text-foreground font-medium">{pairName(m.pairB)}</span>
+                        </div>
+                        <span className="text-muted-foreground text-[10px] mr-2">🪑 {m.sittingOut.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* View All Teams Button */}
         <Button
           variant="outline"
           className="w-full border-border/50 text-muted-foreground"
           onClick={() => setBankDrawerOpen(true)}
         >
-          <Wallet className="h-4 w-4 ml-1" />
-          צפייה בבנקי קבוצות
+          <Eye className="h-4 w-4 ml-1" />
+          צפייה בכל הקבוצות
         </Button>
 
         {/* Standings Tabs */}
@@ -252,8 +290,7 @@ export default function Spectate() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right text-xs">#</TableHead>
-                    <TableHead className="text-right text-xs">זוג</TableHead>
+                     <TableHead className="text-right text-xs">זוג</TableHead>
                     <TableHead className="text-center text-xs">מש׳</TableHead>
                     <TableHead className="text-center text-xs">נ</TableHead>
                     <TableHead className="text-center text-xs">ת</TableHead>
@@ -266,9 +303,8 @@ export default function Spectate() {
                 </TableHeader>
                 <TableBody>
                   {pairStats.map((s, idx) => (
-                    <TableRow key={s.pair.id}>
-                      <TableCell className="text-xs">{idx + 1}</TableCell>
-                      <TableCell className="text-xs font-medium whitespace-nowrap">
+                     <TableRow key={s.pair.id}>
+                       <TableCell className="text-xs font-medium whitespace-nowrap">
                         {pairName(s.pair)}
                       </TableCell>
                       <TableCell className="text-center text-xs">
@@ -302,8 +338,7 @@ export default function Spectate() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right text-xs">#</TableHead>
-                    <TableHead className="text-right text-xs">שחקן</TableHead>
+                     <TableHead className="text-right text-xs">שחקן</TableHead>
                     <TableHead className="text-center text-xs">מש׳</TableHead>
                     <TableHead className="text-center text-xs">נ</TableHead>
                     <TableHead className="text-center text-xs">ת</TableHead>
@@ -316,9 +351,8 @@ export default function Spectate() {
                 </TableHeader>
                 <TableBody>
                   {playerStats.map((s, idx) => (
-                    <TableRow key={s.player.id}>
-                      <TableCell className="text-xs">{idx + 1}</TableCell>
-                      <TableCell className="text-xs font-medium">
+                     <TableRow key={s.player.id}>
+                       <TableCell className="text-xs font-medium">
                         {s.player.name}
                       </TableCell>
                       <TableCell className="text-center text-xs">
@@ -373,9 +407,9 @@ export default function Spectate() {
                         {pairName(m.pairB)}
                       </span>
                     </div>
-                    <span className="font-bold text-foreground mr-2">
-                      {m.scoreA}-{m.scoreB}
-                    </span>
+                    <span dir="ltr" className="font-bold text-foreground mr-2 font-mono">
+                       {m.scoreA}-{m.scoreB}
+                     </span>
                   </div>
                 ))}
             </div>
@@ -388,11 +422,11 @@ export default function Spectate() {
         <DrawerContent className="max-h-[85vh]" dir="rtl">
           <DrawerHeader>
             <DrawerTitle className="text-foreground text-right">
-              בנקי קבוצות
-            </DrawerTitle>
-            <DrawerDescription className="text-right">
-              כל בנקי הזוגות בליגה
-            </DrawerDescription>
+               כל הקבוצות
+             </DrawerTitle>
+             <DrawerDescription className="text-right">
+               כל הקבוצות של הזוגות בליגה
+             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6 space-y-3 overflow-auto max-h-[65vh]">
             {evening.pairs.map((pair) => {
