@@ -283,22 +283,60 @@ function PersonalizedSpectateView({
           </Card>
         )}
 
-        {/* Completed banner */}
-        {evening.completed && (
-          <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card text-center">
-            <Trophy className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
-            <h2 className="text-lg font-bold text-foreground">הליגה הסתיימה!</h2>
-            {pairStats[0] && (
-              <p className="text-sm text-muted-foreground mt-1">
-                מנצחים:{" "}
-                <strong className="text-foreground">
-                  {pairName(pairStats[0].pair)}
-                </strong>{" "}
-                ({pairStats[0].points} נק׳)
-              </p>
-            )}
-          </Card>
-        )}
+        {/* Completed: Final Player Ranking */}
+        {evening.completed && (() => {
+          const tierLabels = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
+          const tierEmojis = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
+          const tierColors = [
+            'from-yellow-400/25 to-yellow-600/10 border-yellow-400/50 ring-yellow-400/20',
+            'from-slate-300/20 to-slate-400/10 border-slate-300/40',
+            'from-amber-600/20 to-amber-700/10 border-amber-600/40',
+            'from-border/30 to-border/10 border-border/40',
+            'from-border/20 to-border/5 border-border/30',
+          ];
+          const tierText = [
+            'text-yellow-400',
+            'text-slate-300',
+            'text-amber-500',
+            'text-muted-foreground',
+            'text-muted-foreground',
+          ];
+          return (
+            <Card className="bg-gradient-card border-yellow-400/30 p-4 shadow-card space-y-3">
+              <div className="text-center">
+                <Trophy className="h-8 w-8 text-yellow-400 mx-auto mb-1" />
+                <h2 className="text-lg font-bold text-foreground">תוצאות סופיות</h2>
+                <p className="text-[11px] text-muted-foreground">דירוג שחקנים סופי</p>
+              </div>
+              <div className="space-y-2">
+                {playerStats.slice(0, 5).map((s, idx) => {
+                  const isMe = s.player.id === selectedPlayerId;
+                  return (
+                    <div
+                      key={s.player.id}
+                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 bg-gradient-to-l border ${tierColors[idx]} ${idx === 0 ? 'ring-1' : ''} ${isMe ? 'ring-1 ring-neon-green/40' : ''}`}
+                    >
+                      <span className="text-lg">{tierEmojis[idx]}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs font-bold tracking-wider ${tierText[idx]}`}>{tierLabels[idx]}</span>
+                          {isMe && <span className="text-[9px] text-neon-green">●</span>}
+                        </div>
+                        <p className={`text-sm font-bold leading-tight ${isMe ? 'text-neon-green' : 'text-foreground'}`}>
+                          {s.player.name}
+                        </p>
+                      </div>
+                      <div className="text-left shrink-0">
+                        <p className={`text-sm font-bold ${tierText[idx]}`}>{s.points} <span className="text-[10px] font-normal text-muted-foreground">נק׳</span></p>
+                        <p className="text-[10px] text-muted-foreground">{s.wins}נ {s.draws}ת {s.losses}ה</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* ── Section 3: Personal Insights (expandable) ── */}
         {personal && <PersonalInsights personal={personal} />}
