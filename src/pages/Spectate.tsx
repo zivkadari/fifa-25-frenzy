@@ -232,58 +232,81 @@ function PersonalizedSpectateView({
         )}
 
         {/* ── Section 2: Current Match / Live Status ── */}
-        {currentMatch && !evening.completed && (
-          <Card className={`bg-gradient-card p-4 shadow-card ${isMyMatch(currentMatch) ? 'border-neon-green/50 ring-1 ring-neon-green/20' : 'border-neon-green/30'}`}>
-            <p className="text-[10px] text-muted-foreground text-center mb-1">
-              משחק נוכחי • סיבוב {currentMatch.roundIndex + 1} • משחק{" "}
-              {currentMatch.matchIndex + 1}
-            </p>
-            <div className="text-center space-y-1">
-              <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
-                {pairName(currentMatch.pairA)}
-              </p>
-              <p className="text-xs text-muted-foreground">vs</p>
-              <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
-                {pairName(currentMatch.pairB)}
-              </p>
-            </div>
+        {currentMatch && !evening.completed && (() => {
+          const isPlaying = playerInMatch(selectedPlayerId, currentMatch);
+          const inA = playerInFPPair(selectedPlayerId, currentMatch.pairA);
+          const myClub = isPlaying ? (inA ? currentMatch.clubA : currentMatch.clubB) : undefined;
 
-            {(currentMatch.clubA || currentMatch.clubB) && (
-              <div className="flex items-center justify-center gap-3 mt-2 text-xs">
-                {currentMatch.clubA && (
-                  <Badge variant="outline" className="border-border/50 text-foreground">
-                    {currentMatch.clubA.name}
-                  </Badge>
-                )}
-                {currentMatch.clubA && currentMatch.clubB && (
-                  <span className="text-muted-foreground">vs</span>
-                )}
-                {currentMatch.clubB && (
-                  <Badge variant="outline" className="border-border/50 text-foreground">
-                    {currentMatch.clubB.name}
-                  </Badge>
-                )}
+          // If sitting out, find next match and their club
+          const nextMatch = !isPlaying
+            ? evening.schedule.find((m, i) => !m.completed && i !== evening.currentMatchIndex && playerInMatch(selectedPlayerId, m))
+            : undefined;
+          const nextInA = nextMatch ? playerInFPPair(selectedPlayerId, nextMatch.pairA) : false;
+          const nextClub = nextMatch ? (nextInA ? nextMatch.clubA : nextMatch.clubB) : undefined;
+
+          return (
+            <Card className={`bg-gradient-card p-4 shadow-card ${isMyMatch(currentMatch) ? 'border-neon-green/50 ring-1 ring-neon-green/20' : 'border-neon-green/30'}`}>
+              <p className="text-[10px] text-muted-foreground text-center mb-1">
+                משחק נוכחי • סיבוב {currentMatch.roundIndex + 1} • משחק{" "}
+                {currentMatch.matchIndex + 1}
+              </p>
+              <div className="text-center space-y-1">
+                <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairA) ? 'text-neon-green' : 'text-foreground'}`}>
+                  {pairName(currentMatch.pairA)}
+                </p>
+                <p className="text-xs text-muted-foreground">vs</p>
+                <p className={`text-lg font-bold ${playerInFPPair(selectedPlayerId, currentMatch.pairB) ? 'text-neon-green' : 'text-foreground'}`}>
+                  {pairName(currentMatch.pairB)}
+                </p>
               </div>
-            )}
 
-            {currentMatch.scoreA !== undefined && currentMatch.scoreB !== undefined && currentMatch.completed && (
+              {(currentMatch.clubA || currentMatch.clubB) && (
+                <div className="flex items-center justify-center gap-3 mt-2 text-xs">
+                  {currentMatch.clubA && (
+                    <Badge variant="outline" className="border-border/50 text-foreground">
+                      {currentMatch.clubA.name}
+                    </Badge>
+                  )}
+                  {currentMatch.clubA && currentMatch.clubB && (
+                    <span className="text-muted-foreground">vs</span>
+                  )}
+                  {currentMatch.clubB && (
+                    <Badge variant="outline" className="border-border/50 text-foreground">
+                      {currentMatch.clubB.name}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {currentMatch.scoreA !== undefined && currentMatch.scoreB !== undefined && currentMatch.completed && (
+                <div className="text-center mt-2">
+                  <span className="text-2xl font-bold text-neon-green">
+                    {currentMatch.scoreA} - {currentMatch.scoreB}
+                  </span>
+                </div>
+              )}
+
               <div className="text-center mt-2">
-                <span className="text-2xl font-bold text-neon-green">
-                  {currentMatch.scoreA} - {currentMatch.scoreB}
-                </span>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] ${currentMatch.sittingOut.id === selectedPlayerId ? 'border-neon-green/30 text-neon-green' : 'border-muted-foreground/30 text-muted-foreground'}`}
+                >
+                  🪑 יושב בחוץ: {currentMatch.sittingOut.name}
+                </Badge>
               </div>
-            )}
 
-            <div className="text-center mt-2">
-              <Badge
-                variant="outline"
-                className={`text-[10px] ${currentMatch.sittingOut.id === selectedPlayerId ? 'border-neon-green/30 text-neon-green' : 'border-muted-foreground/30 text-muted-foreground'}`}
-              >
-                🪑 יושב בחוץ: {currentMatch.sittingOut.name}
-              </Badge>
-            </div>
-          </Card>
-        )}
+              {/* Team Setup Recommendation Button */}
+              <div className="flex justify-center mt-3">
+                {isPlaying && myClub && (
+                  <TeamSetupButton club={myClub} matchLabel="משחק נוכחי" tournamentId={evening.id} />
+                )}
+                {!isPlaying && nextClub && (
+                  <TeamSetupButton club={nextClub} matchLabel="המשחק הבא" tournamentId={evening.id} />
+                )}
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* Completed: Final Player Ranking */}
         {evening.completed && (() => {
