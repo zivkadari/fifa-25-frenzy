@@ -19,6 +19,7 @@ import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
+import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
