@@ -213,7 +213,13 @@ export default function AdminClubs() {
         clubs.sort((a, b) => getStarsForClub(b) - getStarsForClub(a) || a.name.localeCompare(b.name));
         break;
       case "league":
-        // keep original order (grouped by league in the source array)
+        clubs.sort((a, b) => {
+          const leagueCompare = (a.league || "").localeCompare(b.league || "");
+          if (leagueCompare !== 0) return leagueCompare;
+          const starsCompare = getStarsForClub(b) - getStarsForClub(a);
+          if (starsCompare !== 0) return starsCompare;
+          return a.name.localeCompare(b.name);
+        });
         break;
     }
 
