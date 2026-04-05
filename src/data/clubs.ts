@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Club overrides cache
 let clubOverridesCache: Record<string, number> | null = null;
+let clubDeletedCache: Set<string> | null = null;
 let lastOverridesFetch = 0;
 const OVERRIDES_CACHE_TTL = 60000; // 1 minute
 
