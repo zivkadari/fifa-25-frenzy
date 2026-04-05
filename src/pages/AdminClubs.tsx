@@ -233,6 +233,7 @@ export default function AdminClubs() {
     setFilterLeague(null);
     setFilterType("all");
     setFilterModified(false);
+    setFilterDefaultAdded(false);
     setSearch("");
   };
 
