@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight, Save, Star, Loader2, Search, SlidersHorizontal, X, ArrowUpDown,
+  Trash2, RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -16,6 +17,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const STAR_OPTIONS = [
   { value: "0.5", label: "0.5" },
@@ -59,7 +61,8 @@ const SORT_LABELS: Record<SortOption, string> = {
   "league": "לפי ליגה",
 };
 
-type ClubOverride = { club_id: string; stars: number };
+type ClubOverride = { club_id: string; stars: number; deleted?: boolean };
+type ViewMode = "active" | "deleted";
 
 export default function AdminClubs() {
   const navigate = useNavigate();
@@ -68,7 +71,11 @@ export default function AdminClubs() {
   const [isSaving, setIsSaving] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [localChanges, setLocalChanges] = useState<Record<string, number>>({});
+
+  // View mode
+  const [viewMode, setViewMode] = useState<ViewMode>("active");
 
   // Filter/sort state
   const [search, setSearch] = useState("");
@@ -95,14 +102,19 @@ export default function AdminClubs() {
   const loadOverrides = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.from("club_overrides").select("club_id, stars");
+      const { data, error } = await supabase.from("club_overrides").select("club_id, stars, deleted");
       if (error) {
         toast({ title: "שגיאה בטעינת הנתונים", variant: "destructive" });
         return;
       }
       const map: Record<string, number> = {};
-      (data || []).forEach((row: ClubOverride) => { map[row.club_id] = row.stars; });
+      const deleted = new Set<string>();
+      (data || []).forEach((row: ClubOverride) => {
+        map[row.club_id] = row.stars;
+        if (row.deleted) deleted.add(row.club_id);
+      });
       setOverrides(map);
+      setDeletedIds(deleted);
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +158,42 @@ export default function AdminClubs() {
     }
   };
 
+  const handleSoftDelete = async (club: Club) => {
+    if (!window.confirm(`האם למחוק את ${club.name} מהרשימה הפעילה?`)) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const currentStars = getStarsForClub(club);
+      const { error } = await supabase.from("club_overrides").upsert({
+        club_id: club.id, stars: currentStars, deleted: true,
+        updated_by: user.id, updated_at: new Date().toISOString(),
+      }, { onConflict: "club_id" });
+      if (error) throw error;
+      setDeletedIds((prev) => new Set(prev).add(club.id));
+      invalidateClubOverridesCache();
+      toast({ title: "קבוצה הוסרה", description: `${club.name} הועברה לרשימת הקבוצות המוסרות` });
+    } catch (error: any) {
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleRestore = async (club: Club) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("club_overrides").upsert({
+        club_id: club.id, stars: getStarsForClub(club), deleted: false,
+        updated_by: user.id, updated_at: new Date().toISOString(),
+      }, { onConflict: "club_id" });
+      if (error) throw error;
+      setDeletedIds((prev) => { const n = new Set(prev); n.delete(club.id); return n; });
+      invalidateClubOverridesCache();
+      toast({ title: "קבוצה שוחזרה", description: `${club.name} חזרה לרשימה הפעילה` });
+    } catch (error: any) {
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
+    }
+  };
+
   // Derived data
   const allLeagues = useMemo(() => {
     const set = new Set<string>();
@@ -160,7 +208,10 @@ export default function AdminClubs() {
   }, []);
 
   const filteredAndSorted = useMemo(() => {
-    let clubs = [...FIFA_CLUBS];
+    // Split by view mode
+    let clubs = FIFA_CLUBS.filter((c) =>
+      viewMode === "deleted" ? deletedIds.has(c.id) : !deletedIds.has(c.id)
+    );
 
     // Search
     if (search.trim()) {
@@ -224,7 +275,7 @@ export default function AdminClubs() {
     }
 
     return clubs;
-  }, [search, filterStars, filterLeague, filterType, filterModified, filterDefaultAdded, sortBy, overrides, localChanges]);
+  }, [search, filterStars, filterLeague, filterType, filterModified, filterDefaultAdded, sortBy, overrides, localChanges, viewMode, deletedIds]);
 
   const activeFilterCount = [
     filterStars !== null,
@@ -254,6 +305,8 @@ export default function AdminClubs() {
     );
   };
 
+  const deletedCount = deletedIds.size;
+
   if (!isAuthorized) return null;
 
   return (
@@ -273,6 +326,29 @@ export default function AdminClubs() {
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             שמור
           </Button>
+        </div>
+
+        {/* Active / Deleted tabs */}
+        <div className="max-w-2xl mx-auto px-4 pb-2">
+          <Tabs value={viewMode} onValueChange={(v) => { setViewMode(v as ViewMode); clearAllFilters(); }}>
+            <TabsList className="w-full">
+              <TabsTrigger value="active" className="flex-1 gap-1">
+                פעילות
+                <Badge variant="secondary" className="h-5 min-w-[1.25rem] px-1 text-[10px]">
+                  {FIFA_CLUBS.length - deletedCount}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="deleted" className="flex-1 gap-1">
+                <Trash2 className="h-3.5 w-3.5" />
+                מוסרות
+                {deletedCount > 0 && (
+                  <Badge variant="destructive" className="h-5 min-w-[1.25rem] px-1 text-[10px]">
+                    {deletedCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Search + Filter/Sort bar */}
@@ -306,25 +382,27 @@ export default function AdminClubs() {
               </SelectContent>
             </Select>
 
-            {/* Filter button */}
-            <Button
-              variant={activeFilterCount > 0 ? "default" : "outline"}
-              size="sm"
-              className="h-9 gap-1 px-3"
-              onClick={() => setFilterSheetOpen(true)}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              סינון
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
+            {/* Filter button (active view only) */}
+            {viewMode === "active" && (
+              <Button
+                variant={activeFilterCount > 0 ? "default" : "outline"}
+                size="sm"
+                className="h-9 gap-1 px-3"
+                onClick={() => setFilterSheetOpen(true)}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                סינון
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Active filter chips */}
-          {activeFilterCount > 0 && (
+          {activeFilterCount > 0 && viewMode === "active" && (
             <div className="flex flex-wrap gap-1.5 items-center">
               {filterStars !== null && (
                 <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => setFilterStars(null)}>
@@ -365,7 +443,7 @@ export default function AdminClubs() {
           {/* Results count */}
           <div className="text-xs text-muted-foreground">
             {filteredAndSorted.length} קבוצות
-            {filteredAndSorted.length !== FIFA_CLUBS.length && ` מתוך ${FIFA_CLUBS.length}`}
+            {viewMode === "active" && filteredAndSorted.length !== (FIFA_CLUBS.length - deletedCount) && ` מתוך ${FIFA_CLUBS.length - deletedCount}`}
           </div>
         </div>
       </div>
@@ -513,45 +591,77 @@ export default function AdminClubs() {
           </div>
         ) : filteredAndSorted.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
-            <p className="text-lg mb-2">לא נמצאו קבוצות</p>
-            <Button variant="outline" size="sm" onClick={clearAllFilters}>נקה פילטרים</Button>
+            <p className="text-lg mb-2">
+              {viewMode === "deleted" ? "אין קבוצות מוסרות" : "לא נמצאו קבוצות"}
+            </p>
+            {viewMode === "active" && activeFilterCount > 0 && (
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>נקה פילטרים</Button>
+            )}
           </div>
         ) : (
           filteredAndSorted.map((club) => {
             const currentStars = getStarsForClub(club);
             const modified = isModifiedClub(club);
+            const isDeleted = deletedIds.has(club.id);
             return (
               <div
                 key={club.id}
-                className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors"
+                className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors ${isDeleted ? "opacity-70" : ""}`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-xs shrink-0">{LEAGUE_FLAGS[club.league || ""] || "⚽"}</span>
                   <span className="text-sm truncate">{club.name}</span>
-                  {club.defaultAdded && !modified && (
+                  {club.defaultAdded && !modified && !isDeleted && (
                     <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0 border-blue-500/40 text-blue-400">חדש</Badge>
                   )}
-                  {modified && (
+                  {modified && !isDeleted && (
                     <span className="text-xs text-muted-foreground shrink-0">
                       (מקורי: {renderStars(club.stars)})
                     </span>
                   )}
                 </div>
-                <Select
-                  value={currentStars.toString()}
-                  onValueChange={(val) => handleStarsChange(club.id, val)}
-                >
-                  <SelectTrigger className="w-24 h-8 shrink-0">
-                    <SelectValue>{renderStars(currentStars)}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STAR_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {renderStars(parseFloat(opt.value))} ({opt.label})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isDeleted ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">{renderStars(currentStars)}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 text-emerald-500 hover:text-emerald-400 border-emerald-500/30"
+                        onClick={() => handleRestore(club)}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        שחזר
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Select
+                        value={currentStars.toString()}
+                        onValueChange={(val) => handleStarsChange(club.id, val)}
+                      >
+                        <SelectTrigger className="w-24 h-8">
+                          <SelectValue>{renderStars(currentStars)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STAR_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {renderStars(parseFloat(opt.value))} ({opt.label})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleSoftDelete(club)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })
