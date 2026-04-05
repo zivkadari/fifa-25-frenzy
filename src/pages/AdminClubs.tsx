@@ -344,6 +344,12 @@ export default function AdminClubs() {
                   <X className="h-3 w-3" />
                 </Badge>
               )}
+              {filterDefaultAdded && (
+                <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => setFilterDefaultAdded(false)}>
+                  🆕 נוספו אוטומטית
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
               <button onClick={clearAllFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 נקה הכל
               </button>
