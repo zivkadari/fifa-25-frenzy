@@ -225,6 +225,7 @@ export default function AdminClubs() {
     filterLeague !== null,
     filterType !== "all",
     filterModified,
+    filterDefaultAdded,
   ].filter(Boolean).length;
 
   const clearAllFilters = () => {
