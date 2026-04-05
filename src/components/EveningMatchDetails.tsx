@@ -62,7 +62,7 @@ export const EveningMatchDetails = ({ evening }: EveningMatchDetailsProps) => {
         )}
 
         {/* Rounds Details */}
-        {evening.rounds.map((round, roundIdx) => (
+        {(evening.rounds || []).map((round, roundIdx) => (
           <RoundDetails key={round.id} round={round} roundNumber={roundIdx + 1} />
         ))}
       </CollapsibleContent>
