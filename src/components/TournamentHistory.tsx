@@ -287,7 +287,7 @@ export const TournamentHistory = ({ evenings, onBack, onDeleteEvening, onRefresh
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
-                    {evening.rounds.length} rounds
+                    {evening.rounds?.length || 0} rounds
                   </Badge>
                   {/* Link to team button */}
                   <LinkToTeamDialog
