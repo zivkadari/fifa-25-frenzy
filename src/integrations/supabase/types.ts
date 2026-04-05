@@ -17,18 +17,21 @@ export type Database = {
       club_overrides: {
         Row: {
           club_id: string
+          deleted: boolean
           stars: number
           updated_at: string | null
           updated_by: string | null
         }
         Insert: {
           club_id: string
+          deleted?: boolean
           stars: number
           updated_at?: string | null
           updated_by?: string | null
         }
         Update: {
           club_id?: string
+          deleted?: boolean
           stars?: number
           updated_at?: string | null
           updated_by?: string | null
