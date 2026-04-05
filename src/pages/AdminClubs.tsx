@@ -77,6 +77,7 @@ export default function AdminClubs() {
   const [filterLeague, setFilterLeague] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "club" | "national">("all");
   const [filterModified, setFilterModified] = useState(false);
+  const [filterDefaultAdded, setFilterDefaultAdded] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   useEffect(() => {
