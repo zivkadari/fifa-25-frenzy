@@ -218,7 +218,7 @@ export default function AdminClubs() {
     }
 
     return clubs;
-  }, [search, filterStars, filterLeague, filterType, filterModified, sortBy, overrides, localChanges]);
+  }, [search, filterStars, filterLeague, filterType, filterModified, filterDefaultAdded, sortBy, overrides, localChanges]);
 
   const activeFilterCount = [
     filterStars !== null,
