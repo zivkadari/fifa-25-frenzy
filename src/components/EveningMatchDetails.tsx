@@ -62,7 +62,7 @@ export const EveningMatchDetails = ({ evening }: EveningMatchDetailsProps) => {
         )}
 
         {/* Rounds Details */}
-        {evening.rounds.map((round, roundIdx) => (
+        {(evening.rounds || []).map((round, roundIdx) => (
           <RoundDetails key={round.id} round={round} roundNumber={roundIdx + 1} />
         ))}
       </CollapsibleContent>
@@ -170,7 +170,7 @@ function calculateEveningStats(evening: Evening) {
   let highestScoringMatch: Match | null = null;
   let highestGoals = 0;
 
-  evening.rounds.forEach(round => {
+  (evening.rounds || []).forEach(round => {
     round.matches.forEach(match => {
       if (match.completed && match.score) {
         totalMatches++;
