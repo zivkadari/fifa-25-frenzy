@@ -193,6 +193,11 @@ export default function AdminClubs() {
       clubs = clubs.filter((c) => isModifiedClub(c));
     }
 
+    // Filter default-added only
+    if (filterDefaultAdded) {
+      clubs = clubs.filter((c) => c.defaultAdded);
+    }
+
     // Sort
     switch (sortBy) {
       case "alpha-asc":
