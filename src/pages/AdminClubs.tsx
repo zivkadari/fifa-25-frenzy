@@ -456,6 +456,13 @@ export default function AdminClubs() {
                 >
                   ✏️ שונו בלבד
                 </Button>
+                <Button
+                  variant={filterDefaultAdded ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterDefaultAdded(!filterDefaultAdded)}
+                >
+                  🆕 נוספו אוטומטית
+                </Button>
               </div>
             </div>
 
