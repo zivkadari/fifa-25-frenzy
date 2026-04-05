@@ -170,7 +170,7 @@ function calculateEveningStats(evening: Evening) {
   let highestScoringMatch: Match | null = null;
   let highestGoals = 0;
 
-  evening.rounds.forEach(round => {
+  (evening.rounds || []).forEach(round => {
     round.matches.forEach(match => {
       if (match.completed && match.score) {
         totalMatches++;
