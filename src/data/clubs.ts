@@ -28,6 +28,10 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'leeds', name: 'Leeds United', stars: 4, league: 'Premier League' },
   { id: 'burnley', name: 'Burnley', stars: 4, league: 'Premier League' },
   { id: 'sunderland', name: 'Sunderland', stars: 4, league: 'Premier League' },
+  // Premier League — newly added defaults
+  { id: 'ipswich-town', name: 'Ipswich Town', stars: 3.5, league: 'Premier League', defaultAdded: true },
+  { id: 'leicester', name: 'Leicester City', stars: 3.5, league: 'Premier League', defaultAdded: true },
+  { id: 'southampton', name: 'Southampton', stars: 3.5, league: 'Premier League', defaultAdded: true },
 
   // 🇪🇸 La Liga (Spain)
   { id: 'real-madrid', name: 'Real Madrid', stars: 5, league: 'La Liga' },
@@ -46,6 +50,14 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'rayo-vallecano', name: 'Rayo Vallecano', stars: 4, league: 'La Liga' },
   { id: 'espanyol', name: 'Espanyol', stars: 4, league: 'La Liga' },
   { id: 'mallorca', name: 'RCD Mallorca', stars: 4, league: 'La Liga' },
+  // La Liga — newly added defaults
+  { id: 'deportivo-alaves', name: 'Deportivo Alavés', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'elche', name: 'Elche CF', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'levante', name: 'Levante UD', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'real-oviedo', name: 'Real Oviedo', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'real-valladolid', name: 'Real Valladolid', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'las-palmas', name: 'UD Las Palmas', stars: 3.5, league: 'La Liga', defaultAdded: true },
+  { id: 'leganes', name: 'CD Leganés', stars: 3.5, league: 'La Liga', defaultAdded: true },
 
   // 🇩🇪 Bundesliga (Germany)
   { id: 'bayern-munich', name: 'FC Bayern München', stars: 5, league: 'Bundesliga' },
@@ -61,6 +73,16 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'werder-bremen', name: 'Werder Bremen', stars: 4, league: 'Bundesliga' },
   { id: 'mainz', name: 'Mainz', stars: 4, league: 'Bundesliga' },
   { id: 'hoffenheim', name: 'TSG Hoffenheim', stars: 4, league: 'Bundesliga' },
+  // Bundesliga — newly added defaults
+  { id: 'augsburg', name: 'FC Augsburg', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'st-pauli', name: 'FC St. Pauli', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'hamburger-sv', name: 'Hamburger SV', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'heidenheim', name: '1. FC Heidenheim', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'bochum', name: 'VfL Bochum', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'darmstadt', name: 'SV Darmstadt 98', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'koln', name: '1. FC Köln', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'hertha-bsc', name: 'Hertha BSC', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
+  { id: 'schalke', name: 'FC Schalke 04', stars: 3.5, league: 'Bundesliga', defaultAdded: true },
 
   // 🇮🇹 Serie A (Italy)
   { id: 'inter', name: 'Inter', stars: 5, league: 'Serie A' },
@@ -74,6 +96,19 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'bologna', name: 'Bologna', stars: 4, league: 'Serie A' },
   { id: 'torino', name: 'Torino', stars: 4, league: 'Serie A' },
   { id: 'como', name: 'Como', stars: 4, league: 'Serie A' },
+  // Serie A — newly added defaults
+  { id: 'cagliari', name: 'Cagliari', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'genoa', name: 'Genoa', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'hellas-verona', name: 'Hellas Verona', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'lecce', name: 'Lecce', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'parma', name: 'Parma', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'sassuolo', name: 'Sassuolo', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'udinese', name: 'Udinese', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'monza', name: 'Monza', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'empoli', name: 'Empoli', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'cremonese', name: 'Cremonese', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'salernitana', name: 'Salernitana', stars: 3.5, league: 'Serie A', defaultAdded: true },
+  { id: 'venezia', name: 'Venezia', stars: 3.5, league: 'Serie A', defaultAdded: true },
 
   // 🇫🇷 Ligue 1 (France)
   { id: 'psg', name: 'Paris Saint-Germain', stars: 5, league: 'Ligue 1' },
@@ -85,6 +120,19 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'lens', name: 'Lens', stars: 4, league: 'Ligue 1' },
   { id: 'nice', name: 'OGC Nice', stars: 4, league: 'Ligue 1' },
   { id: 'strasbourg', name: 'RC Strasbourg', stars: 4, league: 'Ligue 1' },
+  // Ligue 1 — newly added defaults
+  { id: 'auxerre', name: 'AJ Auxerre', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'angers', name: 'Angers SCO', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'brest', name: 'Stade Brestois 29', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'le-havre', name: 'Le Havre AC', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'montpellier', name: 'Montpellier HSC', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'nantes', name: 'FC Nantes', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'rennes', name: 'Stade Rennais FC', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'toulouse', name: 'Toulouse FC', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'saint-etienne', name: 'AS Saint-Étienne', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'lorient', name: 'FC Lorient', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'metz', name: 'FC Metz', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
+  { id: 'paris-fc', name: 'Paris FC', stars: 3.5, league: 'Ligue 1', defaultAdded: true },
 
   // 🌍 Rest of World
   { id: 'sporting-cp', name: 'Sporting CP', stars: 4.5, league: 'Portugal' },
@@ -108,6 +156,105 @@ export const FIFA_CLUBS: Club[] = [
   { id: 'aek-athens', name: 'AEK Athens', stars: 4, league: 'Greece' },
   { id: 'celtic', name: 'Celtic', stars: 4, league: 'Scotland' },
   { id: 'club-brugge', name: 'Club Brugge', stars: 4, league: 'Belgium' },
+
+  // Portugal — newly added defaults
+  { id: 'vitoria-sc', name: 'Vitória SC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'boavista', name: 'Boavista FC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'casa-pia', name: 'Casa Pia AC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'famalicao', name: 'FC Famalicão', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'rio-ave', name: 'Rio Ave FC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'arouca', name: 'FC Arouca', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'estoril', name: 'Estoril Praia', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'estrela-amadora', name: 'Estrela Amadora', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'moreirense', name: 'Moreirense FC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'nacional', name: 'CD Nacional', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'santa-clara', name: 'Santa Clara', stars: 3.5, league: 'Portugal', defaultAdded: true },
+  { id: 'gil-vicente', name: 'Gil Vicente FC', stars: 3.5, league: 'Portugal', defaultAdded: true },
+
+  // Turkey — newly added defaults
+  { id: 'trabzonspor', name: 'Trabzonspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'basaksehir', name: 'İstanbul Başakşehir', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'adana-demirspor', name: 'Adana Demirspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'antalyaspor', name: 'Antalyaspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'kayserispor', name: 'Kayserispor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'konyaspor', name: 'Konyaspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'sivasspor', name: 'Sivasspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'kasimpasa', name: 'Kasımpaşa', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'alanyaspor', name: 'Alanyaspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'rizespor', name: 'Çaykur Rizespor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'gaziantep', name: 'Gaziantep FK', stars: 3.5, league: 'Turkey', defaultAdded: true },
+  { id: 'hatayspor', name: 'Hatayspor', stars: 3.5, league: 'Turkey', defaultAdded: true },
+
+  // Netherlands — newly added defaults
+  { id: 'az-alkmaar', name: 'AZ Alkmaar', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'fc-twente', name: 'FC Twente', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'fc-utrecht', name: 'FC Utrecht', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'vitesse', name: 'Vitesse', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'sc-heerenveen', name: 'SC Heerenveen', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'fc-groningen', name: 'FC Groningen', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'nec-nijmegen', name: 'NEC Nijmegen', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'go-ahead-eagles', name: 'Go Ahead Eagles', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'sparta-rotterdam', name: 'Sparta Rotterdam', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'fortuna-sittard', name: 'Fortuna Sittard', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'rkc-waalwijk', name: 'RKC Waalwijk', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+  { id: 'heracles', name: 'Heracles Almelo', stars: 3.5, league: 'Netherlands', defaultAdded: true },
+
+  // Saudi Arabia — newly added defaults
+  { id: 'al-shabab', name: 'Al Shabab', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-ettifaq', name: 'Al Ettifaq', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-fateh', name: 'Al Fateh', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-taawoun', name: 'Al Taawoun', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-raed', name: 'Al Raed', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'damac', name: 'Damac FC', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-fayha', name: 'Al Fayha', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+  { id: 'al-khaleej', name: 'Al Khaleej', stars: 3.5, league: 'Saudi Arabia', defaultAdded: true },
+
+  // Argentina — newly added defaults
+  { id: 'river-plate', name: 'River Plate', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'racing-club', name: 'Racing Club', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'san-lorenzo', name: 'San Lorenzo', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'independiente', name: 'Independiente', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'estudiantes', name: 'Estudiantes', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'velez-sarsfield', name: 'Vélez Sársfield', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'rosario-central', name: 'Rosario Central', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'newells-old-boys', name: "Newell's Old Boys", stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'talleres', name: 'Talleres', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'lanus', name: 'Lanús', stars: 3.5, league: 'Argentina', defaultAdded: true },
+  { id: 'argentinos-juniors', name: 'Argentinos Juniors', stars: 3.5, league: 'Argentina', defaultAdded: true },
+
+  // Czech Republic — newly added defaults
+  { id: 'sparta-praha', name: 'Sparta Praha', stars: 3.5, league: 'Czech Republic', defaultAdded: true },
+  { id: 'viktoria-plzen', name: 'Viktoria Plzeň', stars: 3.5, league: 'Czech Republic', defaultAdded: true },
+  { id: 'banik-ostrava', name: 'Baník Ostrava', stars: 3.5, league: 'Czech Republic', defaultAdded: true },
+  { id: 'bohemians-1905', name: 'Bohemians 1905', stars: 3.5, league: 'Czech Republic', defaultAdded: true },
+  { id: 'sigma-olomouc', name: 'Sigma Olomouc', stars: 3.5, league: 'Czech Republic', defaultAdded: true },
+
+  // Greece — newly added defaults
+  { id: 'paok', name: 'PAOK', stars: 3.5, league: 'Greece', defaultAdded: true },
+  { id: 'panathinaikos', name: 'Panathinaikos', stars: 3.5, league: 'Greece', defaultAdded: true },
+  { id: 'aris-thessaloniki', name: 'Aris Thessaloniki', stars: 3.5, league: 'Greece', defaultAdded: true },
+  { id: 'atromitos', name: 'Atromitos', stars: 3.5, league: 'Greece', defaultAdded: true },
+
+  // Scotland — newly added defaults
+  { id: 'rangers', name: 'Rangers', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'aberdeen', name: 'Aberdeen', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'hearts', name: 'Heart of Midlothian', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'hibernian', name: 'Hibernian', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'dundee-united', name: 'Dundee United', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'motherwell', name: 'Motherwell', stars: 3.5, league: 'Scotland', defaultAdded: true },
+  { id: 'kilmarnock', name: 'Kilmarnock', stars: 3.5, league: 'Scotland', defaultAdded: true },
+
+  // Belgium — newly added defaults
+  { id: 'anderlecht', name: 'RSC Anderlecht', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'standard-liege', name: 'Standard Liège', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'krc-genk', name: 'KRC Genk', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'kaa-gent', name: 'KAA Gent', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'royal-antwerp', name: 'Royal Antwerp FC', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'union-sg', name: 'Union Saint-Gilloise', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'cercle-brugge', name: 'Cercle Brugge', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'oh-leuven', name: 'OH Leuven', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'kv-mechelen', name: 'KV Mechelen', stars: 3.5, league: 'Belgium', defaultAdded: true },
+  { id: 'charleroi', name: 'Sporting Charleroi', stars: 3.5, league: 'Belgium', defaultAdded: true },
 
   // 🗺️ International (National Teams)
   { id: 'france', name: 'France', stars: 5, league: 'International', isNational: true },

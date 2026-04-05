@@ -77,6 +77,7 @@ export default function AdminClubs() {
   const [filterLeague, setFilterLeague] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "club" | "national">("all");
   const [filterModified, setFilterModified] = useState(false);
+  const [filterDefaultAdded, setFilterDefaultAdded] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -192,6 +193,11 @@ export default function AdminClubs() {
       clubs = clubs.filter((c) => isModifiedClub(c));
     }
 
+    // Filter default-added only
+    if (filterDefaultAdded) {
+      clubs = clubs.filter((c) => c.defaultAdded);
+    }
+
     // Sort
     switch (sortBy) {
       case "alpha-asc":
@@ -212,13 +218,14 @@ export default function AdminClubs() {
     }
 
     return clubs;
-  }, [search, filterStars, filterLeague, filterType, filterModified, sortBy, overrides, localChanges]);
+  }, [search, filterStars, filterLeague, filterType, filterModified, filterDefaultAdded, sortBy, overrides, localChanges]);
 
   const activeFilterCount = [
     filterStars !== null,
     filterLeague !== null,
     filterType !== "all",
     filterModified,
+    filterDefaultAdded,
   ].filter(Boolean).length;
 
   const clearAllFilters = () => {
@@ -226,6 +233,7 @@ export default function AdminClubs() {
     setFilterLeague(null);
     setFilterType("all");
     setFilterModified(false);
+    setFilterDefaultAdded(false);
     setSearch("");
   };
 
@@ -336,6 +344,12 @@ export default function AdminClubs() {
                   <X className="h-3 w-3" />
                 </Badge>
               )}
+              {filterDefaultAdded && (
+                <Badge variant="secondary" className="gap-1 cursor-pointer" onClick={() => setFilterDefaultAdded(false)}>
+                  🆕 נוספו אוטומטית
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
               <button onClick={clearAllFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 נקה הכל
               </button>
@@ -442,6 +456,13 @@ export default function AdminClubs() {
                 >
                   ✏️ שונו בלבד
                 </Button>
+                <Button
+                  variant={filterDefaultAdded ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterDefaultAdded(!filterDefaultAdded)}
+                >
+                  🆕 נוספו אוטומטית
+                </Button>
               </div>
             </div>
 
@@ -501,6 +522,9 @@ export default function AdminClubs() {
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-xs shrink-0">{LEAGUE_FLAGS[club.league || ""] || "⚽"}</span>
                   <span className="text-sm truncate">{club.name}</span>
+                  {club.defaultAdded && !modified && (
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0 border-blue-500/40 text-blue-400">חדש</Badge>
+                  )}
                   {modified && (
                     <span className="text-xs text-muted-foreground shrink-0">
                       (מקורי: {renderStars(club.stars)})

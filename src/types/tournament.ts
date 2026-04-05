@@ -10,6 +10,7 @@ export interface Club {
   isNational?: boolean;
   isPrime?: boolean;
   league: string;
+  defaultAdded?: boolean;
 }
 
 export interface Pair {
