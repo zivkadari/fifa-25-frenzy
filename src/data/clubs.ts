@@ -305,7 +305,7 @@ export async function loadClubOverrides(): Promise<Record<string, number>> {
   try {
     const { data, error } = await supabase
       .from('club_overrides')
-      .select('club_id, stars');
+      .select('club_id, stars, deleted');
     
     if (error) {
       console.error('Error loading club overrides:', error);
@@ -313,11 +313,14 @@ export async function loadClubOverrides(): Promise<Record<string, number>> {
     }
     
     const map: Record<string, number> = {};
-    (data || []).forEach((row: { club_id: string; stars: number }) => {
+    const deletedSet = new Set<string>();
+    (data || []).forEach((row: { club_id: string; stars: number; deleted?: boolean }) => {
       map[row.club_id] = row.stars;
+      if (row.deleted) deletedSet.add(row.club_id);
     });
     
     clubOverridesCache = map;
+    clubDeletedCache = deletedSet;
     lastOverridesFetch = now;
     return map;
   } catch (e) {
@@ -326,18 +329,28 @@ export async function loadClubOverrides(): Promise<Record<string, number>> {
   }
 }
 
-// Get clubs with database overrides applied
+// Load deleted club IDs
+export async function loadDeletedClubIds(): Promise<Set<string>> {
+  await loadClubOverrides(); // ensures cache is populated
+  return clubDeletedCache || new Set();
+}
+
+// Get clubs with database overrides applied (excludes deleted)
 export async function getClubsWithOverrides(): Promise<Club[]> {
   const overrides = await loadClubOverrides();
-  return FIFA_CLUBS.map(club => ({
-    ...club,
-    stars: overrides[club.id] ?? club.stars
-  }));
+  const deleted = clubDeletedCache || new Set();
+  return FIFA_CLUBS
+    .filter(club => !deleted.has(club.id))
+    .map(club => ({
+      ...club,
+      stars: overrides[club.id] ?? club.stars
+    }));
 }
 
 // Invalidate cache (call after saving overrides)
 export function invalidateClubOverridesCache() {
   clubOverridesCache = null;
+  clubDeletedCache = null;
   lastOverridesFetch = 0;
 }
 
