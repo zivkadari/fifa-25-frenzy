@@ -28,6 +28,7 @@ const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywyd
 const POLL_INTERVAL = 4000;
 
 type SpectateState = "loading" | "error" | "live";
+type EveningMode = "five-player" | "couples";
 
 function getStorageKey(code: string) {
   return `spectate-player-${code}`;
