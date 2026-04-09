@@ -76,9 +76,15 @@ export default function Spectate() {
       const json = await res.json();
       if (json.updated_at !== lastUpdatedAt.current) {
         lastUpdatedAt.current = json.updated_at;
-        const data = json.data as FPEvening;
+        const data = json.data;
         if (data && data.mode === "five-player-doubles") {
-          setEvening(data);
+          setEvening(data as FPEvening);
+          setEveningMode("five-player");
+          setState("live");
+        } else if (data && data.players && data.players.length > 0) {
+          // Couples / pairs mode
+          setCouplesEvening(data as Evening);
+          setEveningMode("couples");
           setState("live");
         } else {
           setState("error");
