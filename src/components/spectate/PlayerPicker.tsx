@@ -5,15 +5,16 @@ import { Eye, User } from "lucide-react";
 interface PlayerPickerProps {
   players: Player[];
   onSelect: (playerId: string) => void;
+  title?: string;
 }
 
-export default function PlayerPicker({ players, onSelect }: PlayerPickerProps) {
+export default function PlayerPicker({ players, onSelect, title }: PlayerPickerProps) {
   return (
     <div className="min-h-[100svh] bg-gaming-bg flex items-center justify-center p-4" dir="rtl">
       <div className="max-w-sm w-full space-y-5">
         <div className="text-center space-y-2">
           <Eye className="h-8 w-8 text-neon-green mx-auto" />
-          <h1 className="text-xl font-bold text-foreground">ליגת 5 שחקנים</h1>
+          <h1 className="text-xl font-bold text-foreground">{title || "צפייה בטורניר"}</h1>
           <p className="text-sm text-muted-foreground">בחר את השחקן שלך לחוויה מותאמת אישית</p>
         </div>
 

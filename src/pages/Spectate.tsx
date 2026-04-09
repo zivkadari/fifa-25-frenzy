@@ -14,18 +14,21 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes";
+import { Evening } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
+import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
 import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
 const POLL_INTERVAL = 4000;
 
 type SpectateState = "loading" | "error" | "live";
+type EveningMode = "five-player" | "couples";
 
 function getStorageKey(code: string) {
   return `spectate-player-${code}`;
@@ -35,6 +38,8 @@ export default function Spectate() {
   const { code } = useParams<{ code: string }>();
   const [state, setState] = useState<SpectateState>("loading");
   const [evening, setEvening] = useState<FPEvening | null>(null);
+  const [couplesEvening, setCouplesEvening] = useState<Evening | null>(null);
+  const [eveningMode, setEveningMode] = useState<EveningMode | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
@@ -71,9 +76,15 @@ export default function Spectate() {
       const json = await res.json();
       if (json.updated_at !== lastUpdatedAt.current) {
         lastUpdatedAt.current = json.updated_at;
-        const data = json.data as FPEvening;
+        const data = json.data;
         if (data && data.mode === "five-player-doubles") {
-          setEvening(data);
+          setEvening(data as FPEvening);
+          setEveningMode("five-player");
+          setState("live");
+        } else if (data && data.players && data.players.length > 0) {
+          // Couples / pairs mode
+          setCouplesEvening(data as Evening);
+          setEveningMode("couples");
           setState("live");
         } else {
           setState("error");
@@ -90,11 +101,12 @@ export default function Spectate() {
     }
   }, [code, state]);
 
-  const isCompleted = evening?.completed === true;
+  const isCompleted = eveningMode === "five-player"
+    ? evening?.completed === true
+    : couplesEvening?.completed === true;
 
   useEffect(() => {
     fetchEvening();
-    // Don't poll for completed tournaments
     if (isCompleted) return;
     const interval = setInterval(fetchEvening, POLL_INTERVAL);
     return () => clearInterval(interval);
@@ -102,11 +114,12 @@ export default function Spectate() {
 
   // Validate stored player still exists in evening
   useEffect(() => {
-    if (evening && selectedPlayerId) {
-      const exists = evening.players.some(p => p.id === selectedPlayerId);
+    const players = eveningMode === "five-player" ? evening?.players : couplesEvening?.players;
+    if (players && selectedPlayerId) {
+      const exists = players.some(p => p.id === selectedPlayerId);
       if (!exists) clearPlayer();
     }
-  }, [evening, selectedPlayerId, clearPlayer]);
+  }, [evening, couplesEvening, selectedPlayerId, clearPlayer, eveningMode]);
 
   if (state === "loading") {
     return (
@@ -119,7 +132,7 @@ export default function Spectate() {
     );
   }
 
-  if (state === "error" || !evening) {
+  if (state === "error" || (!evening && !couplesEvening)) {
     return (
       <div className="min-h-[100svh] bg-gaming-bg flex items-center justify-center p-4" dir="rtl">
         <Card className="bg-gradient-card border-destructive/30 p-6 max-w-sm text-center space-y-3">
@@ -131,14 +144,31 @@ export default function Spectate() {
     );
   }
 
+  // Determine players for picker
+  const allPlayers = eveningMode === "five-player" ? evening!.players : couplesEvening!.players;
+
   // Show player picker if no player selected
   if (!selectedPlayerId) {
-    return <PlayerPicker players={evening.players} onSelect={selectPlayer} />;
+    const title = eveningMode === "five-player" ? "ליגת 5 שחקנים" : "טורניר זוגות";
+    return <PlayerPicker players={allPlayers} onSelect={selectPlayer} title={title} />;
   }
 
+  // Couples mode
+  if (eveningMode === "couples" && couplesEvening) {
+    return (
+      <CouplesSpectateView
+        evening={couplesEvening}
+        selectedPlayerId={selectedPlayerId}
+        onSwitchPlayer={clearPlayer}
+        isCompleted={!!isCompleted}
+      />
+    );
+  }
+
+  // Five-player mode
   return (
     <PersonalizedSpectateView
-      evening={evening}
+      evening={evening!}
       selectedPlayerId={selectedPlayerId}
       onSwitchPlayer={clearPlayer}
       bankDrawerOpen={bankDrawerOpen}
@@ -147,7 +177,7 @@ export default function Spectate() {
       setShowUpcoming={setShowUpcoming}
       showRecent={showRecent}
       setShowRecent={setShowRecent}
-      isCompleted={isCompleted}
+      isCompleted={!!isCompleted}
     />
   );
 }
