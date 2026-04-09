@@ -101,11 +101,12 @@ export default function Spectate() {
     }
   }, [code, state]);
 
-  const isCompleted = evening?.completed === true;
+  const isCompleted = eveningMode === "five-player"
+    ? evening?.completed === true
+    : couplesEvening?.completed === true;
 
   useEffect(() => {
     fetchEvening();
-    // Don't poll for completed tournaments
     if (isCompleted) return;
     const interval = setInterval(fetchEvening, POLL_INTERVAL);
     return () => clearInterval(interval);
@@ -113,11 +114,12 @@ export default function Spectate() {
 
   // Validate stored player still exists in evening
   useEffect(() => {
-    if (evening && selectedPlayerId) {
-      const exists = evening.players.some(p => p.id === selectedPlayerId);
+    const players = eveningMode === "five-player" ? evening?.players : couplesEvening?.players;
+    if (players && selectedPlayerId) {
+      const exists = players.some(p => p.id === selectedPlayerId);
       if (!exists) clearPlayer();
     }
-  }, [evening, selectedPlayerId, clearPlayer]);
+  }, [evening, couplesEvening, selectedPlayerId, clearPlayer, eveningMode]);
 
   if (state === "loading") {
     return (
@@ -130,7 +132,7 @@ export default function Spectate() {
     );
   }
 
-  if (state === "error" || !evening) {
+  if (state === "error" || (!evening && !couplesEvening)) {
     return (
       <div className="min-h-[100svh] bg-gaming-bg flex items-center justify-center p-4" dir="rtl">
         <Card className="bg-gradient-card border-destructive/30 p-6 max-w-sm text-center space-y-3">
@@ -142,20 +144,42 @@ export default function Spectate() {
     );
   }
 
+  // Determine players for picker
+  const allPlayers = eveningMode === "five-player" ? evening!.players : couplesEvening!.players;
+
   // Show player picker if no player selected
   if (!selectedPlayerId) {
-    return <PlayerPicker players={evening.players} onSelect={selectPlayer} />;
+    return <PlayerPicker players={allPlayers} onSelect={selectPlayer} />;
   }
 
+  // Couples mode
+  if (eveningMode === "couples" && couplesEvening) {
+    return (
+      <CouplesSpectateView
+        evening={couplesEvening}
+        selectedPlayerId={selectedPlayerId}
+        onSwitchPlayer={clearPlayer}
+        isCompleted={!!isCompleted}
+      />
+    );
+  }
+
+  // Five-player mode
   return (
     <PersonalizedSpectateView
-      evening={evening}
+      evening={evening!}
       selectedPlayerId={selectedPlayerId}
       onSwitchPlayer={clearPlayer}
       bankDrawerOpen={bankDrawerOpen}
       setBankDrawerOpen={setBankDrawerOpen}
       showUpcoming={showUpcoming}
       setShowUpcoming={setShowUpcoming}
+      showRecent={showRecent}
+      setShowRecent={setShowRecent}
+      isCompleted={!!isCompleted}
+    />
+  );
+}
       showRecent={showRecent}
       setShowRecent={setShowRecent}
       isCompleted={isCompleted}
