@@ -14,12 +14,14 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes";
+import { Evening } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
+import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
 import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
