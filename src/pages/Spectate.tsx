@@ -149,7 +149,8 @@ export default function Spectate() {
 
   // Show player picker if no player selected
   if (!selectedPlayerId) {
-    return <PlayerPicker players={allPlayers} onSelect={selectPlayer} />;
+    const title = eveningMode === "five-player" ? "ליגת 5 שחקנים" : "טורניר זוגות";
+    return <PlayerPicker players={allPlayers} onSelect={selectPlayer} title={title} />;
   }
 
   // Couples mode
