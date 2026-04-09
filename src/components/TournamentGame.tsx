@@ -169,8 +169,8 @@ export const TournamentGame = ({ evening, onBack, onComplete, onGoHome, onUpdate
       return;
     }
     const appUrl = window.location.origin;
-    const joinUrl = `${appUrl}/join/${shareCode}`;
-    const message = `🎮 הצטרף לטורניר שלנו!\n\nלחץ כאן להצטרפות:\n${joinUrl}`;
+    const spectateUrl = `${appUrl}/spectate/${shareCode}`;
+    const message = `🎮 צפו בטורניר שלנו בשידור חי!\n\n${spectateUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
