@@ -38,6 +38,8 @@ export default function Spectate() {
   const { code } = useParams<{ code: string }>();
   const [state, setState] = useState<SpectateState>("loading");
   const [evening, setEvening] = useState<FPEvening | null>(null);
+  const [couplesEvening, setCouplesEvening] = useState<Evening | null>(null);
+  const [eveningMode, setEveningMode] = useState<EveningMode | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
