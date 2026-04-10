@@ -19,11 +19,26 @@ export default function InsightCards({ insights }: InsightCardsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedInsightId, setExpandedInsightId] = useState<string | null>(null);
 
-  if (insights.length === 0) return null;
-
   // Show 1-2 insights at a time
   const visibleCount = Math.min(2, insights.length);
   const visible = useMemo(() => {
+    if (insights.length === 0) return [];
+    const result: Insight[] = [];
+    for (let i = 0; i < visibleCount; i++) {
+      result.push(insights[(currentIndex + i) % insights.length]);
+    }
+    return result;
+  }, [insights, currentIndex, visibleCount]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex(prev => (prev + visibleCount) % Math.max(1, insights.length));
+  }, [insights.length, visibleCount]);
+
+  const expandedInsight = expandedInsightId
+    ? insights.find(i => i.id === expandedInsightId)
+    : null;
+
+  if (insights.length === 0) return null;
     const result: Insight[] = [];
     for (let i = 0; i < visibleCount; i++) {
       result.push(insights[(currentIndex + i) % insights.length]);
