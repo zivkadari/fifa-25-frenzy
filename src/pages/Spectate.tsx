@@ -419,8 +419,18 @@ function PersonalizedSpectateView({
           );
         })()}
 
-        {/* ── Section 3: Personal Insights (expandable) ── */}
+        {/* ── Section 3: Personal Insights (current evening) ── */}
         {personal && <PersonalInsights personal={personal} />}
+
+        {/* ── Section 3b: All-Time Stats ── */}
+        {allTimeStats && allTimeStats.eveningsPlayed > 0 && (
+          <AllTimeStatsCard stats={allTimeStats} />
+        )}
+
+        {/* ── Section 3c: Insight Cards ── */}
+        {insights.length > 0 && (
+          <InsightCards insights={insights} />
+        )}
 
         {/* ── Section 4: Progress ── */}
         <Card className="bg-gaming-surface/50 border-border/50 p-2">
