@@ -19,6 +19,7 @@ import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerE
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
 import { computeAllTimeStats, computeAllTimeStatsForAll } from "@/services/allTimeStatsService";
 import { generateInsights } from "@/services/insightGenerator";
+import { useFivePlayerAllTimeHistory } from "@/hooks/useFivePlayerAllTimeHistory";
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
@@ -217,22 +218,10 @@ function PersonalizedSpectateView({
     [evening, selectedPlayerId, playerStats]
   );
 
-  // Fetch historical FP evenings for all-time stats
-  const [fpHistory, setFpHistory] = useState<FPEvening[]>([]);
-  const historyFetched = useRef(false);
-
-  useEffect(() => {
-    if (historyFetched.current) return;
-    historyFetched.current = true;
-    fetch(
-      `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/get-fp-history?code=${encodeURIComponent(shareCode)}`
-    )
-      .then(res => res.ok ? res.json() : null)
-      .then(json => {
-        if (json?.history) setFpHistory(json.history as FPEvening[]);
-      })
-      .catch(() => {});
-  }, [shareCode]);
+  const { history: fpHistory } = useFivePlayerAllTimeHistory({
+    currentEvening: evening,
+    shareCode,
+  });
 
   // Compute all-time stats
   const allTimeStats = useMemo(
