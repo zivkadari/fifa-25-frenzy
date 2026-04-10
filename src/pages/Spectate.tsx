@@ -200,6 +200,7 @@ interface PersonalizedViewProps {
   showRecent: boolean;
   setShowRecent: (v: boolean) => void;
   isCompleted: boolean;
+  shareCode: string;
 }
 
 function PersonalizedSpectateView({
@@ -207,13 +208,47 @@ function PersonalizedSpectateView({
   bankDrawerOpen, setBankDrawerOpen,
   showUpcoming, setShowUpcoming,
   showRecent, setShowRecent,
-  isCompleted,
+  isCompleted, shareCode,
 }: PersonalizedViewProps) {
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
   const personal = useMemo(
     () => computePersonalStats(evening, selectedPlayerId, playerStats),
     [evening, selectedPlayerId, playerStats]
+  );
+
+  // Fetch historical FP evenings for all-time stats
+  const [fpHistory, setFpHistory] = useState<FPEvening[]>([]);
+  const historyFetched = useRef(false);
+
+  useEffect(() => {
+    if (historyFetched.current) return;
+    historyFetched.current = true;
+    fetch(
+      `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/get-fp-history?code=${encodeURIComponent(shareCode)}`
+    )
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (json?.history) setFpHistory(json.history as FPEvening[]);
+      })
+      .catch(() => {});
+  }, [shareCode]);
+
+  // Compute all-time stats
+  const allTimeStats = useMemo(
+    () => computeAllTimeStats(fpHistory, evening, selectedPlayerId),
+    [fpHistory, evening, selectedPlayerId]
+  );
+
+  const allPlayersAllTime = useMemo(
+    () => computeAllTimeStatsForAll(fpHistory, evening),
+    [fpHistory, evening]
+  );
+
+  const insights = useMemo(
+    () => allTimeStats ? generateInsights(allTimeStats, allPlayersAllTime) : [],
+    [allTimeStats, allPlayersAllTime]
+  );
   );
 
   const currentMatch = evening.schedule[evening.currentMatchIndex] ?? null;
