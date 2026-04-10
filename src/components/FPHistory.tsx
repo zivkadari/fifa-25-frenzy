@@ -35,7 +35,19 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
   const [sharingId, setSharingId] = useState<string | null>(null);
 
   useEffect(() => {
-    setEvenings(StorageService.loadFPEvenings());
+    const local = StorageService.loadFPEvenings();
+    setEvenings(local);
+    
+    // Auto-sync completed local FP evenings to Supabase
+    const syncToRemote = async () => {
+      const completed = local.filter(e => e.completed);
+      for (const ev of completed) {
+        try {
+          await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, null);
+        } catch {}
+      }
+    };
+    syncToRemote();
   }, []);
 
   const sorted = [...evenings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
