@@ -3,7 +3,6 @@
  * Generates interesting, personalized facts from all-time data.
  */
 import { AllTimePlayerStats } from '@/services/allTimeStatsService';
-import { Player } from '@/types/tournament';
 
 export interface Insight {
   id: string;
@@ -46,9 +45,9 @@ export function generateInsights(
     insights.push({
       id: 'tonight-points',
       icon: '📈',
-      text: `הערב כבר הוסיף +${p.tonightPoints} נקודות לסה״כ הכל-זמני שלך (${historicalTotal} → ${p.totalPoints})`,
+      text: `הטורניר הזה הוסיף +${p.tonightPoints} נקודות לסה״כ הכל-זמני שלך (${historicalTotal} → ${p.totalPoints})`,
       category: 'personal',
-      comparisonTitle: 'נקודות שנוספו הערב',
+      comparisonTitle: 'נקודות שנוספו בטורניר הזה',
       comparisonData: buildComparison(allStats, p.player.id, s => `+${s.tonightPoints}`),
     });
   }
@@ -151,8 +150,8 @@ export function generateInsights(
           id: 'best-evening',
           icon: '🔥',
           text: rank === 1
-            ? `זה הערב הטוב ביותר שלך אי-פעם! (${currentBreakdown.points} נק׳)`
-            : `זו ההתחלה השנייה הטובה ביותר שלך אי-פעם!`,
+            ? `זה הטורניר הטוב ביותר שלך אי-פעם! (${currentBreakdown.points} נק׳)`
+            : `זו ההתחלה השנייה הטובה ביותר שלך אי-פעם בטורניר 5 שחקנים!`,
           category: 'milestone',
         });
       }
@@ -165,7 +164,7 @@ export function generateInsights(
           insights.push({
             id: 'above-average',
             icon: '📊',
-            text: `כבר עברת את הממוצע שלך (${avgPoints} נק׳ בדרך כלל, ${currentBreakdown.points} הערב)`,
+            text: `כבר עברת את הממוצע שלך (${avgPoints} נק׳ בדרך כלל, ${currentBreakdown.points} בטורניר הזה)`,
             category: 'milestone',
           });
         }

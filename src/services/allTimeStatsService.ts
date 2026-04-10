@@ -1,14 +1,21 @@
 /**
  * All-time cumulative stats service for 5-player doubles mode.
- * Computes stats across multiple completed FP evenings + current evening.
+ * Computes stats across completed FP history plus the currently viewed FP evening.
  */
-import { FPEvening, FPPlayerStats, FPPairStats } from '@/types/fivePlayerTypes';
+import { FPEvening } from '@/types/fivePlayerTypes';
 import { Player } from '@/types/tournament';
-import { calculatePlayerStats, calculatePairStats } from '@/services/fivePlayerEngine';
-import { computePersonalStats, PartnerRecord, OpponentRecord } from '@/services/spectatorPersonalStats';
+import { calculatePlayerStats } from '@/services/fivePlayerEngine';
+import {
+  buildCanonicalPlayerLookup,
+  getFivePlayerIdentity,
+  getPartnerByIdentity,
+  pairHasPlayerIdentity,
+  resolveCanonicalFivePlayerPlayer,
+} from '@/services/fivePlayerIdentity';
 
 export interface AllTimePlayerStats {
   player: Player;
+  /** Contribution from the currently viewed tournament (live or historical). */
   totalPoints: number;
   tonightPoints: number;
   totalWins: number;
@@ -93,6 +100,26 @@ function getPartner(playerId: string, pair: { players: [Player, Player] }): Play
   return pair.players[0].id === playerId ? pair.players[1] : pair.players[0];
 }
 
+function isCompletedHistoricalFPEvening(evening: FPEvening): boolean {
+  return evening.mode === 'five-player-doubles' && evening.completed === true;
+}
+
+function getAllTimeScope(historicalEvenings: FPEvening[], currentEvening: FPEvening): FPEvening[] {
+  const eveningsById = new Map<string, FPEvening>();
+
+  for (const evening of historicalEvenings) {
+    if (isCompletedHistoricalFPEvening(evening)) {
+      eveningsById.set(evening.id, evening);
+    }
+  }
+
+  if (currentEvening.mode === 'five-player-doubles') {
+    eveningsById.set(currentEvening.id, currentEvening);
+  }
+
+  return Array.from(eveningsById.values());
+}
+
 /**
  * Compute all-time stats for a specific player across multiple FP evenings.
  */
@@ -104,12 +131,13 @@ export function computeAllTimeStats(
   const player = currentEvening.players.find(p => p.id === playerId);
   if (!player) return null;
 
-  // All evenings to process: historical + current
-  const allEvenings = [...historicalEvenings, currentEvening];
-  
-  // Find which evenings this player participated in
-  const playerEvenings = allEvenings.filter(ev => 
-    ev.players.some(p => p.id === playerId)
+  const playerIdentity = getFivePlayerIdentity(player);
+  const canonicalPlayers = buildCanonicalPlayerLookup(currentEvening.players);
+
+  // FP saved history uses fresh ids per evening, so stitch the same player across history by name.
+  const allEvenings = getAllTimeScope(historicalEvenings, currentEvening);
+  const playerEvenings = allEvenings.filter((evening) =>
+    evening.players.some((entry) => getFivePlayerIdentity(entry) === playerIdentity)
   );
 
   if (playerEvenings.length === 0) return null;
@@ -126,10 +154,10 @@ export function computeAllTimeStats(
 
   for (const ev of playerEvenings) {
     const playerStats = calculatePlayerStats(ev);
-    const myStats = playerStats.find(s => s.player.id === playerId);
+    const myStats = playerStats.find((stats) => getFivePlayerIdentity(stats.player) === playerIdentity);
     if (!myStats) continue;
 
-    const rank = playerStats.findIndex(s => s.player.id === playerId) + 1;
+    const rank = playerStats.findIndex((stats) => getFivePlayerIdentity(stats.player) === playerIdentity) + 1;
 
     // Accumulate totals
     totalPoints += myStats.points;
@@ -159,9 +187,9 @@ export function computeAllTimeStats(
     // Process individual matches for partner/opponent/club/tier records
     for (const match of ev.schedule) {
       if (!match.completed || match.scoreA === undefined || match.scoreB === undefined) continue;
-      
-      const inA = playerInPair(playerId, match.pairA);
-      const inB = playerInPair(playerId, match.pairB);
+
+      const inA = pairHasPlayerIdentity(match.pairA, playerIdentity);
+      const inB = pairHasPlayerIdentity(match.pairB, playerIdentity);
       if (!inA && !inB) continue;
 
       const myPair = inA ? match.pairA : match.pairB;
@@ -173,14 +201,19 @@ export function computeAllTimeStats(
       const lost = myScore < theirScore;
 
       // Partner record
-      const partner = getPartner(playerId, myPair);
-      if (!partnerMap.has(partner.id)) {
-        partnerMap.set(partner.id, {
+      const rawPartner = getPartnerByIdentity(myPair, playerIdentity);
+      if (!rawPartner) continue;
+
+      const partner = resolveCanonicalFivePlayerPlayer(rawPartner, canonicalPlayers);
+      const partnerIdentity = getFivePlayerIdentity(partner);
+
+      if (!partnerMap.has(partnerIdentity)) {
+        partnerMap.set(partnerIdentity, {
           partner, played: 0, wins: 0, draws: 0, losses: 0, points: 0,
           goalsFor: 0, goalsAgainst: 0, winRate: 0,
         });
       }
-      const pr = partnerMap.get(partner.id)!;
+      const pr = partnerMap.get(partnerIdentity)!;
       pr.played++;
       pr.goalsFor += myScore;
       pr.goalsAgainst += theirScore;
@@ -189,14 +222,17 @@ export function computeAllTimeStats(
       else { pr.losses++; }
 
       // Opponent records
-      for (const opp of oppPair.players) {
-        if (!opponentMap.has(opp.id)) {
-          opponentMap.set(opp.id, {
-            opponent: opp, played: 0, wins: 0, draws: 0, losses: 0,
+      for (const rawOpponent of oppPair.players) {
+        const opponent = resolveCanonicalFivePlayerPlayer(rawOpponent, canonicalPlayers);
+        const opponentIdentity = getFivePlayerIdentity(opponent);
+
+        if (!opponentMap.has(opponentIdentity)) {
+          opponentMap.set(opponentIdentity, {
+            opponent, played: 0, wins: 0, draws: 0, losses: 0,
             goalsFor: 0, goalsAgainst: 0,
           });
         }
-        const or = opponentMap.get(opp.id)!;
+        const or = opponentMap.get(opponentIdentity)!;
         or.played++;
         or.goalsFor += myScore;
         or.goalsAgainst += theirScore;
