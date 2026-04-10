@@ -39,20 +39,6 @@ export default function InsightCards({ insights }: InsightCardsProps) {
     : null;
 
   if (insights.length === 0) return null;
-    const result: Insight[] = [];
-    for (let i = 0; i < visibleCount; i++) {
-      result.push(insights[(currentIndex + i) % insights.length]);
-    }
-    return result;
-  }, [insights, currentIndex, visibleCount]);
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex(prev => (prev + visibleCount) % insights.length);
-  }, [insights.length, visibleCount]);
-
-  const expandedInsight = expandedInsightId
-    ? insights.find(i => i.id === expandedInsightId)
-    : null;
 
   return (
     <div className="space-y-2">
