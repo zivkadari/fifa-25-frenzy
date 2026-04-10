@@ -69,10 +69,10 @@ export function generateInsights(
     insights.push({
       id: 'win-rate',
       icon: '🎯',
-      text: `אחוז הניצחון הכל-זמני שלך: ${p.totalWinRate}%`,
+      text: `אחוז הניצחון הכל-זמני שלך: ${p.totalWinRate}% (${p.totalWins} מתוך ${p.totalPlayed} משחקים)`,
       category: 'personal',
       comparisonTitle: '% ניצחון כל הזמנים',
-      comparisonData: buildComparison(allStats, p.player.id, s => `${s.totalWinRate}%`),
+      comparisonData: buildComparison(allStats, p.player.id, s => `${s.totalWinRate}% (${s.totalWins}/${s.totalPlayed})`),
     });
   }
 
@@ -101,7 +101,7 @@ export function generateInsights(
       category: 'personal',
       comparisonTitle: 'יריב קשה ביותר',
       comparisonData: buildComparison(allStats, p.player.id, s =>
-        s.toughestOpponentEver ? `${s.toughestOpponentEver.opponent.name} (${s.toughestOpponentEver.losses} הפס׳)` : '–'
+        s.toughestOpponentEver ? `${s.toughestOpponentEver.opponent.name} (${s.toughestOpponentEver.losses}/${s.toughestOpponentEver.played})` : '–'
       ),
     });
   }
@@ -128,12 +128,12 @@ export function generateInsights(
     insights.push({
       id: 'best-tier',
       icon: '⭐',
-      text: `אחוז הניצחון הגבוה ביותר שלך הוא עם קבוצות ${bt.label} (${bt.winRate}%)`,
+      text: `אחוז הניצחון הגבוה ביותר שלך הוא עם קבוצות ${bt.label} — ${bt.winRate}% (${bt.wins} מתוך ${bt.played} משחקים)`,
       category: 'personal',
       comparisonTitle: `% ניצחון עם ${bt.label}`,
       comparisonData: buildComparison(allStats, p.player.id, s => {
         const tier = s.tierRecords.find(t => t.stars === bt.stars);
-        return tier ? `${tier.winRate}%` : '–';
+        return tier ? `${tier.winRate}% (${tier.wins}/${tier.played})` : '–';
       }),
     });
   }
@@ -193,12 +193,12 @@ export function generateInsights(
       insights.push({
         id: 'strong-pair',
         icon: '💪',
-        text: `${p.player.name} ו${topPartner.partner.name} מנצחים ב-${topPartner.winRate}% מהמשחקים ביחד`,
+        text: `${p.player.name} ו${topPartner.partner.name} מנצחים ב-${topPartner.winRate}% מהמשחקים ביחד (${topPartner.wins} מתוך ${topPartner.played} משחקים)`,
         category: 'pair',
         comparisonTitle: 'שותפות מנצחת',
         comparisonData: buildComparison(allStats, p.player.id, s => {
           const pr = s.partnerRecords.find(r => r.partner.id === topPartner.partner.id);
-          return pr ? `${pr.winRate}%` : '–';
+          return pr ? `${pr.winRate}% (${pr.wins}/${pr.played})` : '–';
         }),
       });
     }
