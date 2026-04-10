@@ -98,7 +98,11 @@ export default function InsightCards({ insights }: InsightCardsProps) {
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6 space-y-2">
-            {expandedInsight?.comparisonData?.map(row => (
+            {[...(expandedInsight?.comparisonData ?? [])].sort((a, b) => {
+              const aNum = typeof a.value === 'number' ? a.value : parseFloat(String(a.value).replace(/[^0-9.\-]/g, '')) || 0;
+              const bNum = typeof b.value === 'number' ? b.value : parseFloat(String(b.value).replace(/[^0-9.\-]/g, '')) || 0;
+              return bNum - aNum;
+            }).map(row => (
               <div
                 key={row.playerId}
                 className={`flex items-center justify-between rounded-lg px-3 py-2 border text-sm ${
