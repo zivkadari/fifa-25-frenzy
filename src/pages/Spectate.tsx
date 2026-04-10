@@ -182,6 +182,7 @@ export default function Spectate() {
       showRecent={showRecent}
       setShowRecent={setShowRecent}
       isCompleted={!!isCompleted}
+      shareCode={code!}
     />
   );
 }
