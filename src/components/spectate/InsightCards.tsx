@@ -9,7 +9,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { Insight, ComparisonRow } from "@/services/insightGenerator";
+import { Insight } from "@/services/insightGenerator";
 
 interface InsightCardsProps {
   insights: Insight[];
