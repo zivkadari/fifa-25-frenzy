@@ -101,7 +101,7 @@ export function generateInsights(
       category: 'personal',
       comparisonTitle: 'יריב קשה ביותר',
       comparisonData: buildComparison(allStats, p.player.id, s =>
-        s.toughestOpponentEver ? `${s.toughestOpponentEver.opponent.name} (${s.toughestOpponentEver.losses} הפס׳)` : '–'
+        s.toughestOpponentEver ? `${s.toughestOpponentEver.opponent.name} (${s.toughestOpponentEver.losses}/${s.toughestOpponentEver.played})` : '–'
       ),
     });
   }
