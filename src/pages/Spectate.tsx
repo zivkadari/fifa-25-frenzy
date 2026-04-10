@@ -249,7 +249,6 @@ function PersonalizedSpectateView({
     () => allTimeStats ? generateInsights(allTimeStats, allPlayersAllTime) : [],
     [allTimeStats, allPlayersAllTime]
   );
-  );
 
   const currentMatch = evening.schedule[evening.currentMatchIndex] ?? null;
   const totalMatches = evening.schedule.length;
