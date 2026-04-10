@@ -17,9 +17,13 @@ import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes"
 import { Evening } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
+import { computeAllTimeStats, computeAllTimeStatsForAll } from "@/services/allTimeStatsService";
+import { generateInsights } from "@/services/insightGenerator";
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
+import AllTimeStatsCard from "@/components/spectate/AllTimeStatsCard";
+import InsightCards from "@/components/spectate/InsightCards";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
 import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
