@@ -228,7 +228,7 @@ export function computeAllTimeStats(
 
         if (!opponentMap.has(opponentIdentity)) {
           opponentMap.set(opponentIdentity, {
-            opponent: opp, played: 0, wins: 0, draws: 0, losses: 0,
+            opponent, played: 0, wins: 0, draws: 0, losses: 0,
             goalsFor: 0, goalsAgainst: 0,
           });
         }
