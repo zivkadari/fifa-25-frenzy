@@ -17,9 +17,13 @@ import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes"
 import { Evening } from "@/types/tournament";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
+import { computeAllTimeStats, computeAllTimeStatsForAll } from "@/services/allTimeStatsService";
+import { generateInsights } from "@/services/insightGenerator";
 import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
+import AllTimeStatsCard from "@/components/spectate/AllTimeStatsCard";
+import InsightCards from "@/components/spectate/InsightCards";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
 import { TIER_LABELS, TIER_EMOJIS, TIER_COLORS, TIER_TEXT, computeTierIndices } from "@/lib/tierRanking";
@@ -178,6 +182,7 @@ export default function Spectate() {
       showRecent={showRecent}
       setShowRecent={setShowRecent}
       isCompleted={!!isCompleted}
+      shareCode={code!}
     />
   );
 }
@@ -195,6 +200,7 @@ interface PersonalizedViewProps {
   showRecent: boolean;
   setShowRecent: (v: boolean) => void;
   isCompleted: boolean;
+  shareCode: string;
 }
 
 function PersonalizedSpectateView({
@@ -202,13 +208,46 @@ function PersonalizedSpectateView({
   bankDrawerOpen, setBankDrawerOpen,
   showUpcoming, setShowUpcoming,
   showRecent, setShowRecent,
-  isCompleted,
+  isCompleted, shareCode,
 }: PersonalizedViewProps) {
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
   const personal = useMemo(
     () => computePersonalStats(evening, selectedPlayerId, playerStats),
     [evening, selectedPlayerId, playerStats]
+  );
+
+  // Fetch historical FP evenings for all-time stats
+  const [fpHistory, setFpHistory] = useState<FPEvening[]>([]);
+  const historyFetched = useRef(false);
+
+  useEffect(() => {
+    if (historyFetched.current) return;
+    historyFetched.current = true;
+    fetch(
+      `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/get-fp-history?code=${encodeURIComponent(shareCode)}`
+    )
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (json?.history) setFpHistory(json.history as FPEvening[]);
+      })
+      .catch(() => {});
+  }, [shareCode]);
+
+  // Compute all-time stats
+  const allTimeStats = useMemo(
+    () => computeAllTimeStats(fpHistory, evening, selectedPlayerId),
+    [fpHistory, evening, selectedPlayerId]
+  );
+
+  const allPlayersAllTime = useMemo(
+    () => computeAllTimeStatsForAll(fpHistory, evening),
+    [fpHistory, evening]
+  );
+
+  const insights = useMemo(
+    () => allTimeStats ? generateInsights(allTimeStats, allPlayersAllTime) : [],
+    [allTimeStats, allPlayersAllTime]
   );
 
   const currentMatch = evening.schedule[evening.currentMatchIndex] ?? null;
@@ -380,8 +419,18 @@ function PersonalizedSpectateView({
           );
         })()}
 
-        {/* ── Section 3: Personal Insights (expandable) ── */}
+        {/* ── Section 3: Personal Insights (current evening) ── */}
         {personal && <PersonalInsights personal={personal} />}
+
+        {/* ── Section 3b: All-Time Stats ── */}
+        {allTimeStats && allTimeStats.eveningsPlayed > 0 && (
+          <AllTimeStatsCard stats={allTimeStats} />
+        )}
+
+        {/* ── Section 3c: Insight Cards ── */}
+        {insights.length > 0 && (
+          <InsightCards insights={insights} />
+        )}
 
         {/* ── Section 4: Progress ── */}
         <Card className="bg-gaming-surface/50 border-border/50 p-2">
