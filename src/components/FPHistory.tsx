@@ -35,6 +35,12 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
 
+function toLocalDatetimeString(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 interface FPHistoryProps {
   onBack: () => void;
 }
