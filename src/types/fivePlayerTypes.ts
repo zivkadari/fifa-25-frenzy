@@ -62,8 +62,9 @@ export interface FPEvening {
   mode: 'five-player-doubles';
   players: Player[];   // exactly 5
   pairs: FPPair[];     // all 10 pairs
-  schedule: FPMatch[]; // 30 matches total (6 rounds × 5 matches)
+  schedule: FPMatch[]; // 15 or 30 matches
   teamBanks: FPTeamBank[]; // 10 banks, one per pair
   currentMatchIndex: number; // index into schedule
   completed: boolean;
+  matchCount?: 15 | 30; // tournament length, defaults to 30 for legacy
 }
