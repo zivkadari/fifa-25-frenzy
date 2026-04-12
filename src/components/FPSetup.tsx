@@ -108,7 +108,9 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
           </Button>
           <div>
             <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
-            <p className="text-xs text-muted-foreground">6 סיבובים • 30 משחקים • 10 זוגות</p>
+            <p className="text-xs text-muted-foreground">
+              {matchCount === 15 ? '3 סיבובים • 15 משחקים • 3 קבוצות לזוג' : '6 סיבובים • 30 משחקים • 6 קבוצות לזוג'}
+            </p>
           </div>
         </div>
 
@@ -214,8 +216,10 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
           <ArrowLeft className="h-5 w-5 rotate-180" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
-          <p className="text-xs text-muted-foreground">6 סיבובים • 30 משחקים • 10 זוגות</p>
+            <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
+            <p className="text-xs text-muted-foreground">
+              {matchCount === 15 ? '3 סיבובים • 15 משחקים • 3 קבוצות לזוג' : '6 סיבובים • 30 משחקים • 6 קבוצות לזוג'}
+            </p>
         </div>
       </div>
 
