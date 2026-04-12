@@ -345,16 +345,20 @@ export function calculatePlayerStats(evening: FPEvening): FPPlayerStats[] {
 
 /**
  * Create a new 5-player doubles evening.
+ * matchCount: 15 (short) or 30 (full, default).
  */
-export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2): FPEvening | string {
+export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2, matchCount: 15 | 30 = 30): FPEvening | string {
   if (players.length !== 5) return 'נדרשים בדיוק 5 שחקנים';
+
+  const cycles = matchCount === 15 ? 1 : 2;
+  const teamsPerTier = matchCount === 15 ? 1 : 2;
 
   // Shuffle player order randomly so setup input order doesn't create schedule bias
   const shuffledPlayers = shuffleArray([...players]);
 
   const pairs = generateAllPairs(shuffledPlayers);
-  const schedule = generateSchedule(shuffledPlayers, pairs);
-  const banksResult = generateTeamBanks(pairs, shuffledPlayers, clubsOverride, maxAppearances);
+  const schedule = generateSchedule(shuffledPlayers, pairs, cycles);
+  const banksResult = generateTeamBanks(pairs, shuffledPlayers, clubsOverride, maxAppearances, teamsPerTier);
 
   if (typeof banksResult === 'string') return banksResult;
 
@@ -368,6 +372,7 @@ export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAp
     teamBanks: banksResult,
     currentMatchIndex: 0,
     completed: false,
+    matchCount,
   };
 }
 
