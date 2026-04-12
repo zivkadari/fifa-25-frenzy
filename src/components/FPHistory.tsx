@@ -141,6 +141,12 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                             <Badge variant="secondary" className="text-[10px]">קצרה</Badge>
                           )}
                         </div>
+                        {ev.durationMinutes ? (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {formatDuration(ev.durationMinutes)}
+                          </p>
+                        ) : null}
                         <p className="text-sm text-muted-foreground">
                           {ev.players.map(p => p.name).join(', ')}
                         </p>
@@ -220,7 +226,38 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                         </TabsContent>
                       </Tabs>
 
-                      {/* Share spectator link */}
+                      {/* Timing info & edit */}
+                      {ev.completed && (
+                        <div className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-3 py-2 border border-border/30">
+                          <div className="text-xs space-y-0.5">
+                            {ev.startedAt && (
+                              <p className="text-muted-foreground">התחלה: <span className="text-foreground">{new Date(ev.startedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                            )}
+                            {ev.completedAt && (
+                              <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                            )}
+                            {ev.durationMinutes ? (
+                              <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(ev.durationMinutes)}</span></p>
+                            ) : (
+                              <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground h-7 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditTimingEvening(ev);
+                              setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
+                              setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+
                       <Button
                         variant="outline"
                         size="sm"
