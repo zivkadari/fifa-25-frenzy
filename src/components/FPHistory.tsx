@@ -303,6 +303,60 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
             );
           })}
         </div>
+
+        {/* Timing Edit Dialog */}
+        <Dialog open={!!editTimingEvening} onOpenChange={(open) => { if (!open) setEditTimingEvening(null); }}>
+          <DialogContent dir="rtl">
+            <DialogHeader>
+              <DialogTitle>עריכת זמני ליגה</DialogTitle>
+              <DialogDescription>הגדר את שעת ההתחלה והסיום של הליגה</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-foreground mb-1 block">שעת התחלה</label>
+                <Input
+                  type="datetime-local"
+                  value={editStartedAt}
+                  onChange={(e) => setEditStartedAt(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-foreground mb-1 block">שעת סיום</label>
+                <Input
+                  type="datetime-local"
+                  value={editCompletedAt}
+                  onChange={(e) => setEditCompletedAt(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setEditTimingEvening(null)}>ביטול</Button>
+              <Button onClick={() => {
+                if (!editTimingEvening) return;
+                const startedAt = editStartedAt ? new Date(editStartedAt).toISOString() : undefined;
+                const completedAt = editCompletedAt ? new Date(editCompletedAt).toISOString() : undefined;
+                const durationMinutes = startedAt && completedAt
+                  ? Math.round((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 60000)
+                  : undefined;
+
+                const updated: FPEvening = {
+                  ...editTimingEvening,
+                  startedAt,
+                  completedAt,
+                  durationMinutes: durationMinutes && durationMinutes > 0 ? durationMinutes : undefined,
+                };
+
+                StorageService.saveFPEvening(updated);
+                RemoteStorageService.upsertEveningLiveWithTeam(updated as any, null).catch(() => {});
+                setEvenings(StorageService.loadFPEvenings());
+                setEditTimingEvening(null);
+                toast({ title: "זמני הליגה עודכנו" });
+              }}>
+                שמור
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
