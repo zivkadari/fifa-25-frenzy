@@ -428,24 +428,8 @@ function PersonalizedSpectateView({
           <InsightCards insights={insights} />
         )}
 
-        {/* ── Timing Card ── */}
-        <FPTimingCard evening={evening} allHistory={fpHistory} />
-
-        {/* ── Section 4: Progress ── */}
-        <Card className="bg-gaming-surface/50 border-border/50 p-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {evening.completed ? "הליגה הסתיימה!" : `משחק ${completedCount + 1} מתוך ${totalMatches}`}
-            </span>
-            <span>{completedCount}/{totalMatches} הושלמו</span>
-          </div>
-          <div className="w-full bg-gaming-surface rounded-full h-1.5 mt-1.5">
-            <div
-              className="bg-neon-green rounded-full h-1.5 transition-all duration-500"
-              style={{ width: `${(completedCount / totalMatches) * 100}%` }}
-            />
-          </div>
-        </Card>
+        {/* ── Timing & Progress Card ── */}
+        <FPTimingCard evening={evening} allHistory={fpHistory} showProgress />
 
         {/* ── Section 5: Standings ── */}
         <Tabs defaultValue="players">
