@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Clock, Timer } from "lucide-react";
-import { FPEvening } from "@/types/fivePlayerTypes";
+import { Clock, Timer, ChevronDown, ChevronUp } from "lucide-react";
+import { FPEvening, FPBlockTiming } from "@/types/fivePlayerTypes";
 
 interface FPTimingCardProps {
   evening: FPEvening;
@@ -10,12 +10,12 @@ interface FPTimingCardProps {
   showProgress?: boolean;
 }
 
-function formatTime(iso: string): string {
+export function formatTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 }
 
-function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes} דק׳`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -31,6 +31,16 @@ function formatDurationFromMs(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Compute block durations from startedAt + block completedAt timestamps */
+function computeBlockDurations(startedAt: string, blockTimings: FPBlockTiming[]): { blockIndex: number; completedAt: string; durationMinutes: number }[] {
+  const sorted = [...blockTimings].sort((a, b) => a.blockIndex - b.blockIndex);
+  return sorted.map((bt, i) => {
+    const prevEnd = i === 0 ? startedAt : sorted[i - 1].completedAt;
+    const dur = Math.round((new Date(bt.completedAt).getTime() - new Date(prevEnd).getTime()) / 60000);
+    return { blockIndex: bt.blockIndex, completedAt: bt.completedAt, durationMinutes: Math.max(0, dur) };
+  });
+}
+
 function estimateFinish(
   evening: FPEvening,
   allHistory: FPEvening[]
@@ -43,7 +53,57 @@ function estimateFinish(
   if (remaining <= 0) return null;
 
   const matchCount = evening.matchCount || 30;
+  const totalBlocks = matchCount / 5;
+  const completedBlocks = Math.floor(completedCount / 5);
 
+  // Try block-level estimation first
+  const completedBlockTimings = evening.blockTimings?.filter(bt => bt.completedAt) || [];
+  
+  if (completedBlocks > 0 && completedBlockTimings.length > 0 && evening.startedAt) {
+    // We have real block data for this tournament — use it for more accurate ETA
+    const blockDurations = computeBlockDurations(evening.startedAt, completedBlockTimings);
+    
+    // Also gather historical block durations for remaining blocks
+    const histPool = allHistory.filter(
+      (e) => e.completed && e.startedAt && e.blockTimings && e.blockTimings.length > 0
+    );
+    const sameLenPool = histPool.filter(e => (e.matchCount || 30) === matchCount);
+    const pool = sameLenPool.length >= 1 ? sameLenPool : histPool;
+
+    const remainingBlocks = totalBlocks - completedBlocks;
+    const matchesInPartialBlock = completedCount % 5;
+    
+    // Average time per block from this tournament's completed blocks
+    const avgThisTournament = blockDurations.reduce((s, b) => s + b.durationMinutes, 0) / blockDurations.length;
+    
+    // Average from history if available
+    let avgHistorical = avgThisTournament;
+    if (pool.length > 0) {
+      const allHistBlockDurs: number[] = [];
+      for (const e of pool) {
+        if (e.startedAt && e.blockTimings) {
+          const durs = computeBlockDurations(e.startedAt, e.blockTimings);
+          durs.forEach(d => allHistBlockDurs.push(d.durationMinutes));
+        }
+      }
+      if (allHistBlockDurs.length > 0) {
+        avgHistorical = allHistBlockDurs.reduce((s, d) => s + d, 0) / allHistBlockDurs.length;
+      }
+    }
+
+    // Weighted: prefer current tournament data (70%) vs history (30%)
+    const avgBlock = avgThisTournament * 0.7 + avgHistorical * 0.3;
+    
+    // Estimate: remaining full blocks + fraction of partial block
+    const partialBlockFraction = matchesInPartialBlock / 5;
+    const remainingMinutes = Math.round((remainingBlocks - partialBlockFraction) * avgBlock + partialBlockFraction * avgBlock);
+    
+    const now = new Date();
+    const estimatedFinish = new Date(now.getTime() + Math.max(0, remainingMinutes) * 60000).toISOString();
+    return { estimatedFinish, remainingMinutes: Math.max(0, remainingMinutes) };
+  }
+
+  // Fallback: tournament-level average from history
   const withTiming = allHistory.filter(
     (e) => e.completed && e.startedAt && e.completedAt && e.durationMinutes && e.durationMinutes > 0
   );
@@ -63,10 +123,34 @@ function estimateFinish(
   return { estimatedFinish, remainingMinutes };
 }
 
+/** Expandable block timing details section */
+function BlockTimingDetails({ evening }: { evening: FPEvening }) {
+  if (!evening.startedAt || !evening.blockTimings || evening.blockTimings.length === 0) return null;
+
+  const blockDurations = computeBlockDurations(evening.startedAt, evening.blockTimings);
+
+  return (
+    <div className="space-y-1 pt-1 border-t border-border/30">
+      <p className="text-[10px] text-muted-foreground font-medium mb-1">פירוט בלוקים</p>
+      {blockDurations.map((b) => (
+        <div key={b.blockIndex} className="flex justify-between text-[11px]">
+          <span className="text-muted-foreground">בלוק {b.blockIndex + 1}</span>
+          <span className="text-foreground">
+            {formatTime(b.completedAt)} <span className="text-muted-foreground">({formatDuration(b.durationMinutes)})</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function FPTimingCard({ evening, allHistory = [], showProgress = false }: FPTimingCardProps) {
   const [now, setNow] = useState(Date.now());
+  const [showDetails, setShowDetails] = useState(false);
 
   const isActive = !evening.completed && !!evening.startedAt;
+
+  const hasBlockTimings = !!evening.blockTimings && evening.blockTimings.length > 0;
 
   // Tick every second for active tournaments
   useEffect(() => {
@@ -105,6 +189,19 @@ export function FPTimingCard({ evening, allHistory = [], showProgress = false }:
             <p className="font-medium text-neon-green">{formatDuration(dur)}</p>
           </div>
         </div>
+
+        {hasBlockTimings && (
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors w-full justify-center pt-1"
+          >
+            {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {showDetails ? "הסתר פירוט בלוקים" : "הצג פירוט בלוקים"}
+          </button>
+        )}
+
+        {showDetails && <BlockTimingDetails evening={evening} />}
+
         {showProgress && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -160,6 +257,18 @@ export function FPTimingCard({ evening, allHistory = [], showProgress = false }:
           )}
         </div>
 
+        {hasBlockTimings && (
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors w-full justify-center pt-1"
+          >
+            {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {showDetails ? "הסתר פירוט בלוקים" : "הצג פירוט בלוקים"}
+          </button>
+        )}
+
+        {showDetails && <BlockTimingDetails evening={evening} />}
+
         {showProgress && (
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -180,5 +289,3 @@ export function FPTimingCard({ evening, allHistory = [], showProgress = false }:
 
   return null;
 }
-
-export { formatTime, formatDuration };
