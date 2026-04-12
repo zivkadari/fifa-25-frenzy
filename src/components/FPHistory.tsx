@@ -43,6 +43,9 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
   const { toast } = useToast();
   const [evenings, setEvenings] = useState<FPEvening[]>([]);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [editTimingEvening, setEditTimingEvening] = useState<FPEvening | null>(null);
+  const [editStartedAt, setEditStartedAt] = useState("");
+  const [editCompletedAt, setEditCompletedAt] = useState("");
 
   useEffect(() => {
     const local = StorageService.loadFPEvenings();
