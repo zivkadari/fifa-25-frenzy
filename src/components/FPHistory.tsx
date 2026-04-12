@@ -50,6 +50,7 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
   const [editTimingEvening, setEditTimingEvening] = useState<FPEvening | null>(null);
   const [editStartedAt, setEditStartedAt] = useState("");
   const [editCompletedAt, setEditCompletedAt] = useState("");
+  const [editBlockTimings, setEditBlockTimings] = useState<string[]>([]);
   const [showTrash, setShowTrash] = useState(false);
   const [trashItems, setTrashItems] = useState<(FPEvening & { deletedAt?: string })[]>([]);
   const [restoringFromCloud, setRestoringFromCloud] = useState(false);
