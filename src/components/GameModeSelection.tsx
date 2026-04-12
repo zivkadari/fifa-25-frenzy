@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Dice1, Users, Trophy, Sparkles } from "lucide-react";
 import { Player, Club } from "@/types/tournament";
+import { StarRating } from "@/components/StarRating";
 import { FIFA_CLUBS } from "@/data/clubs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
