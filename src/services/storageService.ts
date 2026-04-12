@@ -134,7 +134,59 @@ export class StorageService {
   static deleteFPEvening(eveningId: string): void {
     try {
       const existing = this.loadFPEvenings();
+      const toDelete = existing.find(e => e.id === eveningId);
+      if (toDelete) {
+        this.addToFPTrash(toDelete);
+      }
       localStorage.setItem(FP_STORAGE_KEY, JSON.stringify(existing.filter(e => e.id !== eveningId)));
+    } catch {}
+  }
+
+  // --- 5-Player Trash / Recycle Bin ---
+  static loadFPTrash(): FPEvening[] {
+    try {
+      const stored = localStorage.getItem(FP_TRASH_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch { return []; }
+  }
+
+  private static addToFPTrash(evening: FPEvening): void {
+    try {
+      const trash = this.loadFPTrash();
+      // Avoid duplicates in trash
+      if (!trash.find(e => e.id === evening.id)) {
+        trash.push({ ...evening, deletedAt: new Date().toISOString() } as any);
+      }
+      localStorage.setItem(FP_TRASH_KEY, JSON.stringify(trash));
+    } catch {}
+  }
+
+  static restoreFPEvening(eveningId: string): FPEvening | null {
+    try {
+      const trash = this.loadFPTrash();
+      const item = trash.find(e => e.id === eveningId);
+      if (!item) return null;
+      // Remove from trash
+      localStorage.setItem(FP_TRASH_KEY, JSON.stringify(trash.filter(e => e.id !== eveningId)));
+      // Remove deletedAt before restoring
+      const { deletedAt, ...cleaned } = item as any;
+      // Add back to evenings
+      this.saveFPEvening(cleaned as FPEvening);
+      return cleaned as FPEvening;
+    } catch { return null; }
+  }
+
+  static permanentlyDeleteFPEvening(eveningId: string): void {
+    try {
+      const trash = this.loadFPTrash();
+      localStorage.setItem(FP_TRASH_KEY, JSON.stringify(trash.filter(e => e.id !== eveningId)));
+    } catch {}
+  }
+
+  static clearFPTrash(): void {
+    try {
+      localStorage.removeItem(FP_TRASH_KEY);
     } catch {}
   }
 
