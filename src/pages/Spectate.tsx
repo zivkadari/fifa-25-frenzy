@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/drawer";
 import { FPEvening, FPMatch, FPPair, FPTeamBank } from "@/types/fivePlayerTypes";
 import { Evening } from "@/types/tournament";
+import { StarRating, starText } from "@/components/StarRating";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { computePersonalStats, playerInMatch, playerInFPPair } from "@/services/spectatorPersonalStats";
 import { computeAllTimeStats, computeAllTimeStatsForAll } from "@/services/allTimeStatsService";

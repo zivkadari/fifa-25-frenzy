@@ -9,6 +9,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
 import { Evening, Pair, Round } from "@/types/tournament";
+import { StarRating, starText } from "@/components/StarRating";
 import {
   computeCouplesPersonalStats,
   computeCouplesPlayerStandings,
