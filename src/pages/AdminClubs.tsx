@@ -294,16 +294,7 @@ export default function AdminClubs() {
     setSearch("");
   };
 
-  const renderStars = (count: number) => {
-    const fullStars = Math.floor(count);
-    const hasHalf = count % 1 !== 0;
-    return (
-      <span className="text-yellow-400 text-xs">
-        {"★".repeat(fullStars)}
-        {hasHalf && "½"}
-      </span>
-    );
-  };
+  const renderStars = (count: number) => <StarRating stars={count} size="sm" />;
 
   const deletedCount = deletedIds.size;
 

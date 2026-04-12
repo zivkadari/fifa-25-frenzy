@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save, ListOrdered, Share2, Copy, Eye } from "lucide-react";
 import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
+import { StarRating } from "@/components/StarRating";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { useToast } from "@/hooks/use-toast";
 import { FPScheduleReorder } from "@/components/FPScheduleReorder";
@@ -296,15 +297,7 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
   const pairName = (pair: { players: [{ name: string }, { name: string }] }) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
 
-  const renderStars = (stars: number) => {
-    const full = Math.floor(stars);
-    const half = stars % 1 !== 0;
-    return (
-      <span className="text-yellow-400 text-xs">
-        {'★'.repeat(full)}{half ? '☆' : ''}
-      </span>
-    );
-  };
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
 
   const currentStepNum = activeStep === 'teamA' ? 1 : activeStep === 'teamB' ? 2 : 3;
 

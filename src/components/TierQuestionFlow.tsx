@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle, Star } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
 import { Evening, Pair, Club, TierQuestionRoundState } from "@/types/tournament";
 import { TierQuestionPhase } from "@/components/TierQuestionPhase";
 import { getRandomQuestion, getTierConfig, buildTierConfigFromPoolConfig, TierConfigEntry, TriviaQuestion } from "@/data/triviaQuestions";
@@ -220,11 +221,7 @@ export const TierQuestionFlow = ({
     onComplete([pair1Pool, pair2Pool]);
   };
 
-  const renderStars = (count: number) => {
-    return Array.from({ length: Math.floor(count) }).map((_, i) => (
-      <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400 inline-block" />
-    ));
-  };
+  const renderStars = (count: number) => <StarRating stars={count} size="sm" />;
 
   if (!configLoaded) {
     return (
