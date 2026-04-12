@@ -108,7 +108,13 @@ export class StorageService {
   static saveFPEvening(evening: FPEvening): void {
     try {
       const existing = this.loadFPEvenings();
-      localStorage.setItem(FP_STORAGE_KEY, JSON.stringify([...existing, evening]));
+      const index = existing.findIndex(e => e.id === evening.id);
+      if (index >= 0) {
+        existing[index] = { ...existing[index], ...evening };
+      } else {
+        existing.push(evening);
+      }
+      localStorage.setItem(FP_STORAGE_KEY, JSON.stringify(existing));
     } catch (error) {
       console.error('Failed to save FP evening:', error);
     }
