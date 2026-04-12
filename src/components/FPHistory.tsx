@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Calendar, Trophy, Trash2, Share2, Loader2, Clock, Edit2, RotateCcw, Cloud, AlertTriangle } from "lucide-react";
-import { FPEvening } from "@/types/fivePlayerTypes";
+import { FPEvening, FPBlockTiming } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
