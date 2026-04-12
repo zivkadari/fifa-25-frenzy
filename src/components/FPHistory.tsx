@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Trophy, Trash2, Users2, Share2, Loader2, ExternalLink, Clock, Edit2 } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Trash2, Share2, Loader2, Clock, Edit2, RotateCcw, Cloud, AlertTriangle } from "lucide-react";
 import { FPEvening } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
@@ -33,8 +33,6 @@ import {
 } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
-const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
-
 function toLocalDatetimeString(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -52,12 +50,19 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
   const [editTimingEvening, setEditTimingEvening] = useState<FPEvening | null>(null);
   const [editStartedAt, setEditStartedAt] = useState("");
   const [editCompletedAt, setEditCompletedAt] = useState("");
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashItems, setTrashItems] = useState<(FPEvening & { deletedAt?: string })[]>([]);
+  const [restoringFromCloud, setRestoringFromCloud] = useState(false);
+
+  const refreshData = useCallback(() => {
+    setEvenings(StorageService.loadFPEvenings());
+    setTrashItems(StorageService.loadFPTrash() as any);
+  }, []);
 
   useEffect(() => {
-    const local = StorageService.loadFPEvenings();
-    setEvenings(local);
+    refreshData();
     
-    // Auto-sync completed local FP evenings to Supabase
+    const local = StorageService.loadFPEvenings();
     const syncToRemote = async () => {
       const completed = local.filter(e => e.completed);
       for (const ev of completed) {
@@ -67,19 +72,62 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
       }
     };
     syncToRemote();
-  }, []);
+  }, [refreshData]);
 
   const sorted = [...evenings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleDelete = (id: string) => {
     StorageService.deleteFPEvening(id);
-    setEvenings(StorageService.loadFPEvenings());
+    refreshData();
+    toast({ title: "הליגה הועברה לפח" });
   };
+
+  const handleRestore = (id: string) => {
+    const restored = StorageService.restoreFPEvening(id);
+    if (restored) {
+      refreshData();
+      toast({ title: "הליגה שוחזרה בהצלחה!" });
+    }
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    StorageService.permanentlyDeleteFPEvening(id);
+    refreshData();
+    toast({ title: "הליגה נמחקה לצמיתות" });
+  };
+
+  const handleRestoreFromCloud = useCallback(async () => {
+    setRestoringFromCloud(true);
+    try {
+      const remoteEvenings = await RemoteStorageService.loadAllFPEvenings?.();
+      if (!remoteEvenings || remoteEvenings.length === 0) {
+        toast({ title: "לא נמצאו ליגות בענן", variant: "destructive" });
+        return;
+      }
+      const localIds = new Set(StorageService.loadFPEvenings().map(e => e.id));
+      let restored = 0;
+      for (const ev of remoteEvenings) {
+        if (!localIds.has(ev.id) && ev.completed) {
+          StorageService.saveFPEvening(ev);
+          restored++;
+        }
+      }
+      refreshData();
+      if (restored > 0) {
+        toast({ title: `שוחזרו ${restored} ליגות מהענן!` });
+      } else {
+        toast({ title: "כל הליגות מהענן כבר קיימות מקומית" });
+      }
+    } catch {
+      toast({ title: "שגיאה בשחזור מהענן", variant: "destructive" });
+    } finally {
+      setRestoringFromCloud(false);
+    }
+  }, [toast, refreshData]);
 
   const handleShare = useCallback(async (ev: FPEvening) => {
     setSharingId(ev.id);
     try {
-      // Ensure the evening is in Supabase
       await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, null).catch(() => {});
       const code = await RemoteStorageService.getShareCode(ev.id);
       if (!code) {
@@ -109,13 +157,114 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-5 w-5 rotate-180" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">היסטוריית ליגות 5 שחקנים</h1>
             <p className="text-xs text-muted-foreground">{sorted.length} ליגות</p>
           </div>
         </div>
 
-        {sorted.length === 0 && (
+        {/* Action buttons row */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={showTrash ? "default" : "outline"}
+            size="sm"
+            className={showTrash ? "" : "border-border/50"}
+            onClick={() => setShowTrash(!showTrash)}
+          >
+            <Trash2 className="h-3 w-3" />
+            פח ({trashItems.length})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border/50"
+            onClick={handleRestoreFromCloud}
+            disabled={restoringFromCloud}
+          >
+            {restoringFromCloud ? <Loader2 className="h-3 w-3 animate-spin" /> : <Cloud className="h-3 w-3" />}
+            שחזור מהענן
+          </Button>
+        </div>
+
+        {/* Trash section */}
+        {showTrash && (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              <span className="text-sm text-muted-foreground">ליגות שנמחקו</span>
+            </div>
+            {trashItems.length === 0 ? (
+              <Card className="bg-gaming-surface/30 border-border/30 p-4">
+                <p className="text-center text-sm text-muted-foreground">הפח ריק</p>
+              </Card>
+            ) : (
+              <>
+                {trashItems.map(ev => (
+                  <Card key={ev.id} className="bg-gaming-surface/30 border-destructive/20 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(ev.date).toLocaleDateString('he-IL')}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{ev.players.map(p => p.name).join(', ')}</p>
+                        {ev.deletedAt && (
+                          <p className="text-[10px] text-destructive/70 mt-0.5">
+                            נמחק: {new Date(ev.deletedAt).toLocaleDateString('he-IL')}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="outline" size="sm" className="h-7 px-2 text-neon-green border-neon-green/30" onClick={() => handleRestore(ev.id)}>
+                          <RotateCcw className="h-3 w-3" />
+                          שחזר
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>מחיקה לצמיתות?</AlertDialogTitle>
+                              <AlertDialogDescription>פעולה זו לא ניתנת לביטול.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>ביטול</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handlePermanentDelete(ev.id)} className="bg-destructive">מחק לצמיתות</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-destructive w-full text-xs">
+                      רוקן פח
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>רוקן את כל הפח?</AlertDialogTitle>
+                      <AlertDialogDescription>כל הליגות בפח יימחקו לצמיתות.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => { StorageService.clearFPTrash(); refreshData(); toast({ title: "הפח רוקן" }); }} className="bg-destructive">רוקן</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
+        )}
+
+        {sorted.length === 0 && !showTrash && (
           <Card className="bg-gaming-surface/50 border-border/50 p-6">
             <p className="text-center text-muted-foreground">אין היסטוריה עדיין</p>
           </Card>
@@ -287,12 +436,12 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>מחק ליגה?</AlertDialogTitle>
-                            <AlertDialogDescription>פעולה זו לא ניתנת לביטול.</AlertDialogDescription>
+                            <AlertDialogTitle>העבר לפח?</AlertDialogTitle>
+                            <AlertDialogDescription>הליגה תועבר לפח ותוכל לשחזר אותה משם.</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>ביטול</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(ev.id)} className="bg-destructive">מחק</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDelete(ev.id)} className="bg-destructive">העבר לפח</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -348,7 +497,7 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
 
                 StorageService.saveFPEvening(updated);
                 RemoteStorageService.upsertEveningLiveWithTeam(updated as any, null).catch(() => {});
-                setEvenings(StorageService.loadFPEvenings());
+                refreshData();
                 setEditTimingEvening(null);
                 toast({ title: "זמני הליגה עודכנו" });
               }}>
