@@ -410,9 +410,17 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                             className="text-muted-foreground h-7 px-2"
                             onClick={(e) => {
                               e.stopPropagation();
+                              const totalBlocks = (ev.matchCount || 30) / 5;
+                              const existingBT = ev.blockTimings || [];
+                              const blockValues: string[] = [];
+                              for (let i = 0; i < totalBlocks; i++) {
+                                const existing = existingBT.find(bt => bt.blockIndex === i);
+                                blockValues.push(existing ? toLocalDatetimeString(existing.completedAt) : "");
+                              }
                               setEditTimingEvening(ev);
                               setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
                               setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
+                              setEditBlockTimings(blockValues);
                             }}
                           >
                             <Edit2 className="h-3 w-3" />
