@@ -431,8 +431,6 @@ function PersonalizedSpectateView({
           <InsightCards insights={insights} />
         )}
 
-        {/* ── Timing & Progress Card ── */}
-        <FPTimingCard evening={evening} allHistory={fpHistory} showProgress />
 
         {/* ── Section 5: Standings ── */}
         <Tabs defaultValue="players">
