@@ -286,6 +286,9 @@ function PersonalizedSpectateView({
           )}
         </div>
 
+        {/* ── Timing & Progress Card (top) ── */}
+        <FPTimingCard evening={evening} allHistory={fpHistory} showProgress />
+
         {/* ── Section 1: Personal Summary Card ── */}
         {personal && (
           <PersonalSummaryCard personal={personal} onSwitchPlayer={onSwitchPlayer} isCompleted={isCompleted} />
