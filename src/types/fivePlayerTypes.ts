@@ -67,4 +67,7 @@ export interface FPEvening {
   currentMatchIndex: number; // index into schedule
   completed: boolean;
   matchCount?: 15 | 30; // tournament length, defaults to 30 for legacy
+  startedAt?: string;      // ISO timestamp when tournament actually started
+  completedAt?: string;    // ISO timestamp when tournament finished
+  durationMinutes?: number; // calculated from completedAt - startedAt
 }

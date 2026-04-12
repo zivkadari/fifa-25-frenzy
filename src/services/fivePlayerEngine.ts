@@ -362,9 +362,10 @@ export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAp
 
   if (typeof banksResult === 'string') return banksResult;
 
+  const now = new Date().toISOString();
   return {
     id: `fp-evening-${Date.now()}`,
-    date: new Date().toISOString(),
+    date: now,
     mode: 'five-player-doubles',
     players: shuffledPlayers,
     pairs,
@@ -373,6 +374,7 @@ export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAp
     currentMatchIndex: 0,
     completed: false,
     matchCount,
+    startedAt: now,
   };
 }
 
