@@ -397,11 +397,11 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                             {ev.completedAt && (
                               <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
                             )}
-                            {ev.durationMinutes ? (
-                              <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(ev.durationMinutes)}</span></p>
-                            ) : (
+                            {validDuration ? (
+                              <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(validDuration)}</span></p>
+                            ) : !ev.startedAt && !ev.completedAt ? (
                               <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
-                            )}
+                            ) : null}
                           </div>
                           <Button
                             variant="ghost"
