@@ -87,6 +87,20 @@ export class RemoteStorageService {
     return (data || []).map((r: any) => r.data as Evening);
   }
 
+  static async loadAllFPEvenings(): Promise<any[]> {
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from(EVENINGS_TABLE)
+      .select("data")
+      .order("updated_at", { ascending: false });
+    if (error) return [];
+    return (data || [])
+      .map((r: any) => r.data)
+      .filter((d: any) => d && d.mode === 'five-player-doubles');
+  }
+
   static async loadEveningsByTeam(teamId: string): Promise<Evening[]> {
     if (!supabase) return [];
     const { data, error } = await supabase
