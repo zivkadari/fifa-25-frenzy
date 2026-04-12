@@ -428,6 +428,9 @@ function PersonalizedSpectateView({
           <InsightCards insights={insights} />
         )}
 
+        {/* ── Timing Card ── */}
+        <FPTimingCard evening={evening} allHistory={fpHistory} />
+
         {/* ── Section 4: Progress ── */}
         <Card className="bg-gaming-surface/50 border-border/50 p-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
