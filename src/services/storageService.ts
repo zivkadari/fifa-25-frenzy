@@ -6,6 +6,7 @@ const ACTIVE_EVENING_KEY = 'ea-fc-25-active-evening';
 const FP_STORAGE_KEY = 'ea-fc-25-fp-tournaments';
 const FP_ACTIVE_KEY = 'ea-fc-25-fp-active';
 const FP_GROUPS_KEY = 'ea-fc-25-fp-saved-groups';
+const FP_TRASH_KEY = 'ea-fc-25-fp-trash';
 
 export interface FPSavedGroup {
   id: string;
