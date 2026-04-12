@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Trophy, Trash2, Users2, Share2, Loader2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Trash2, Users2, Share2, Loader2, ExternalLink, Clock, Edit2 } from "lucide-react";
 import { FPEvening } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useToast } from "@/hooks/use-toast";
+import { formatDuration } from "@/components/FPTimingCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +23,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
