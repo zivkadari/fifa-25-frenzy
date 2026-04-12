@@ -167,12 +167,18 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
     const nextIndex = currentEvening.currentMatchIndex + 1;
     const isComplete = nextIndex >= totalMatches;
 
+    const completedAt = isComplete ? new Date().toISOString() : undefined;
+    const durationMinutes = isComplete && currentEvening.startedAt && completedAt
+      ? Math.round((new Date(completedAt).getTime() - new Date(currentEvening.startedAt).getTime()) / 60000)
+      : undefined;
+
     const updated: FPEvening = {
       ...currentEvening,
       schedule: updatedSchedule,
       teamBanks: updatedBanks,
       currentMatchIndex: isComplete ? currentEvening.currentMatchIndex : nextIndex,
       completed: isComplete,
+      ...(completedAt ? { completedAt, durationMinutes } : {}),
     };
 
     setShowSaved(true);
