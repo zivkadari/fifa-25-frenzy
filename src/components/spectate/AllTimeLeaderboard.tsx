@@ -88,7 +88,8 @@ export default function AllTimeLeaderboard({ allPlayersStats, selectedPlayerId }
         type="single"
         value={metric}
         onValueChange={(v) => v && setMetric(v as Metric)}
-        className="flex flex-wrap gap-1 direction-rtl"
+        className="flex flex-wrap gap-1"
+        dir="rtl"
       >
         {METRIC_OPTIONS.map((opt) => (
           <ToggleGroupItem
