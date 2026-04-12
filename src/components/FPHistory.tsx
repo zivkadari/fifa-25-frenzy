@@ -277,6 +277,12 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
             const topPair = pairStats[0];
             const completedCount = ev.schedule.filter(m => m.completed).length;
             const isSharing = sharingId === ev.id;
+            const effectiveDuration = ev.durationMinutes || (
+              ev.startedAt && ev.completedAt
+                ? Math.round((new Date(ev.completedAt).getTime() - new Date(ev.startedAt).getTime()) / 60000)
+                : undefined
+            );
+            const validDuration = effectiveDuration && effectiveDuration > 0 ? effectiveDuration : undefined;
 
             return (
               <Collapsible key={ev.id}>
@@ -296,10 +302,10 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                             <Badge variant="secondary" className="text-[10px]">קצרה</Badge>
                           )}
                         </div>
-                        {ev.durationMinutes ? (
+                        {validDuration ? (
                           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
-                            {formatDuration(ev.durationMinutes)}
+                            {formatDuration(validDuration)}
                           </p>
                         ) : null}
                         <p className="text-sm text-muted-foreground">
