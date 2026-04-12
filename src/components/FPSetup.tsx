@@ -9,7 +9,7 @@ import { StorageService, FPSavedGroup } from "@/services/storageService";
 
 interface FPSetupProps {
   onBack: () => void;
-  onStart: (players: Player[]) => void;
+  onStart: (players: Player[], matchCount: 15 | 30) => void;
   savedPlayers?: Player[];
 }
 
@@ -23,6 +23,7 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
       ? savedPlayers
       : Array.from({ length: 5 }, (_, i) => ({ id: `player-${Date.now()}-${i}`, name: '' }))
   );
+  const [matchCount, setMatchCount] = useState<15 | 30>(30);
   const [savedGroups, setSavedGroups] = useState<FPSavedGroup[]>([]);
   const [groupName, setGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
       return;
     }
     const cleaned = players.map(p => ({ ...p, name: p.name.trim() }));
-    onStart(cleaned);
+    onStart(cleaned, matchCount);
   };
 
   const handleSaveGroup = () => {
