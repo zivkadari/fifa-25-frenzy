@@ -24,6 +24,7 @@ import PlayerPicker from "@/components/spectate/PlayerPicker";
 import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
 import AllTimeStatsCard from "@/components/spectate/AllTimeStatsCard";
+import AllTimeLeaderboard from "@/components/spectate/AllTimeLeaderboard";
 import InsightCards from "@/components/spectate/InsightCards";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
@@ -414,6 +415,11 @@ function PersonalizedSpectateView({
         {/* ── Section 3b: All-Time Stats ── */}
         {allTimeStats && allTimeStats.eveningsPlayed > 0 && (
           <AllTimeStatsCard stats={allTimeStats} />
+        )}
+
+        {/* ── Section 3b2: All-Time Leaderboard ── */}
+        {allPlayersAllTime.size > 0 && (
+          <AllTimeLeaderboard allPlayersStats={allPlayersAllTime} selectedPlayerId={selectedPlayerId} />
         )}
 
         {/* ── Section 3c: Insight Cards ── */}
