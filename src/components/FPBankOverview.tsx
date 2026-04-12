@@ -37,6 +37,7 @@ export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdate
   const pairName = (pair: FPPair) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
 
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
   const renderStarsText = (stars: number) => starText(stars);
 
   // --- First cycle = matches 0-14 (15 matches) ---

@@ -40,6 +40,7 @@ export default function CouplesSpectateView({ evening, selectedPlayerId, onSwitc
   const totalMatches = (evening.rounds || []).reduce((sum, r) => sum + r.matches.length, 0);
   const completedMatches = (evening.rounds || []).reduce((sum, r) => sum + r.matches.filter(m => m.completed).length, 0);
 
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
   const renderStarsText = (stars: number) => starText(stars);
 
   // Collect all completed matches for results

@@ -248,6 +248,7 @@ function PersonalizedSpectateView({
   const pairName = (pair: FPPair) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
 
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
   const renderStarsText = (stars: number) => starText(stars);
 
   const isMyMatch = (m: FPMatch) => playerInMatch(selectedPlayerId, m);
