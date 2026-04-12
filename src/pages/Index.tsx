@@ -382,6 +382,10 @@ const handleGoHome = () => {
   };
 
   const handleCloseTournament = () => {
+    // Delete remote record so spectator link doesn't show stale cancelled tournament
+    if (currentEvening?.id) {
+      RemoteStorageService.deleteEvening(currentEvening.id).catch(() => {});
+    }
     clearActiveEvening();
     setCurrentEvening(null);
   };
@@ -429,7 +433,12 @@ const handleGoHome = () => {
             }
             onCloseTournament={
               fpEvening && !fpEvening.completed
-                ? () => { StorageService.clearFPActive(); setFpEvening(null); }
+                ? () => {
+                    // Delete remote record so spectator link doesn't show stale cancelled tournament
+                    RemoteStorageService.deleteEvening(fpEvening.id).catch(() => {});
+                    StorageService.clearFPActive();
+                    setFpEvening(null);
+                  }
                 : currentEvening && !currentEvening.completed
                   ? handleCloseTournament
                   : undefined

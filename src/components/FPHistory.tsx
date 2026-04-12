@@ -79,6 +79,8 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
 
   const handleDelete = (id: string) => {
     StorageService.deleteFPEvening(id);
+    // Also delete from remote so spectator link is cleaned up
+    RemoteStorageService.deleteEvening(id).catch(() => {});
     refreshData();
     toast({ title: "הליגה הועברה לפח" });
   };
@@ -93,6 +95,8 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
 
   const handlePermanentDelete = (id: string) => {
     StorageService.permanentlyDeleteFPEvening(id);
+    // Also permanently delete from remote
+    RemoteStorageService.deleteEvening(id).catch(() => {});
     refreshData();
     toast({ title: "הליגה נמחקה לצמיתות" });
   };
