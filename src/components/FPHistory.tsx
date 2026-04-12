@@ -470,10 +470,10 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
 
         {/* Timing Edit Dialog */}
         <Dialog open={!!editTimingEvening} onOpenChange={(open) => { if (!open) setEditTimingEvening(null); }}>
-          <DialogContent dir="rtl">
+          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>עריכת זמני ליגה</DialogTitle>
-              <DialogDescription>הגדר את שעת ההתחלה והסיום של הליגה</DialogDescription>
+              <DialogDescription>הגדר את שעת ההתחלה, הסיום וזמני סיום הבלוקים</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -492,6 +492,43 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                   onChange={(e) => setEditCompletedAt(e.target.value)}
                 />
               </div>
+
+              {/* Block end times */}
+              <div className="space-y-2">
+                <label className="text-sm text-foreground font-medium block">זמני סיום בלוקים</label>
+                <p className="text-[10px] text-muted-foreground">כל בלוק = 5 משחקים. הזן את שעת הסיום של כל בלוק.</p>
+                {editBlockTimings.map((val, i) => {
+                  // Compute block duration if possible
+                  let blockDurLabel = "";
+                  if (val) {
+                    const prevEnd = i === 0
+                      ? (editStartedAt ? new Date(editStartedAt).getTime() : null)
+                      : (editBlockTimings[i - 1] ? new Date(editBlockTimings[i - 1]).getTime() : null);
+                    if (prevEnd) {
+                      const dur = Math.round((new Date(val).getTime() - prevEnd) / 60000);
+                      if (dur > 0) blockDurLabel = `(${formatDuration(dur)})`;
+                    }
+                  }
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-16 shrink-0">בלוק {i + 1}</span>
+                      <Input
+                        type="datetime-local"
+                        value={val}
+                        onChange={(e) => {
+                          const updated = [...editBlockTimings];
+                          updated[i] = e.target.value;
+                          setEditBlockTimings(updated);
+                        }}
+                        className="flex-1"
+                      />
+                      {blockDurLabel && (
+                        <span className="text-[10px] text-neon-green whitespace-nowrap">{blockDurLabel}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setEditTimingEvening(null)}>ביטול</Button>
@@ -503,11 +540,20 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                   ? Math.round((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 60000)
                   : undefined;
 
+                // Build blockTimings from inputs
+                const blockTimings: FPBlockTiming[] = [];
+                editBlockTimings.forEach((val, i) => {
+                  if (val) {
+                    blockTimings.push({ blockIndex: i, completedAt: new Date(val).toISOString() });
+                  }
+                });
+
                 const updated: FPEvening = {
                   ...editTimingEvening,
                   startedAt,
                   completedAt,
                   durationMinutes: durationMinutes && durationMinutes > 0 ? durationMinutes : undefined,
+                  blockTimings: blockTimings.length > 0 ? blockTimings : undefined,
                 };
 
                 StorageService.saveFPEvening(updated);
