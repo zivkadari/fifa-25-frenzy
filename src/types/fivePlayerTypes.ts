@@ -48,6 +48,12 @@ export interface FPPlayerStats {
   points: number;
 }
 
+/** Block timing: when each block of 5 matches was completed */
+export interface FPBlockTiming {
+  blockIndex: number;       // 0-based (0–2 for 15-match, 0–5 for 30-match)
+  completedAt: string;      // ISO timestamp
+}
+
 /** The team bank for one pair (6 clubs: 2×5★, 2×4.5★, 2×4★) */
 export interface FPTeamBank {
   pairId: string;
@@ -70,4 +76,5 @@ export interface FPEvening {
   startedAt?: string;      // ISO timestamp when tournament actually started
   completedAt?: string;    // ISO timestamp when tournament finished
   durationMinutes?: number; // calculated from completedAt - startedAt
+  blockTimings?: FPBlockTiming[]; // per-block completion timestamps
 }

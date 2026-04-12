@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Calendar, Trophy, Trash2, Share2, Loader2, Clock, Edit2, RotateCcw, Cloud, AlertTriangle } from "lucide-react";
-import { FPEvening } from "@/types/fivePlayerTypes";
+import { FPEvening, FPBlockTiming } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
 import { RemoteStorageService } from "@/services/remoteStorageService";
@@ -50,6 +50,7 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
   const [editTimingEvening, setEditTimingEvening] = useState<FPEvening | null>(null);
   const [editStartedAt, setEditStartedAt] = useState("");
   const [editCompletedAt, setEditCompletedAt] = useState("");
+  const [editBlockTimings, setEditBlockTimings] = useState<string[]>([]);
   const [showTrash, setShowTrash] = useState(false);
   const [trashItems, setTrashItems] = useState<(FPEvening & { deletedAt?: string })[]>([]);
   const [restoringFromCloud, setRestoringFromCloud] = useState(false);
@@ -388,36 +389,71 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                       </Tabs>
 
                       {/* Timing info & edit */}
-                      {ev.completed && (
-                        <div className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-3 py-2 border border-border/30">
-                          <div className="text-xs space-y-0.5">
-                            {ev.startedAt && (
-                              <p className="text-muted-foreground">התחלה: <span className="text-foreground">{new Date(ev.startedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                      {ev.completed && (() => {
+                        // Compute block durations for display
+                        const blockDurations = ev.startedAt && ev.blockTimings && ev.blockTimings.length > 0
+                          ? [...ev.blockTimings].sort((a, b) => a.blockIndex - b.blockIndex).map((bt, i, arr) => {
+                              const prevEnd = i === 0 ? ev.startedAt! : arr[i - 1].completedAt;
+                              const dur = Math.round((new Date(bt.completedAt).getTime() - new Date(prevEnd).getTime()) / 60000);
+                              return { blockIndex: bt.blockIndex, completedAt: bt.completedAt, durationMinutes: Math.max(0, dur) };
+                            })
+                          : null;
+
+                        return (
+                          <div className="bg-gaming-surface/40 rounded-lg px-3 py-2 border border-border/30 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs space-y-0.5">
+                                {ev.startedAt && (
+                                  <p className="text-muted-foreground">התחלה: <span className="text-foreground">{new Date(ev.startedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                                )}
+                                {ev.completedAt && (
+                                  <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                                )}
+                                {validDuration ? (
+                                  <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(validDuration)}</span></p>
+                                ) : !ev.startedAt && !ev.completedAt ? (
+                                  <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
+                                ) : null}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground h-7 px-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const totalBlocks = (ev.matchCount || 30) / 5;
+                                  const existingBT = ev.blockTimings || [];
+                                  const blockValues: string[] = [];
+                                  for (let i = 0; i < totalBlocks; i++) {
+                                    const existing = existingBT.find(bt => bt.blockIndex === i);
+                                    blockValues.push(existing ? toLocalDatetimeString(existing.completedAt) : "");
+                                  }
+                                  setEditTimingEvening(ev);
+                                  setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
+                                  setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
+                                  setEditBlockTimings(blockValues);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            {blockDurations && blockDurations.length > 0 && (
+                              <div className="border-t border-border/30 pt-1.5 space-y-0.5">
+                                <p className="text-[10px] text-muted-foreground font-medium">פירוט בלוקים</p>
+                                {blockDurations.map(b => (
+                                  <div key={b.blockIndex} className="flex justify-between text-[11px]">
+                                    <span className="text-muted-foreground">בלוק {b.blockIndex + 1}</span>
+                                    <span className="text-foreground">
+                                      {new Date(b.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                                      <span className="text-muted-foreground mr-1">({formatDuration(b.durationMinutes)})</span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             )}
-                            {ev.completedAt && (
-                              <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
-                            )}
-                            {validDuration ? (
-                              <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(validDuration)}</span></p>
-                            ) : !ev.startedAt && !ev.completedAt ? (
-                              <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
-                            ) : null}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground h-7 px-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditTimingEvening(ev);
-                              setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
-                              setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
-                            }}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       <Button
                         variant="outline"
@@ -461,10 +497,10 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
 
         {/* Timing Edit Dialog */}
         <Dialog open={!!editTimingEvening} onOpenChange={(open) => { if (!open) setEditTimingEvening(null); }}>
-          <DialogContent dir="rtl">
+          <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>עריכת זמני ליגה</DialogTitle>
-              <DialogDescription>הגדר את שעת ההתחלה והסיום של הליגה</DialogDescription>
+              <DialogDescription>הגדר את שעת ההתחלה, הסיום וזמני סיום הבלוקים</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -483,6 +519,43 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                   onChange={(e) => setEditCompletedAt(e.target.value)}
                 />
               </div>
+
+              {/* Block end times */}
+              <div className="space-y-2">
+                <label className="text-sm text-foreground font-medium block">זמני סיום בלוקים</label>
+                <p className="text-[10px] text-muted-foreground">כל בלוק = 5 משחקים. הזן את שעת הסיום של כל בלוק.</p>
+                {editBlockTimings.map((val, i) => {
+                  // Compute block duration if possible
+                  let blockDurLabel = "";
+                  if (val) {
+                    const prevEnd = i === 0
+                      ? (editStartedAt ? new Date(editStartedAt).getTime() : null)
+                      : (editBlockTimings[i - 1] ? new Date(editBlockTimings[i - 1]).getTime() : null);
+                    if (prevEnd) {
+                      const dur = Math.round((new Date(val).getTime() - prevEnd) / 60000);
+                      if (dur > 0) blockDurLabel = `(${formatDuration(dur)})`;
+                    }
+                  }
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-16 shrink-0">בלוק {i + 1}</span>
+                      <Input
+                        type="datetime-local"
+                        value={val}
+                        onChange={(e) => {
+                          const updated = [...editBlockTimings];
+                          updated[i] = e.target.value;
+                          setEditBlockTimings(updated);
+                        }}
+                        className="flex-1"
+                      />
+                      {blockDurLabel && (
+                        <span className="text-[10px] text-neon-green whitespace-nowrap">{blockDurLabel}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setEditTimingEvening(null)}>ביטול</Button>
@@ -494,11 +567,20 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                   ? Math.round((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 60000)
                   : undefined;
 
+                // Build blockTimings from inputs
+                const blockTimings: FPBlockTiming[] = [];
+                editBlockTimings.forEach((val, i) => {
+                  if (val) {
+                    blockTimings.push({ blockIndex: i, completedAt: new Date(val).toISOString() });
+                  }
+                });
+
                 const updated: FPEvening = {
                   ...editTimingEvening,
                   startedAt,
                   completedAt,
                   durationMinutes: durationMinutes && durationMinutes > 0 ? durationMinutes : undefined,
+                  blockTimings: blockTimings.length > 0 ? blockTimings : undefined,
                 };
 
                 StorageService.saveFPEvening(updated);
