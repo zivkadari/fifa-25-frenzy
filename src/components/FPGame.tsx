@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Home, Trophy, Users, Check, ChevronDown, Edit2, X, Save, ListOrdered, Share2, Copy, Eye } from "lucide-react";
-import { FPEvening, FPTeamBank, FPMatch, FPPair } from "@/types/fivePlayerTypes";
+import { FPEvening, FPTeamBank, FPMatch, FPPair, FPBlockTiming } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
 import { StarRating } from "@/components/StarRating";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
@@ -173,12 +173,23 @@ export const FPGame = ({ evening, onBack, onComplete, onGoHome, onUpdateEvening 
       ? Math.round((new Date(completedAt).getTime() - new Date(currentEvening.startedAt).getTime()) / 60000)
       : undefined;
 
+    // Auto-capture block timing: each block = 5 matches
+    let blockTimings = currentEvening.blockTimings ? [...currentEvening.blockTimings] : [];
+    const completedMatchCount = updatedSchedule.filter(m => m.completed).length;
+    if (completedMatchCount > 0 && completedMatchCount % 5 === 0) {
+      const blockIndex = (completedMatchCount / 5) - 1;
+      if (!blockTimings.find(bt => bt.blockIndex === blockIndex)) {
+        blockTimings.push({ blockIndex, completedAt: new Date().toISOString() });
+      }
+    }
+
     const updated: FPEvening = {
       ...currentEvening,
       schedule: updatedSchedule,
       teamBanks: updatedBanks,
       currentMatchIndex: isComplete ? currentEvening.currentMatchIndex : nextIndex,
       completed: isComplete,
+      blockTimings,
       ...(completedAt ? { completedAt, durationMinutes } : {}),
     };
 
