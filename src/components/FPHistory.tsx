@@ -389,44 +389,71 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                       </Tabs>
 
                       {/* Timing info & edit */}
-                      {ev.completed && (
-                        <div className="flex items-center justify-between bg-gaming-surface/40 rounded-lg px-3 py-2 border border-border/30">
-                          <div className="text-xs space-y-0.5">
-                            {ev.startedAt && (
-                              <p className="text-muted-foreground">התחלה: <span className="text-foreground">{new Date(ev.startedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                      {ev.completed && (() => {
+                        // Compute block durations for display
+                        const blockDurations = ev.startedAt && ev.blockTimings && ev.blockTimings.length > 0
+                          ? [...ev.blockTimings].sort((a, b) => a.blockIndex - b.blockIndex).map((bt, i, arr) => {
+                              const prevEnd = i === 0 ? ev.startedAt! : arr[i - 1].completedAt;
+                              const dur = Math.round((new Date(bt.completedAt).getTime() - new Date(prevEnd).getTime()) / 60000);
+                              return { blockIndex: bt.blockIndex, completedAt: bt.completedAt, durationMinutes: Math.max(0, dur) };
+                            })
+                          : null;
+
+                        return (
+                          <div className="bg-gaming-surface/40 rounded-lg px-3 py-2 border border-border/30 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs space-y-0.5">
+                                {ev.startedAt && (
+                                  <p className="text-muted-foreground">התחלה: <span className="text-foreground">{new Date(ev.startedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                                )}
+                                {ev.completedAt && (
+                                  <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
+                                )}
+                                {validDuration ? (
+                                  <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(validDuration)}</span></p>
+                                ) : !ev.startedAt && !ev.completedAt ? (
+                                  <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
+                                ) : null}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground h-7 px-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const totalBlocks = (ev.matchCount || 30) / 5;
+                                  const existingBT = ev.blockTimings || [];
+                                  const blockValues: string[] = [];
+                                  for (let i = 0; i < totalBlocks; i++) {
+                                    const existing = existingBT.find(bt => bt.blockIndex === i);
+                                    blockValues.push(existing ? toLocalDatetimeString(existing.completedAt) : "");
+                                  }
+                                  setEditTimingEvening(ev);
+                                  setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
+                                  setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
+                                  setEditBlockTimings(blockValues);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            {blockDurations && blockDurations.length > 0 && (
+                              <div className="border-t border-border/30 pt-1.5 space-y-0.5">
+                                <p className="text-[10px] text-muted-foreground font-medium">פירוט בלוקים</p>
+                                {blockDurations.map(b => (
+                                  <div key={b.blockIndex} className="flex justify-between text-[11px]">
+                                    <span className="text-muted-foreground">בלוק {b.blockIndex + 1}</span>
+                                    <span className="text-foreground">
+                                      {new Date(b.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                                      <span className="text-muted-foreground mr-1">({formatDuration(b.durationMinutes)})</span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             )}
-                            {ev.completedAt && (
-                              <p className="text-muted-foreground">סיום: <span className="text-foreground">{new Date(ev.completedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span></p>
-                            )}
-                            {validDuration ? (
-                              <p className="text-muted-foreground">משך: <span className="text-neon-green font-medium">{formatDuration(validDuration)}</span></p>
-                            ) : !ev.startedAt && !ev.completedAt ? (
-                              <p className="text-muted-foreground text-[10px]">לא הוגדרו זמנים</p>
-                            ) : null}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground h-7 px-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const totalBlocks = (ev.matchCount || 30) / 5;
-                              const existingBT = ev.blockTimings || [];
-                              const blockValues: string[] = [];
-                              for (let i = 0; i < totalBlocks; i++) {
-                                const existing = existingBT.find(bt => bt.blockIndex === i);
-                                blockValues.push(existing ? toLocalDatetimeString(existing.completedAt) : "");
-                              }
-                              setEditTimingEvening(ev);
-                              setEditStartedAt(ev.startedAt ? toLocalDatetimeString(ev.startedAt) : toLocalDatetimeString(ev.date));
-                              setEditCompletedAt(ev.completedAt ? toLocalDatetimeString(ev.completedAt) : "");
-                              setEditBlockTimings(blockValues);
-                            }}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       <Button
                         variant="outline"
