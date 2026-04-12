@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { FIFA_CLUBS, invalidateClubOverridesCache } from "@/data/clubs";
 import { Club } from "@/types/tournament";
+import { StarRating } from "@/components/StarRating";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -294,16 +295,7 @@ export default function AdminClubs() {
     setSearch("");
   };
 
-  const renderStars = (count: number) => {
-    const fullStars = Math.floor(count);
-    const hasHalf = count % 1 !== 0;
-    return (
-      <span className="text-yellow-400 text-xs">
-        {"★".repeat(fullStars)}
-        {hasHalf && "½"}
-      </span>
-    );
-  };
+  const renderStars = (count: number) => <StarRating stars={count} size="sm" />;
 
   const deletedCount = deletedIds.size;
 

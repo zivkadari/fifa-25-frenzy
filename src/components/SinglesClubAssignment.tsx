@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Users, Trophy, Star, RefreshCw, Copy } from "lucide-react";
+import { ArrowLeft, Users, Trophy, RefreshCw, Copy } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
 import { Player, Club } from "@/types/tournament";
 import { toast } from "sonner";
 
@@ -194,17 +195,7 @@ export const SinglesClubAssignment = ({
                         </Tooltip>
                       </TooltipProvider>
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: Math.floor(getDisplayStars(club)) }).map((_, i) => (
-                            <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
-                          ))}
-                          {getDisplayStars(club) % 1 !== 0 && (
-                            <div className="relative h-3 w-3">
-                              <Star className="h-3 w-3 text-neon-green absolute" />
-                              <Star className="h-3 w-3 fill-neon-green text-neon-green absolute" style={{ clipPath: 'inset(0 50% 0 0)' }} />
-                            </div>
-                          )}
-                        </div>
+                        <StarRating stars={getDisplayStars(club)} size="sm" neonGreen />
                         <Button
                           variant="outline"
                           size="sm"
@@ -322,9 +313,7 @@ export const SinglesClubAssignment = ({
                               <div className="flex items-center gap-2">
                                 <span>{club.name}</span>
                                 <div className="flex items-center gap-1">
-                                  {Array.from({ length: Math.floor(getDisplayStars(club)) }).map((_, i) => (
-                                    <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
-                                  ))}
+                                  <StarRating stars={getDisplayStars(club)} size="sm" neonGreen />
                                 </div>
                               </div>
                             </SelectItem>

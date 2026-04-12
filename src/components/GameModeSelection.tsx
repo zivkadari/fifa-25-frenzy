@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Dice1, Users, Trophy, Sparkles } from "lucide-react";
 import { Player, Club } from "@/types/tournament";
+import { StarRating } from "@/components/StarRating";
 import { FIFA_CLUBS } from "@/data/clubs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,12 +174,7 @@ export const GameModeSelection = ({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">{team.league}</span>
                         <span className="font-semibold text-foreground">{team.name}</span>
-                        <div className="flex">
-                          {Array.from({ length: Math.floor(team.stars) }, (_, i) => (
-                            <span key={i} className="text-yellow-400">★</span>
-                          ))}
-                          {team.stars % 1 !== 0 && <span className="text-yellow-400">☆</span>}
-                        </div>
+                        <StarRating stars={team.stars} size="sm" />
                       </div>
                     </div>
                   ))}

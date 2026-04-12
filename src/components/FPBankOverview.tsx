@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Copy, Check, Play, Edit2, ArrowLeftRight, X, AlertCircle } from "lucide-react";
 import { FPEvening, FPTeamBank, FPPair } from "@/types/fivePlayerTypes";
 import { Club } from "@/types/tournament";
+import { StarRating, starText } from "@/components/StarRating";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -36,11 +37,8 @@ export const FPBankOverview = ({ evening, allClubs, onContinue, onBack, onUpdate
   const pairName = (pair: FPPair) =>
     `${pair.players[0].name} & ${pair.players[1].name}`;
 
-  const renderStars = (stars: number) => {
-    const full = Math.floor(stars);
-    const half = stars % 1 !== 0;
-    return '★'.repeat(full) + (half ? '☆' : '');
-  };
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
+  const renderStarsText = (stars: number) => starText(stars);
 
   // --- First cycle = matches 0-14 (15 matches) ---
   const firstCycle = evening.schedule.filter(m => m.globalIndex < 15);

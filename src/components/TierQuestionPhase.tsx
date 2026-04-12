@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Star, Trophy, AlertCircle, RefreshCw } from "lucide-react";
+import { Trophy, AlertCircle, RefreshCw } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
 import { Club, Pair } from "@/types/tournament";
 import { TriviaQuestion } from "@/data/triviaQuestions";
 
@@ -81,11 +82,7 @@ export const TierQuestionPhase = ({
   const dist1 = Math.abs(pair1Guess - question.correct_answer);
   const dist2 = Math.abs(pair2Guess - question.correct_answer);
 
-  const renderStars = (count: number) => {
-    return Array.from({ length: Math.floor(count) }).map((_, i) => (
-      <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-    ));
-  };
+  const renderStars = (count: number) => <StarRating stars={count} size="sm" />;
 
   return (
     <div className="space-y-4" dir="rtl">

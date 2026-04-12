@@ -9,6 +9,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
 import { Evening, Pair, Round } from "@/types/tournament";
+import { StarRating, starText } from "@/components/StarRating";
 import {
   computeCouplesPersonalStats,
   computeCouplesPlayerStandings,
@@ -40,11 +41,8 @@ export default function CouplesSpectateView({ evening, selectedPlayerId, onSwitc
   const totalMatches = (evening.rounds || []).reduce((sum, r) => sum + r.matches.length, 0);
   const completedMatches = (evening.rounds || []).reduce((sum, r) => sum + r.matches.filter(m => m.completed).length, 0);
 
-  const renderStars = (stars: number) => {
-    const full = Math.floor(stars);
-    const half = stars % 1 !== 0;
-    return "★".repeat(full) + (half ? "☆" : "");
-  };
+  const renderStars = (stars: number) => <StarRating stars={stars} size="xs" />;
+  const renderStarsText = (stars: number) => starText(stars);
 
   // Collect all completed matches for results
   const allResults: { match: typeof evening.rounds[0]['matches'][0]; round: Round; matchIndex: number }[] = [];
