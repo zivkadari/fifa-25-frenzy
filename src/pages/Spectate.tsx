@@ -25,6 +25,7 @@ import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
 import AllTimeStatsCard from "@/components/spectate/AllTimeStatsCard";
 import AllTimeLeaderboard from "@/components/spectate/AllTimeLeaderboard";
+import { FPTimingCard } from "@/components/FPTimingCard";
 import InsightCards from "@/components/spectate/InsightCards";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
@@ -426,6 +427,9 @@ function PersonalizedSpectateView({
         {insights.length > 0 && (
           <InsightCards insights={insights} />
         )}
+
+        {/* ── Timing Card ── */}
+        <FPTimingCard evening={evening} allHistory={fpHistory} />
 
         {/* ── Section 4: Progress ── */}
         <Card className="bg-gaming-surface/50 border-border/50 p-2">
