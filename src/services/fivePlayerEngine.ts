@@ -32,13 +32,10 @@ function getThreePairings(active: Player[]): [Player, Player, Player, Player][] 
 }
 
 /**
- * Generate the full 30-match schedule: 2 cycles × 15 matches.
- * Each cycle = 3 blocks of 5 matches.
- * Within every 5-match block, match slot i always has the same player sitting out.
- * Across the 3 blocks in a cycle, the pairing rotates through the 3 valid groupings.
- * The second cycle repeats the same rotation.
+ * Generate the match schedule.
+ * cycles=1 → 15 matches (1 cycle), cycles=2 → 30 matches (2 cycles).
  */
-export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] {
+export function generateSchedule(players: Player[], pairs: FPPair[], cycles: number = 2): FPMatch[] {
   const pairLookup = new Map<string, FPPair>();
   for (const p of pairs) {
     const key1 = `${p.players[0].id}-${p.players[1].id}`;
@@ -58,9 +55,6 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
     slotPairings.push(getThreePairings(active));
   }
 
-  // Find a permutation of pairing indices [0,1,2] per slot such that
-  // each block of 5 matches covers all 10 unique pairs exactly once.
-  // We try all 3^5 = 243 combinations for block 0, then derive blocks 1 and 2 by rotation.
   const allPairIds = new Set(pairs.map(p => p.id));
 
   function getPairIdsForBlock(pairingIndices: number[]): Set<string> {
@@ -79,14 +73,9 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
     return true;
   }
 
-  // Find a valid assignment: for each block, pick pairing index per slot
-  // such that all 3 blocks cover all 10 pairs, and each slot rotates through all 3 pairings.
-  // Since each slot must use each pairing index exactly once across the 3 blocks,
-  // we need a permutation offset per slot: block b -> pairingIndex = (offset[slot] + b) % 3
   let offsets: number[] = [0, 0, 0, 0, 0];
   let found = false;
 
-  // Try all 3^5 = 243 offset combinations
   for (let o0 = 0; o0 < 3 && !found; o0++) {
     for (let o1 = 0; o1 < 3 && !found; o1++) {
       for (let o2 = 0; o2 < 3 && !found; o2++) {
@@ -137,6 +126,10 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
     }
   }
 
+  if (cycles === 1) {
+    return cycle1;
+  }
+
   // Cycle 2 is an exact repeat of cycle 1
   const cycle2: FPMatch[] = cycle1.map(m => ({
     ...m,
@@ -150,7 +143,9 @@ export function generateSchedule(players: Player[], pairs: FPPair[]): FPMatch[] 
 
 /**
  * Generate team banks for all 10 pairs.
- * Each pair gets exactly 6 clubs: 2×5★, 2×4.5★, 2×4★.
+ * teamsPerTier controls how many clubs per star tier each pair gets:
+ *   - 15-match: 1 per tier (3 total)
+ *   - 30-match: 2 per tier (6 total)
  * Constraints:
  *  - 5★ teams may appear at most `maxAppearances` times (default 2)
  *  - 4.5★ and 4★ teams may appear at most once
@@ -160,7 +155,8 @@ export function generateTeamBanks(
   pairs: FPPair[],
   players: Player[],
   clubsOverride?: Club[],
-  maxAppearances: number = 2
+  maxAppearances: number = 2,
+  teamsPerTier: number = 2
 ): FPTeamBank[] | string {
   const allClubs = clubsOverride || FIFA_CLUBS;
   
@@ -174,10 +170,11 @@ export function generateTeamBanks(
   const max45 = 1;
   const max4 = 1;
 
-  // We need 10 pairs × 2 teams per tier = 20 slots per tier
-  const minNeeded5 = Math.ceil(20 / max5);
-  const minNeeded45 = Math.ceil(20 / max45);
-  const minNeeded4 = Math.ceil(20 / max4);
+  // We need 10 pairs × teamsPerTier teams per tier
+  const slotsPerTier = 10 * teamsPerTier;
+  const minNeeded5 = Math.ceil(slotsPerTier / max5);
+  const minNeeded45 = Math.ceil(slotsPerTier / max45);
+  const minNeeded4 = Math.ceil(slotsPerTier / max4);
   if (clubs5.length < minNeeded5) return `לא מספיק קבוצות/נבחרות 5 כוכבים (צריך לפחות ${minNeeded5}, יש ${clubs5.length})`;
   if (clubs45.length < minNeeded45) return `לא מספיק קבוצות/נבחרות 4.5 כוכבים (צריך לפחות ${minNeeded45}, יש ${clubs45.length})`;
   if (clubs4.length < minNeeded4) return `לא מספיק קבוצות/נבחרות 4 כוכבים (צריך לפחות ${minNeeded4}, יש ${clubs4.length})`;
@@ -197,9 +194,9 @@ export function generateTeamBanks(
   }
 
   const tiers: { pool: Club[]; countPerPair: number; maxForTier: number }[] = [
-    { pool: clubs5, countPerPair: 2, maxForTier: max5 },
-    { pool: clubs45, countPerPair: 2, maxForTier: max45 },
-    { pool: clubs4, countPerPair: 2, maxForTier: max4 },
+    { pool: clubs5, countPerPair: teamsPerTier, maxForTier: max5 },
+    { pool: clubs45, countPerPair: teamsPerTier, maxForTier: max45 },
+    { pool: clubs4, countPerPair: teamsPerTier, maxForTier: max4 },
   ];
 
   for (const tier of tiers) {
@@ -348,16 +345,20 @@ export function calculatePlayerStats(evening: FPEvening): FPPlayerStats[] {
 
 /**
  * Create a new 5-player doubles evening.
+ * matchCount: 15 (short) or 30 (full, default).
  */
-export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2): FPEvening | string {
+export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAppearances: number = 2, matchCount: 15 | 30 = 30): FPEvening | string {
   if (players.length !== 5) return 'נדרשים בדיוק 5 שחקנים';
+
+  const cycles = matchCount === 15 ? 1 : 2;
+  const teamsPerTier = matchCount === 15 ? 1 : 2;
 
   // Shuffle player order randomly so setup input order doesn't create schedule bias
   const shuffledPlayers = shuffleArray([...players]);
 
   const pairs = generateAllPairs(shuffledPlayers);
-  const schedule = generateSchedule(shuffledPlayers, pairs);
-  const banksResult = generateTeamBanks(pairs, shuffledPlayers, clubsOverride, maxAppearances);
+  const schedule = generateSchedule(shuffledPlayers, pairs, cycles);
+  const banksResult = generateTeamBanks(pairs, shuffledPlayers, clubsOverride, maxAppearances, teamsPerTier);
 
   if (typeof banksResult === 'string') return banksResult;
 
@@ -371,6 +372,7 @@ export function createFPEvening(players: Player[], clubsOverride?: Club[], maxAp
     teamBanks: banksResult,
     currentMatchIndex: 0,
     completed: false,
+    matchCount,
   };
 }
 

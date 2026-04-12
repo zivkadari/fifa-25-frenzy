@@ -9,7 +9,7 @@ import { StorageService, FPSavedGroup } from "@/services/storageService";
 
 interface FPSetupProps {
   onBack: () => void;
-  onStart: (players: Player[]) => void;
+  onStart: (players: Player[], matchCount: 15 | 30) => void;
   savedPlayers?: Player[];
 }
 
@@ -23,6 +23,7 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
       ? savedPlayers
       : Array.from({ length: 5 }, (_, i) => ({ id: `player-${Date.now()}-${i}`, name: '' }))
   );
+  const [matchCount, setMatchCount] = useState<15 | 30>(30);
   const [savedGroups, setSavedGroups] = useState<FPSavedGroup[]>([]);
   const [groupName, setGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
       return;
     }
     const cleaned = players.map(p => ({ ...p, name: p.name.trim() }));
-    onStart(cleaned);
+    onStart(cleaned, matchCount);
   };
 
   const handleSaveGroup = () => {
@@ -107,7 +108,9 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
           </Button>
           <div>
             <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
-            <p className="text-xs text-muted-foreground">6 סיבובים • 30 משחקים • 10 זוגות</p>
+            <p className="text-xs text-muted-foreground">
+              {matchCount === 15 ? '3 סיבובים • 15 משחקים • 3 קבוצות לזוג' : '6 סיבובים • 30 משחקים • 6 קבוצות לזוג'}
+            </p>
           </div>
         </div>
 
@@ -213,8 +216,10 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
           <ArrowLeft className="h-5 w-5 rotate-180" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
-          <p className="text-xs text-muted-foreground">6 סיבובים • 30 משחקים • 10 זוגות</p>
+            <h1 className="text-xl font-bold text-foreground">ליגת זוגות (5 שחקנים)</h1>
+            <p className="text-xs text-muted-foreground">
+              {matchCount === 15 ? '3 סיבובים • 15 משחקים • 3 קבוצות לזוג' : '6 סיבובים • 30 משחקים • 6 קבוצות לזוג'}
+            </p>
         </div>
       </div>
 
@@ -235,6 +240,37 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
                   className="bg-gaming-surface border-border text-right"
                 />
               ))}
+            </div>
+          </Card>
+
+          {/* Tournament length selection */}
+          <Card className="bg-gaming-surface/50 border-border/50 p-4">
+            <p className="text-sm font-semibold text-foreground mb-3 text-center">אורך הליגה</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMatchCount(15)}
+                className={`rounded-lg border-2 p-3 text-center transition-all ${
+                  matchCount === 15
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-gaming-surface hover:border-muted-foreground/40'
+                }`}
+              >
+                <p className="text-base font-bold text-foreground">קצרה</p>
+                <p className="text-xs text-muted-foreground">15 משחקים</p>
+                <p className="text-[10px] text-muted-foreground mt-1">3 קבוצות לזוג</p>
+              </button>
+              <button
+                onClick={() => setMatchCount(30)}
+                className={`rounded-lg border-2 p-3 text-center transition-all ${
+                  matchCount === 30
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-gaming-surface hover:border-muted-foreground/40'
+                }`}
+              >
+                <p className="text-base font-bold text-foreground">מלאה</p>
+                <p className="text-xs text-muted-foreground">30 משחקים</p>
+                <p className="text-[10px] text-muted-foreground mt-1">6 קבוצות לזוג</p>
+              </button>
             </div>
           </Card>
 
@@ -266,7 +302,9 @@ export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
                 <strong className="text-neon-green">10 זוגות</strong> • כל שחקן ב-4 משחקים לסיבוב
               </p>
               <p className="text-xs text-muted-foreground">
-                כל זוג מקבל בנק של 6 קבוצות/נבחרות: 2×5★ / 2×4.5★ / 2×4★
+                {matchCount === 15
+                  ? 'כל זוג מקבל בנק של 3 קבוצות/נבחרות: 1×5★ / 1×4.5★ / 1×4★'
+                  : 'כל זוג מקבל בנק של 6 קבוצות/נבחרות: 2×5★ / 2×4.5★ / 2×4★'}
               </p>
             </div>
           </Card>

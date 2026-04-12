@@ -51,7 +51,7 @@ export const TournamentTypeSelection = ({
               <Users2 className="h-8 w-8 text-neon-green" />
               <div>
                 <h3 className="text-lg font-semibold text-foreground">ליגת 5 שחקנים</h3>
-                <p className="text-muted-foreground text-sm">5 שחקנים • 10 זוגות • 30 משחקים</p>
+                <p className="text-muted-foreground text-sm">5 שחקנים • 10 זוגות • 15/30 משחקים</p>
               </div>
             </div>
           </Card>

@@ -122,8 +122,11 @@ export const FPHistory = ({ onBack }: FPHistoryProps) => {
                             {new Date(ev.date).toLocaleDateString('he-IL')}
                           </span>
                           <Badge variant="outline" className="text-xs">
-                            {completedCount}/30 משחקים
+                            {completedCount}/{ev.matchCount || 30} משחקים
                           </Badge>
+                          {(ev.matchCount === 15) && (
+                            <Badge variant="secondary" className="text-[10px]">קצרה</Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {ev.players.map(p => p.name).join(', ')}
