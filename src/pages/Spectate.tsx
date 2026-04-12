@@ -25,6 +25,7 @@ import PersonalSummaryCard from "@/components/spectate/PersonalSummaryCard";
 import PersonalInsights from "@/components/spectate/PersonalInsights";
 import AllTimeStatsCard from "@/components/spectate/AllTimeStatsCard";
 import AllTimeLeaderboard from "@/components/spectate/AllTimeLeaderboard";
+import { FPTimingCard } from "@/components/FPTimingCard";
 import InsightCards from "@/components/spectate/InsightCards";
 import TeamSetupButton from "@/components/spectate/TeamSetupButton";
 import CouplesSpectateView from "@/components/spectate/CouplesSpectateView";
