@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shuffle, Check } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
 import { Club } from "@/types/tournament";
 import { FIFA_CLUBS, getClubsOnly, getNationalTeamsByStars, getPrimeTeams } from "@/data/clubs";
 
