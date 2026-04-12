@@ -300,11 +300,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
                         <SelectItem key={club.id} value={club.id}>
                           <div className="flex items-center gap-2">
                             <span>{club.name}</span>
-                            <div className="flex">
-                              {Array.from({ length: getDisplayStars(club) }).map((_, i) => (
-                                <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
-                              ))}
-                            </div>
+                            <StarRating stars={getDisplayStars(club)} size="sm" neonGreen />
                           </div>
                         </SelectItem>
                       ))}
@@ -355,11 +351,7 @@ export const SinglesGameLive = ({ evening, onBack, onComplete, onGoHome, onUpdat
                         <SelectItem key={club.id} value={club.id}>
                           <div className="flex items-center gap-2">
                             <span>{club.name}</span>
-                            <div className="flex">
-                              {Array.from({ length: getDisplayStars(club) }).map((_, i) => (
-                                <Star key={i} className="h-3 w-3 fill-neon-green text-neon-green" />
-                              ))}
-                            </div>
+                            <StarRating stars={getDisplayStars(club)} size="sm" neonGreen />
                           </div>
                         </SelectItem>
                       ))}

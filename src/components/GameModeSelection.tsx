@@ -173,12 +173,7 @@ export const GameModeSelection = ({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">{team.league}</span>
                         <span className="font-semibold text-foreground">{team.name}</span>
-                        <div className="flex">
-                          {Array.from({ length: Math.floor(team.stars) }, (_, i) => (
-                            <span key={i} className="text-yellow-400">★</span>
-                          ))}
-                          {team.stars % 1 !== 0 && <span className="text-yellow-400">☆</span>}
-                        </div>
+                        <StarRating stars={team.stars} size="sm" />
                       </div>
                     </div>
                   ))}
