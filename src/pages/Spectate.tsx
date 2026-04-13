@@ -48,7 +48,8 @@ export default function Spectate() {
   const [evening, setEvening] = useState<FPEvening | null>(null);
   const [couplesEvening, setCouplesEvening] = useState<Evening | null>(null);
   const [eveningMode, setEveningMode] = useState<EveningMode | null>(null);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = "";
+  const [teamId, setTeamId] = useState<string | null>(null);
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
