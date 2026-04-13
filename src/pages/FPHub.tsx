@@ -341,13 +341,17 @@ export default function FPHub() {
 
         {/* Header */}
         <div className="text-center space-y-1">
-          <div className="flex items-center justify-center gap-2">
-            <Users className="h-5 w-5 text-neon-green" />
-            <h1 className="text-xl font-bold text-foreground">ליגת 5 שחקנים</h1>
-          </div>
-          {hubData.team_name && (
-            <p className="text-sm text-muted-foreground">{hubData.team_name}</p>
-          )}
+          <h1 className="text-2xl font-bold text-foreground">קבוצת האפסילונים</h1>
+          <p className="text-sm text-muted-foreground">מרכז הצפייה של טורנירי 5 השחקנים</p>
+        </div>
+
+        {/* Hero Banner */}
+        <div className="rounded-xl overflow-hidden shadow-lg">
+          <img
+            src={alphasHero}
+            alt="קבוצת האפסילונים"
+            className="w-full h-auto object-cover max-h-44"
+          />
         </div>
 
         {/* Live Section */}
