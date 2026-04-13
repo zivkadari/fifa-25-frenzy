@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, ChevronDown, ChevronUp, ArrowLeft, Home } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -214,6 +214,7 @@ function PersonalizedSpectateView({
   showRecent, setShowRecent,
   isCompleted, shareCode,
 }: PersonalizedViewProps) {
+  const navigate = useNavigate();
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
   const personal = useMemo(
@@ -260,6 +261,18 @@ function PersonalizedSpectateView({
       dir="rtl"
     >
       <div className="max-w-md mx-auto space-y-3">
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
+            חזרה
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground">
+            <Home className="h-4 w-4 ml-1" />
+            בית
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
