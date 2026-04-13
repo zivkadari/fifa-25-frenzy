@@ -11,6 +11,7 @@ import JoinTournament from "./pages/JoinTournament";
 import AdminClubs from "./pages/AdminClubs";
 import AdminPoolConfig from "./pages/AdminPoolConfig";
 import Spectate from "./pages/Spectate";
+import FPHub from "./pages/FPHub";
 
 const queryClient = new QueryClient();
 
