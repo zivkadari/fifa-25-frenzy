@@ -684,10 +684,16 @@ function PersonalizedSpectateView({
             <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
             חזרה
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(teamId ? `/fp-hub/${teamId}` : "/")} className="text-muted-foreground">
-            <Home className="h-4 w-4 ml-1" />
-            בית
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={onSwitchPlayer} className="text-muted-foreground">
+              <Users className="h-4 w-4 ml-1" />
+              החלף שחקן
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate(teamId ? `/fp-hub/${teamId}` : "/")} className="text-muted-foreground">
+              <Home className="h-4 w-4 ml-1" />
+              בית
+            </Button>
+          </div>
         </div>
 
         {/* Header */}

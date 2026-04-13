@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp, ArrowLeft, Home } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp, ArrowLeft, Home, User, RefreshCw } from "lucide-react";
 import { FPEvening, FPMatch } from "@/types/fivePlayerTypes";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
@@ -194,6 +194,10 @@ function CompletedTournamentCard({ item, onOpen }: { item: HubEvening; onOpen: (
   );
 }
 
+function getHubStorageKey(teamId: string) {
+  return `hub-player-${teamId}`;
+}
+
 export default function FPHub() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
@@ -201,6 +205,30 @@ export default function FPHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [selectedPlayerName, setSelectedPlayerName] = useState<string | null>(() => {
+    if (!teamId) return null;
+    return localStorage.getItem(getHubStorageKey(teamId)) || null;
+  });
+
+  // Extract unique player names from all evenings
+  const allPlayerNames = useMemo(() => {
+    if (!hubData) return [];
+    const names = new Set<string>();
+    [...hubData.active, ...hubData.completed].forEach((item) => {
+      item.data.players.forEach((p) => names.add(p.name));
+    });
+    return Array.from(names).sort();
+  }, [hubData]);
+
+  const selectPlayer = useCallback((name: string) => {
+    setSelectedPlayerName(name);
+    if (teamId) localStorage.setItem(getHubStorageKey(teamId), name);
+  }, [teamId]);
+
+  const clearPlayer = useCallback(() => {
+    setSelectedPlayerName(null);
+    if (teamId) localStorage.removeItem(getHubStorageKey(teamId));
+  }, [teamId]);
 
   useEffect(() => {
     if (!teamId) return;
@@ -225,12 +253,22 @@ export default function FPHub() {
     };
 
     fetchHub();
-    // Poll for live updates every 15 seconds
     const interval = setInterval(fetchHub, 15000);
     return () => clearInterval(interval);
   }, [teamId]);
 
   const openSpectate = (shareCode: string) => {
+    // Pre-set the player identity for the spectate page based on hub selection
+    if (selectedPlayerName) {
+      const allEvenings = [...(hubData?.active || []), ...(hubData?.completed || [])];
+      const evening = allEvenings.find((e) => e.share_code === shareCode);
+      if (evening) {
+        const player = evening.data.players.find((p) => p.name === selectedPlayerName);
+        if (player) {
+          localStorage.setItem(`spectate-player-${shareCode}`, player.id);
+        }
+      }
+    }
     navigate(`/spectate/${shareCode}`);
   };
 
@@ -271,6 +309,34 @@ export default function FPHub() {
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Navigation - Hub is the top-level page, no back button needed */}
+
+        {/* Player Identity */}
+        {allPlayerNames.length > 0 && (
+          <div className="flex items-center justify-center gap-2">
+            {selectedPlayerName ? (
+              <div className="flex items-center gap-2 bg-gaming-card border border-border/50 rounded-lg px-3 py-1.5">
+                <User className="h-3.5 w-3.5 text-neon-green" />
+                <span className="text-sm font-medium text-foreground">{selectedPlayerName}</span>
+                <button onClick={clearPlayer} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <span className="text-xs text-muted-foreground">מי אתה?</span>
+                {allPlayerNames.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => selectPlayer(name)}
+                    className="bg-gaming-card border border-border/50 hover:border-neon-green/50 rounded-lg px-3 py-1 text-sm text-foreground transition-colors"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Header */}
         <div className="text-center space-y-1">
