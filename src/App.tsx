@@ -11,6 +11,7 @@ import JoinTournament from "./pages/JoinTournament";
 import AdminClubs from "./pages/AdminClubs";
 import AdminPoolConfig from "./pages/AdminPoolConfig";
 import Spectate from "./pages/Spectate";
+import FPHub from "./pages/FPHub";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/admin/clubs" element={<AdminClubs />} />
           <Route path="/admin/pool-config" element={<AdminPoolConfig />} />
           <Route path="/spectate/:code" element={<Spectate />} />
+          <Route path="/fp-hub/:teamId" element={<FPHub />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
