@@ -192,6 +192,7 @@ export default function Spectate() {
       setShowRecent={setShowRecent}
       isCompleted={!!isCompleted}
       shareCode={code!}
+      teamId={teamId}
     />
   );
 }
