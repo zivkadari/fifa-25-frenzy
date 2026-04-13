@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Trophy, Trash2, Share2, Loader2, Clock, Edit2, RotateCcw, Cloud, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, Trash2, Share2, Loader2, Clock, Edit2, RotateCcw, Cloud, AlertTriangle, Eye } from "lucide-react";
 import { FPEvening, FPBlockTiming } from "@/types/fivePlayerTypes";
 import { calculatePairStats, calculatePlayerStats } from "@/services/fivePlayerEngine";
 import { StorageService } from "@/services/storageService";
@@ -170,7 +170,29 @@ export const FPHistory = ({ onBack, fpTeamId }: FPHistoryProps) => {
         </div>
 
         {/* Action buttons row */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {fpTeamId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-neon-green/40 text-neon-green hover:bg-neon-green/10"
+              onClick={() => {
+                const url = `${window.location.origin}/fp-hub/${fpTeamId}`;
+                if (navigator.share) {
+                  navigator.share({ title: "ליגת 5 שחקנים - Hub", url }).catch(() => {
+                    navigator.clipboard.writeText(url);
+                    toast({ title: "הקישור הועתק!" });
+                  });
+                } else {
+                  navigator.clipboard.writeText(url);
+                  toast({ title: "הקישור הועתק!" });
+                }
+              }}
+            >
+              <Eye className="h-3 w-3" />
+              קישור Hub
+            </Button>
+          )}
           <Button
             variant={showTrash ? "default" : "outline"}
             size="sm"
