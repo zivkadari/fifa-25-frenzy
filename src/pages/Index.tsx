@@ -726,7 +726,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 StorageService.saveFPActive(ev);
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
@@ -745,7 +745,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 if (!ev.completed) StorageService.saveFPActive(ev);
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
@@ -758,7 +758,7 @@ const handleGoHome = () => {
                 StorageService.saveFPEvening(ev);
                 StorageService.clearFPActive();
                 // Push final completed state to Supabase so historical spectator links work
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
               onBackToHome={() => {
                 setFpEvening(null);
