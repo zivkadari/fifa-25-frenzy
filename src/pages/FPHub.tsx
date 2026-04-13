@@ -162,7 +162,7 @@ function CompletedTournamentCard({ item, onOpen }: { item: HubEvening; onOpen: (
 
         {alpha && (
           <div className="flex items-center gap-1.5">
-            <Trophy className="h-4 w-4 text-yellow-500" />
+            <Trophy className="h-4 w-4 text-accent-foreground" />
             <span className="font-semibold text-sm">{alpha}</span>
             <span className="text-xs text-muted-foreground">אלפא</span>
           </div>
