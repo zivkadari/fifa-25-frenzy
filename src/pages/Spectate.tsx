@@ -214,6 +214,7 @@ function PersonalizedSpectateView({
   showRecent, setShowRecent,
   isCompleted, shareCode,
 }: PersonalizedViewProps) {
+  const navigate = useNavigate();
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
   const playerStats = useMemo(() => calculatePlayerStats(evening), [evening]);
   const personal = useMemo(
