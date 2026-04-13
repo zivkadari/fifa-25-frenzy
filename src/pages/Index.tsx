@@ -690,7 +690,7 @@ const handleGoHome = () => {
           return (
             <FPSetup
               onBack={() => window.history.back()}
-              onStart={(players, matchCount) => {
+              onStart={async (players, matchCount) => {
                 // Try strict (max 2 appearances)
                 const result = createFPEvening(players, clubsWithOverrides, 2, matchCount);
                 if (typeof result === 'string') {
@@ -701,8 +701,16 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
+                // Auto-detect team for 5 players
+                let teamId = fpTeamId;
+                if (!teamId && RemoteStorageService.isEnabled()) {
+                  try {
+                    teamId = await RemoteStorageService.ensureTeamForPlayers(players, 5);
+                    setFpTeamId(teamId);
+                  } catch {}
+                }
                 // Sync to remote for spectator mode
-                RemoteStorageService.upsertEveningLiveWithTeam(result as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(result as any, teamId).catch(() => {});
                 goTo('fp-bank-overview');
               }}
             />
