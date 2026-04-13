@@ -602,7 +602,7 @@ export default function AdminClubs() {
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-xs shrink-0">{LEAGUE_FLAGS[club.league || ""] || "⚽"}</span>
-                  <span className="text-sm truncate">{club.name}</span>
+                  <span className="text-sm break-words">{club.name}</span>
                   {club.defaultAdded && !modified && !isDeleted && (
                     <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0 border-blue-500/40 text-blue-400">חדש</Badge>
                   )}
