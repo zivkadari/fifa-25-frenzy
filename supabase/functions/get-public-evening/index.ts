@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("evenings")
-      .select("id, data, updated_at, share_code")
+      .select("id, data, updated_at, share_code, team_id")
       .eq("share_code", cleaned)
       .maybeSingle();
 
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
         id: data.id,
         data: data.data,
         updated_at: data.updated_at,
+        team_id: data.team_id,
       }),
       {
         status: 200,
