@@ -49,6 +49,7 @@ export default function Spectate() {
   const [couplesEvening, setCouplesEvening] = useState<Evening | null>(null);
   const [eveningMode, setEveningMode] = useState<EveningMode | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [teamId, setTeamId] = useState<string | null>(null);
   const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
@@ -88,8 +89,12 @@ export default function Spectate() {
         if (data && data.mode === "five-player-doubles") {
           setEvening(data as FPEvening);
           setEveningMode("five-player");
+          if (json.team_id) setTeamId(json.team_id);
           setState("live");
         } else if (data && data.players && data.players.length > 0) {
+          setCouplesEvening(data as Evening);
+          setEveningMode("couples");
+          if (json.team_id) setTeamId(json.team_id);
           // Couples / pairs mode
           setCouplesEvening(data as Evening);
           setEveningMode("couples");
@@ -187,6 +192,7 @@ export default function Spectate() {
       setShowRecent={setShowRecent}
       isCompleted={!!isCompleted}
       shareCode={code!}
+      teamId={teamId}
     />
   );
 }
@@ -205,6 +211,7 @@ interface PersonalizedViewProps {
   setShowRecent: (v: boolean) => void;
   isCompleted: boolean;
   shareCode: string;
+  teamId: string | null;
 }
 
 function PersonalizedSpectateView({
@@ -212,7 +219,7 @@ function PersonalizedSpectateView({
   bankDrawerOpen, setBankDrawerOpen,
   showUpcoming, setShowUpcoming,
   showRecent, setShowRecent,
-  isCompleted, shareCode,
+  isCompleted, shareCode, teamId,
 }: PersonalizedViewProps) {
   const navigate = useNavigate();
   const pairStats = useMemo(() => calculatePairStats(evening), [evening]);
@@ -677,7 +684,7 @@ function PersonalizedSpectateView({
             <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
             חזרה
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={() => navigate(teamId ? `/fp-hub/${teamId}` : "/")} className="text-muted-foreground">
             <Home className="h-4 w-4 ml-1" />
             בית
           </Button>
