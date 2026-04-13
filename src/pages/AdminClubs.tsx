@@ -598,7 +598,7 @@ export default function AdminClubs() {
             return (
               <div
                 key={club.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors ${isDeleted ? "opacity-70" : ""}`}
+                className={`flex items-center justify-between px-2 py-2 rounded-lg hover:bg-muted/30 transition-colors gap-2 ${isDeleted ? "opacity-70" : ""}`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-xs shrink-0">{LEAGUE_FLAGS[club.league || ""] || "⚽"}</span>
