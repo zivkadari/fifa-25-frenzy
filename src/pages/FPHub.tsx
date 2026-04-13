@@ -270,17 +270,7 @@ export default function FPHub() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground">
-            <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
-            חזרה
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground">
-            <Home className="h-4 w-4 ml-1" />
-            בית
-          </Button>
-        </div>
+        {/* Navigation - Hub is the top-level page, no back button needed */}
 
         {/* Header */}
         <div className="text-center space-y-1">
