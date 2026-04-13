@@ -632,7 +632,7 @@ export default function AdminClubs() {
                         value={currentStars.toString()}
                         onValueChange={(val) => handleStarsChange(club.id, val)}
                       >
-                        <SelectTrigger className="w-24 h-8">
+                        <SelectTrigger className="w-28 h-8">
                           <SelectValue>{renderStars(currentStars)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
