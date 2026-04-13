@@ -91,6 +91,20 @@ useEffect(() => {
     const fpActive = StorageService.loadFPActive();
     if (fpActive && !fpActive.completed) {
       setFpEvening(fpActive);
+      // Auto-detect team for FP players
+      if (RemoteStorageService.isEnabled()) {
+        RemoteStorageService.ensureTeamForPlayers(fpActive.players, 5)
+          .then((tid) => { if (mounted && tid) setFpTeamId(tid); })
+          .catch(() => {});
+      }
+    } else {
+      // Even if no active FP, detect team from last saved FP evening for Hub link
+      const fpHistory = StorageService.loadFPEvenings();
+      if (fpHistory.length > 0 && RemoteStorageService.isEnabled()) {
+        RemoteStorageService.ensureTeamForPlayers(fpHistory[0].players, 5)
+          .then((tid) => { if (mounted && tid) setFpTeamId(tid); })
+          .catch(() => {});
+      }
     }
 
     const loadHistory = async () => {
