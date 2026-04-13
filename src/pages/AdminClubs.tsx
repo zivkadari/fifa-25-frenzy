@@ -612,7 +612,7 @@ export default function AdminClubs() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   {isDeleted ? (
                     <>
                       <span className="text-xs text-muted-foreground">{renderStars(currentStars)}</span>
@@ -632,7 +632,7 @@ export default function AdminClubs() {
                         value={currentStars.toString()}
                         onValueChange={(val) => handleStarsChange(club.id, val)}
                       >
-                        <SelectTrigger className="w-28 h-8">
+                        <SelectTrigger className="w-[7.5rem] h-8 px-2">
                           <SelectValue>{renderStars(currentStars)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
