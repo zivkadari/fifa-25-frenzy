@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp, ArrowLeft, Home } from "lucide-react";
 import { FPEvening, FPMatch } from "@/types/fivePlayerTypes";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
@@ -270,6 +270,18 @@ export default function FPHub() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
+            חזרה
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground">
+            <Home className="h-4 w-4 ml-1" />
+            בית
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-1">
           <div className="flex items-center justify-center gap-2">
