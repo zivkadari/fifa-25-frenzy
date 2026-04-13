@@ -77,7 +77,12 @@ Deno.serve(async (req) => {
         share_code: e.share_code,
         data: e.data,
         updated_at: e.updated_at,
-      }));
+      }))
+      .sort((a, b) => {
+        const dateA = (a.data as Record<string, unknown>).date as string || "";
+        const dateB = (b.data as Record<string, unknown>).date as string || "";
+        return dateB.localeCompare(dateA);
+      });
 
     return new Response(
       JSON.stringify({
