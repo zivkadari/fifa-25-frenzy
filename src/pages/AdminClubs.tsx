@@ -598,7 +598,7 @@ export default function AdminClubs() {
             return (
               <div
                 key={club.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors ${isDeleted ? "opacity-70" : ""}`}
+                className={`flex items-center justify-between px-2 py-2 rounded-lg hover:bg-muted/30 transition-colors gap-2 ${isDeleted ? "opacity-70" : ""}`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="text-xs shrink-0">{LEAGUE_FLAGS[club.league || ""] || "⚽"}</span>
@@ -612,7 +612,7 @@ export default function AdminClubs() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   {isDeleted ? (
                     <>
                       <span className="text-xs text-muted-foreground">{renderStars(currentStars)}</span>
@@ -632,7 +632,7 @@ export default function AdminClubs() {
                         value={currentStars.toString()}
                         onValueChange={(val) => handleStarsChange(club.id, val)}
                       >
-                        <SelectTrigger className="w-28 h-8">
+                        <SelectTrigger className="w-[7.5rem] h-8 px-2">
                           <SelectValue>{renderStars(currentStars)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
