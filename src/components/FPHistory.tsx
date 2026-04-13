@@ -69,7 +69,7 @@ export const FPHistory = ({ onBack, fpTeamId }: FPHistoryProps) => {
       const completed = local.filter(e => e.completed);
       for (const ev of completed) {
         try {
-          await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, null);
+          await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null);
         } catch {}
       }
     };
@@ -134,7 +134,7 @@ export const FPHistory = ({ onBack, fpTeamId }: FPHistoryProps) => {
   const handleShare = useCallback(async (ev: FPEvening) => {
     setSharingId(ev.id);
     try {
-      await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, null).catch(() => {});
+      await RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
       const code = await RemoteStorageService.getShareCode(ev.id);
       if (!code) {
         toast({ title: "לא ניתן ליצור קישור", description: "ודא שאתה מחובר", variant: "destructive" });
