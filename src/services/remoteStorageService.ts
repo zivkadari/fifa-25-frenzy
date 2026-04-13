@@ -573,8 +573,10 @@ export class RemoteStorageService {
       }
     }
 
-    // Try to find existing team owned by user with exactly these 4 players
-    // 1) fetch teams of user
+    // Try to find existing team owned by user with exactly these N players
+    // Match by slugified name to handle varying player IDs across sessions
+    const playerSlugs = new Set(players.map(p => slugify(p.name)));
+    
     const { data: teams, error: tErr } = await supabase
       .from(TEAMS_TABLE)
       .select("id, name");
@@ -588,9 +590,35 @@ export class RemoteStorageService {
           .from(TEAM_PLAYERS_TABLE)
           .select("player_id")
           .eq("team_id", t.id);
-        const set = new Set((links || []).map((l: any) => l.player_id));
-        const allMatch = playerIds.every((id) => set.has(id)) && set.size === expectedCount;
-        if (allMatch) return t.id as string;
+        if (!links || links.length !== expectedCount) continue;
+        
+        const linkedIds = new Set((links).map((l: any) => l.player_id));
+        
+        // First try exact ID match
+        const exactMatch = playerIds.every((id) => linkedIds.has(id)) && linkedIds.size === expectedCount;
+        if (exactMatch) return t.id as string;
+        
+        // Then try name-based match: fetch display_names for linked players
+        const { data: linkedPlayers } = await supabase
+          .from(PLAYERS_TABLE)
+          .select("id, display_name")
+          .in("id", Array.from(linkedIds));
+        if (linkedPlayers && linkedPlayers.length === expectedCount) {
+          const linkedSlugs = new Set(linkedPlayers.map((p: any) => slugify(p.display_name)));
+          const nameMatch = playerSlugs.size === linkedSlugs.size && 
+            [...playerSlugs].every(s => linkedSlugs.has(s));
+          if (nameMatch) {
+            // Found by name — also add missing player links
+            for (const pid of playerIds) {
+              if (!linkedIds.has(pid)) {
+                await supabase.from(TEAM_PLAYERS_TABLE)
+                  .insert({ team_id: t.id, player_id: pid })
+                  .then(() => {});
+              }
+            }
+            return t.id as string;
+          }
+        }
       }
     }
 
