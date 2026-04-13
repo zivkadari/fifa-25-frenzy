@@ -57,6 +57,7 @@ const Index = () => {
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
   // 5-Player Doubles state
   const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
+  const [fpTeamId, setFpTeamId] = useState<string | null>(null);
   const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
   const [showFpDeadlock, setShowFpDeadlock] = useState(false);
 
