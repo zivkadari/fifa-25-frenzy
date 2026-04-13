@@ -59,13 +59,16 @@ export class RemoteStorageService {
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
     if (userErr || !user) return;
 
-    const row = { 
+    const row: any = { 
       id: evening.id, 
       owner_id: user.id, 
       data: evening, 
-      team_id: teamId,
       updated_at: new Date().toISOString()
-    } as any;
+    };
+    // Only set team_id when explicitly provided — null means "don't change"
+    if (teamId !== null) {
+      row.team_id = teamId;
+    }
     
     await supabase
       .from(EVENINGS_TABLE)
