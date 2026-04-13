@@ -89,8 +89,12 @@ export default function Spectate() {
         if (data && data.mode === "five-player-doubles") {
           setEvening(data as FPEvening);
           setEveningMode("five-player");
+          if (json.team_id) setTeamId(json.team_id);
           setState("live");
         } else if (data && data.players && data.players.length > 0) {
+          setCouplesEvening(data as Evening);
+          setEveningMode("couples");
+          if (json.team_id) setTeamId(json.team_id);
           // Couples / pairs mode
           setCouplesEvening(data as Evening);
           setEveningMode("couples");
