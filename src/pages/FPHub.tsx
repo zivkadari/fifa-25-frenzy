@@ -194,6 +194,10 @@ function CompletedTournamentCard({ item, onOpen }: { item: HubEvening; onOpen: (
   );
 }
 
+function getHubStorageKey(teamId: string) {
+  return `hub-player-${teamId}`;
+}
+
 export default function FPHub() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
@@ -201,6 +205,30 @@ export default function FPHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [selectedPlayerName, setSelectedPlayerName] = useState<string | null>(() => {
+    if (!teamId) return null;
+    return localStorage.getItem(getHubStorageKey(teamId)) || null;
+  });
+
+  // Extract unique player names from all evenings
+  const allPlayerNames = useMemo(() => {
+    if (!hubData) return [];
+    const names = new Set<string>();
+    [...hubData.active, ...hubData.completed].forEach((item) => {
+      item.data.players.forEach((p) => names.add(p.name));
+    });
+    return Array.from(names).sort();
+  }, [hubData]);
+
+  const selectPlayer = useCallback((name: string) => {
+    setSelectedPlayerName(name);
+    if (teamId) localStorage.setItem(getHubStorageKey(teamId), name);
+  }, [teamId]);
+
+  const clearPlayer = useCallback(() => {
+    setSelectedPlayerName(null);
+    if (teamId) localStorage.removeItem(getHubStorageKey(teamId));
+  }, [teamId]);
 
   useEffect(() => {
     if (!teamId) return;
@@ -225,12 +253,22 @@ export default function FPHub() {
     };
 
     fetchHub();
-    // Poll for live updates every 15 seconds
     const interval = setInterval(fetchHub, 15000);
     return () => clearInterval(interval);
   }, [teamId]);
 
   const openSpectate = (shareCode: string) => {
+    // Pre-set the player identity for the spectate page based on hub selection
+    if (selectedPlayerName) {
+      const allEvenings = [...(hubData?.active || []), ...(hubData?.completed || [])];
+      const evening = allEvenings.find((e) => e.share_code === shareCode);
+      if (evening) {
+        const player = evening.data.players.find((p) => p.name === selectedPlayerName);
+        if (player) {
+          localStorage.setItem(`spectate-player-${shareCode}`, player.id);
+        }
+      }
+    }
     navigate(`/spectate/${shareCode}`);
   };
 
