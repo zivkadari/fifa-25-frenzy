@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp, ArrowLeft, Home } from "lucide-react";
+import { Trophy, Users, Eye, Loader2, AlertCircle, Radio, Calendar, Clock, ChevronDown, ChevronUp, ArrowLeft, Home, User, RefreshCw } from "lucide-react";
 import { FPEvening, FPMatch } from "@/types/fivePlayerTypes";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ikbywydyidnkohbdrqdk";
