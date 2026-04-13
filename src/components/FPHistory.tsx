@@ -589,7 +589,7 @@ export const FPHistory = ({ onBack, fpTeamId }: FPHistoryProps) => {
                 };
 
                 StorageService.saveFPEvening(updated);
-                RemoteStorageService.upsertEveningLiveWithTeam(updated as any, null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(updated as any, fpTeamId ?? null).catch(() => {});
                 refreshData();
                 setEditTimingEvening(null);
                 toast({ title: "זמני הליגה עודכנו" });
