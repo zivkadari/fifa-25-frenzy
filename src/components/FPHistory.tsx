@@ -41,9 +41,10 @@ function toLocalDatetimeString(iso: string): string {
 
 interface FPHistoryProps {
   onBack: () => void;
+  fpTeamId?: string | null;
 }
 
-export const FPHistory = ({ onBack }: FPHistoryProps) => {
+export const FPHistory = ({ onBack, fpTeamId }: FPHistoryProps) => {
   const { toast } = useToast();
   const [evenings, setEvenings] = useState<FPEvening[]>([]);
   const [sharingId, setSharingId] = useState<string | null>(null);
