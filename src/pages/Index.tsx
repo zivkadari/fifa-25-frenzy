@@ -769,7 +769,7 @@ const handleGoHome = () => {
         
         case 'fp-history':
           return (
-            <FPHistory onBack={() => window.history.back()} />
+            <FPHistory onBack={() => window.history.back()} fpTeamId={fpTeamId} />
           );
         
         default:
