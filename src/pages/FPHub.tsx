@@ -310,6 +310,34 @@ export default function FPHub() {
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Navigation - Hub is the top-level page, no back button needed */}
 
+        {/* Player Identity */}
+        {allPlayerNames.length > 0 && (
+          <div className="flex items-center justify-center gap-2">
+            {selectedPlayerName ? (
+              <div className="flex items-center gap-2 bg-gaming-card border border-border/50 rounded-lg px-3 py-1.5">
+                <User className="h-3.5 w-3.5 text-neon-green" />
+                <span className="text-sm font-medium text-foreground">{selectedPlayerName}</span>
+                <button onClick={clearPlayer} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <span className="text-xs text-muted-foreground">מי אתה?</span>
+                {allPlayerNames.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => selectPlayer(name)}
+                    className="bg-gaming-card border border-border/50 hover:border-neon-green/50 rounded-lg px-3 py-1 text-sm text-foreground transition-colors"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-1">
           <div className="flex items-center justify-center gap-2">
