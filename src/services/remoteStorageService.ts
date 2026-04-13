@@ -544,9 +544,9 @@ export class RemoteStorageService {
     return true;
   }
 
-  // Ensure a reusable team exists for the given 4 players; return team_id
-  static async ensureTeamForPlayers(players: Player[]): Promise<string | null> {
-    if (!supabase || players.length !== 4) return null;
+  // Ensure a reusable team exists for the given N players; return team_id
+  static async ensureTeamForPlayers(players: Player[], expectedCount: number = 4): Promise<string | null> {
+    if (!supabase || players.length !== expectedCount) return null;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
@@ -586,7 +586,7 @@ export class RemoteStorageService {
           .select("player_id")
           .eq("team_id", t.id);
         const set = new Set((links || []).map((l: any) => l.player_id));
-        const allMatch = playerIds.every((id) => set.has(id)) && set.size === 4;
+        const allMatch = playerIds.every((id) => set.has(id)) && set.size === expectedCount;
         if (allMatch) return t.id as string;
       }
     }

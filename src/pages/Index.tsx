@@ -57,6 +57,7 @@ const Index = () => {
   const [pendingRoundIndex, setPendingRoundIndex] = useState<number>(0);
   // 5-Player Doubles state
   const [fpEvening, setFpEvening] = useState<FPEvening | null>(null);
+  const [fpTeamId, setFpTeamId] = useState<string | null>(null);
   const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
   const [showFpDeadlock, setShowFpDeadlock] = useState(false);
 
@@ -90,6 +91,20 @@ useEffect(() => {
     const fpActive = StorageService.loadFPActive();
     if (fpActive && !fpActive.completed) {
       setFpEvening(fpActive);
+      // Auto-detect team for FP players
+      if (RemoteStorageService.isEnabled()) {
+        RemoteStorageService.ensureTeamForPlayers(fpActive.players, 5)
+          .then((tid) => { if (mounted && tid) setFpTeamId(tid); })
+          .catch(() => {});
+      }
+    } else {
+      // Even if no active FP, detect team from last saved FP evening for Hub link
+      const fpHistory = StorageService.loadFPEvenings();
+      if (fpHistory.length > 0 && RemoteStorageService.isEnabled()) {
+        RemoteStorageService.ensureTeamForPlayers(fpHistory[0].players, 5)
+          .then((tid) => { if (mounted && tid) setFpTeamId(tid); })
+          .catch(() => {});
+      }
     }
 
     const loadHistory = async () => {
@@ -689,7 +704,7 @@ const handleGoHome = () => {
           return (
             <FPSetup
               onBack={() => window.history.back()}
-              onStart={(players, matchCount) => {
+              onStart={async (players, matchCount) => {
                 // Try strict (max 2 appearances)
                 const result = createFPEvening(players, clubsWithOverrides, 2, matchCount);
                 if (typeof result === 'string') {
@@ -700,8 +715,16 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
+                // Auto-detect team for 5 players
+                let teamId = fpTeamId;
+                if (!teamId && RemoteStorageService.isEnabled()) {
+                  try {
+                    teamId = await RemoteStorageService.ensureTeamForPlayers(players, 5);
+                    setFpTeamId(teamId);
+                  } catch {}
+                }
                 // Sync to remote for spectator mode
-                RemoteStorageService.upsertEveningLiveWithTeam(result as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(result as any, teamId).catch(() => {});
                 goTo('fp-bank-overview');
               }}
             />
@@ -717,7 +740,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 StorageService.saveFPActive(ev);
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
@@ -736,7 +759,7 @@ const handleGoHome = () => {
               onUpdateEvening={(ev) => {
                 setFpEvening(ev);
                 if (!ev.completed) StorageService.saveFPActive(ev);
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
             />
           ) : null;
@@ -749,7 +772,7 @@ const handleGoHome = () => {
                 StorageService.saveFPEvening(ev);
                 StorageService.clearFPActive();
                 // Push final completed state to Supabase so historical spectator links work
-                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, currentTeamId ?? null).catch(() => {});
+                RemoteStorageService.upsertEveningLiveWithTeam(ev as any, fpTeamId ?? null).catch(() => {});
               }}
               onBackToHome={() => {
                 setFpEvening(null);
@@ -760,7 +783,7 @@ const handleGoHome = () => {
         
         case 'fp-history':
           return (
-            <FPHistory onBack={() => window.history.back()} />
+            <FPHistory onBack={() => window.history.back()} fpTeamId={fpTeamId} />
           );
         
         default:

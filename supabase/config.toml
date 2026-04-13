@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.get-public-evening]
 verify_jwt = false
+
+[functions.get-fp-hub]
+verify_jwt = false
+
+[functions.get-fp-history]
+verify_jwt = false
