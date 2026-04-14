@@ -234,39 +234,33 @@ const Profile = () => {
                   )}
                 </div>
 
-                {/* Claimed Player */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">שחקן מקושר:</span>
-                  {claimedPlayer ? (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <UserCheck className="h-3 w-3" />
-                        {claimedPlayer.player_name}
-                      </Badge>
-                      <Button size="sm" variant="ghost" onClick={handleUnclaimPlayer}>
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : showClaimSelect ? (
-                    <div className="flex items-center gap-2">
-                      <Select onValueChange={handleClaimPlayer}>
-                        <SelectTrigger className="w-32 h-8">
-                          <SelectValue placeholder="בחר שחקן" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allPlayers.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" onClick={() => setShowClaimSelect(false)}>
-                        <X className="h-4 w-4" />
-                      </Button>
+                {/* Claimed Players (per team) */}
+                <div>
+                  <span className="text-sm text-muted-foreground">שחקנים מקושרים:</span>
+                  {claimedPlayers.length > 0 ? (
+                    <div className="space-y-1.5 mt-1">
+                      {claimedPlayers.map((claim) => {
+                        const team = teamMemberships.find(m => m.team_id === claim.team_id);
+                        return (
+                          <div key={claim.team_id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <UserCheck className="h-3 w-3" />
+                                {claim.player_name}
+                              </Badge>
+                              {team && <span className="text-xs text-muted-foreground">({team.team_name})</span>}
+                            </div>
+                            <Button size="sm" variant="ghost" onClick={() => handleUnclaimForTeam(claim.team_id)}>
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => setShowClaimSelect(true)}>
-                      קשר שחקן
-                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ניתן לקשר שחקן דרך הצטרפות לקבוצה
+                    </p>
                   )}
                 </div>
               </div>
