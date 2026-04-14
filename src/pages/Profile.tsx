@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Users, Trophy, User, Edit2, Check, X, UserCheck, Target, Medal, Award, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RemoteStorageService } from "@/services/remoteStorageService";
