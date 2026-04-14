@@ -159,7 +159,7 @@ const Profile = () => {
 
   // Filter evenings for active team context
   const teamEvenings = activeTeamId
-    ? evenings // TODO: filter by team_id when available on evening data
+    ? evenings.filter(e => (e as any)._team_id === activeTeamId)
     : evenings;
 
   // Players already claimed (exclude from selection)

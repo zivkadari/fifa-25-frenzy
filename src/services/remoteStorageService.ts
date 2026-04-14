@@ -107,13 +107,17 @@ export class RemoteStorageService {
     if (!user) return [];
     const { data, error } = await supabase
       .from(EVENINGS_TABLE)
-      .select("data")
+      .select("data, team_id")
       .order("updated_at", { ascending: false });
     if (error) {
       console.error("Supabase loadEvenings error:", error.message);
       return [];
     }
-    return (data || []).map((r: any) => r.data as Evening);
+    return (data || []).map((r: any) => {
+      const evening = r.data as Evening;
+      if (r.team_id) (evening as any)._team_id = r.team_id;
+      return evening;
+    });
   }
 
   static async loadAllFPEvenings(): Promise<any[]> {
