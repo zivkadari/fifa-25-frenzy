@@ -192,24 +192,30 @@ export type Database = {
       player_accounts: {
         Row: {
           claimed_at: string
+          id: string
           player_id: string
+          team_id: string | null
           user_id: string
         }
         Insert: {
           claimed_at?: string
+          id?: string
           player_id: string
+          team_id?: string | null
           user_id: string
         }
         Update: {
           claimed_at?: string
+          id?: string
           player_id?: string
+          team_id?: string | null
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "player_accounts_player_id_fkey"
             columns: ["player_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
           },

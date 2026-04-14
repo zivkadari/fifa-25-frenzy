@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Users, Trophy, User, Edit2, Check, X, UserCheck, Target, Medal, Award, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RemoteStorageService } from "@/services/remoteStorageService";
@@ -43,7 +42,7 @@ const Profile = () => {
   const [newDisplayName, setNewDisplayName] = useState("");
   
   // Claimed player state
-  const [claimedPlayer, setClaimedPlayer] = useState<{ player_id: string; player_name: string } | null>(null);
+  const [claimedPlayers, setClaimedPlayers] = useState<Array<{ team_id: string; player_id: string; player_name: string }>>([]);
   const [allPlayers, setAllPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [showClaimSelect, setShowClaimSelect] = useState(false);
 
@@ -67,9 +66,9 @@ const Profile = () => {
           setDisplayName(profile.display_name);
         }
 
-        // Load claimed player
-        const claimed = await RemoteStorageService.getClaimedPlayer();
-        if (mounted) setClaimedPlayer(claimed);
+        // Load claimed players (team-scoped)
+        const claims = await RemoteStorageService.getClaimedPlayersByTeam();
+        if (mounted) setClaimedPlayers(claims);
 
         // Load evenings (remote if available, otherwise local)
         let evs: Evening[] = [];
@@ -93,13 +92,14 @@ const Profile = () => {
           if (mounted) setAllPlayers(players);
         } catch {}
 
-        // Load stats if player is claimed
-        if (claimed && mounted) {
+        // Load stats from first claimed player (or skip if none)
+        const firstClaim = claims.length > 0 ? claims[0] : null;
+        if (firstClaim && mounted) {
           setStatsLoading(true);
           try {
             const [global, byTeam] = await Promise.all([
-              RemoteStorageService.getPlayerStatsGlobal(claimed.player_id),
-              RemoteStorageService.getPlayerStatsByTeam(claimed.player_id)
+              RemoteStorageService.getPlayerStatsGlobal(firstClaim.player_id),
+              RemoteStorageService.getPlayerStatsByTeam(firstClaim.player_id)
             ]);
             if (mounted) {
               setGlobalStats(global);
@@ -115,9 +115,12 @@ const Profile = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Reload stats when claimed player changes
+  // Derive first claimed player for stats display
+  const primaryClaim = claimedPlayers.length > 0 ? claimedPlayers[0] : null;
+
+  // Reload stats when claimed players change
   useEffect(() => {
-    if (!claimedPlayer) {
+    if (!primaryClaim) {
       setGlobalStats(null);
       setTeamStats([]);
       return;
@@ -128,8 +131,8 @@ const Profile = () => {
       setStatsLoading(true);
       try {
         const [global, byTeam] = await Promise.all([
-          RemoteStorageService.getPlayerStatsGlobal(claimedPlayer.player_id),
-          RemoteStorageService.getPlayerStatsByTeam(claimedPlayer.player_id)
+          RemoteStorageService.getPlayerStatsGlobal(primaryClaim.player_id),
+          RemoteStorageService.getPlayerStatsByTeam(primaryClaim.player_id)
         ]);
         if (mounted) {
           setGlobalStats(global);
@@ -139,7 +142,7 @@ const Profile = () => {
       if (mounted) setStatsLoading(false);
     })();
     return () => { mounted = false; };
-  }, [claimedPlayer?.player_id]);
+  }, [primaryClaim?.player_id]);
 
   const handleUpdateDisplayName = async () => {
     if (!newDisplayName.trim()) {
@@ -156,22 +159,10 @@ const Profile = () => {
     }
   };
 
-  const handleClaimPlayer = async (playerId: string) => {
-    const success = await RemoteStorageService.claimPlayer(playerId);
+  const handleUnclaimForTeam = async (teamId: string) => {
+    const success = await RemoteStorageService.unclaimPlayerForTeam(teamId);
     if (success) {
-      const player = allPlayers.find(p => p.id === playerId);
-      setClaimedPlayer({ player_id: playerId, player_name: player?.name || playerId });
-      setShowClaimSelect(false);
-      toast.success("השחקן קושר לחשבון שלך בהצלחה");
-    } else {
-      toast.error("שגיאה בקישור השחקן - ייתכן שכבר קושר למשתמש אחר");
-    }
-  };
-
-  const handleUnclaimPlayer = async () => {
-    const success = await RemoteStorageService.unclaimPlayer();
-    if (success) {
-      setClaimedPlayer(null);
+      setClaimedPlayers(prev => prev.filter(c => c.team_id !== teamId));
       toast.success("הקישור לשחקן הוסר");
     } else {
       toast.error("שגיאה בהסרת הקישור");
@@ -242,46 +233,40 @@ const Profile = () => {
                   )}
                 </div>
 
-                {/* Claimed Player */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">שחקן מקושר:</span>
-                  {claimedPlayer ? (
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <UserCheck className="h-3 w-3" />
-                        {claimedPlayer.player_name}
-                      </Badge>
-                      <Button size="sm" variant="ghost" onClick={handleUnclaimPlayer}>
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : showClaimSelect ? (
-                    <div className="flex items-center gap-2">
-                      <Select onValueChange={handleClaimPlayer}>
-                        <SelectTrigger className="w-32 h-8">
-                          <SelectValue placeholder="בחר שחקן" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allPlayers.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="icon" variant="ghost" onClick={() => setShowClaimSelect(false)}>
-                        <X className="h-4 w-4" />
-                      </Button>
+                {/* Claimed Players (per team) */}
+                <div>
+                  <span className="text-sm text-muted-foreground">שחקנים מקושרים:</span>
+                  {claimedPlayers.length > 0 ? (
+                    <div className="space-y-1.5 mt-1">
+                      {claimedPlayers.map((claim) => {
+                        const team = teamMemberships.find(m => m.team_id === claim.team_id);
+                        return (
+                          <div key={claim.team_id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <UserCheck className="h-3 w-3" />
+                                {claim.player_name}
+                              </Badge>
+                              {team && <span className="text-xs text-muted-foreground">({team.team_name})</span>}
+                            </div>
+                            <Button size="sm" variant="ghost" onClick={() => handleUnclaimForTeam(claim.team_id)}>
+                              <X className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => setShowClaimSelect(true)}>
-                      קשר שחקן
-                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ניתן לקשר שחקן דרך הצטרפות לקבוצה
+                    </p>
                   )}
                 </div>
               </div>
             </Card>
 
             {/* Global Stats */}
-            {claimedPlayer && (
+            {claimedPlayers.length > 0 && (
               <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
                 <div className="flex items-center gap-2 mb-3">
                   <BarChart3 className="h-5 w-5 text-neon-green" />
@@ -345,7 +330,7 @@ const Profile = () => {
             )}
 
             {/* Per-Team Stats Breakdown */}
-            {claimedPlayer && teamStats.length > 0 && (
+            {claimedPlayers.length > 0 && teamStats.length > 0 && (
               <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-neon-green" />
