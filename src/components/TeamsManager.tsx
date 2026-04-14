@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
-import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus, Pencil, Check, X, Link2, Copy } from "lucide-react";
 import { validateTeamName, validatePlayerName } from "@/lib/validation";
 import { SelectExistingPlayerDialog } from "./SelectExistingPlayerDialog";
 
@@ -42,6 +42,8 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [selectPlayerOpen, setSelectPlayerOpen] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingTeamName, setEditingTeamName] = useState("");
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [loadingInvite, setLoadingInvite] = useState(false);
 
   useEffect(() => {
     const load = async () => {
