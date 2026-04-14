@@ -317,6 +317,32 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
 
         {selectedTeamId && (
           <>
+            {/* Team invite link */}
+            {inviteCode && (
+              <Card className="bg-gaming-surface/50 border-border/50 p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Link2 className="h-4 w-4 text-neon-green" />
+                  <h3 className="font-semibold text-foreground text-sm">קישור הזמנה לקבוצה</h3>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <code className="bg-gaming-bg border border-border rounded px-3 py-1.5 text-sm text-foreground flex-1 overflow-hidden text-ellipsis">
+                    {`${window.location.origin}/join-team/${inviteCode}`}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/join-team/${inviteCode}`);
+                      toast({ title: "הקישור הועתק!" });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">שתף את הקישור כדי שחברים יצטרפו לקבוצה</p>
+              </Card>
+            )}
+
             {/* Players management */}
             <Card className="bg-gaming-surface/50 border-border/50 p-4 mb-6">
               <div className="flex items-center justify-between mb-3">
