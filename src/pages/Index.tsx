@@ -35,11 +35,13 @@ import { FPEvening } from "@/types/fivePlayerTypes";
 import { createFPEvening } from "@/services/fivePlayerEngine";
 import { FPHistory } from "@/components/FPHistory";
 import { FPBankOverview } from "@/components/FPBankOverview";
+import { useTeam } from "@/contexts/TeamContext";
 
 type AppState = 'home' | 'setup' | 'tournament-type' | 'singles-setup' | 'singles-clubs' | 'singles-schedule' | 'game' | 'summary' | 'history' | 'teams' | 'join' | 'pairs-mode-selection' | 'tier-question-flow' | 'fp-setup' | 'fp-bank-overview' | 'fp-game' | 'fp-summary' | 'fp-history';
 
 const Index = () => {
   const location = useLocation();
+  const { activeTeamId: contextTeamId } = useTeam();
   const [appState, setAppState] = useState<AppState>('home');
   const [currentEvening, setCurrentEvening] = useState<Evening | null>(null);
   const [tournamentHistory, setTournamentHistory] = useState<EveningWithTeam[]>([]);
