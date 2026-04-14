@@ -78,7 +78,7 @@ const JoinTeam = () => {
     if (!selectedPlayerId || !teamInfo) return;
     setLinking(true);
     try {
-      const success = await RemoteStorageService.claimPlayer(selectedPlayerId);
+      const success = await RemoteStorageService.claimPlayerForTeam(selectedPlayerId, teamInfo.team_id);
       if (success) {
         toast({ title: "שחקן קושר בהצלחה!", description: "החשבון שלך מקושר לשחקן בקבוצה" });
         navigate('/');
@@ -98,11 +98,10 @@ const JoinTeam = () => {
     try {
       const ok = await RemoteStorageService.addPlayerToTeamByName(teamInfo.team_id, newPlayerName.trim());
       if (ok) {
-        // Now claim that player
         const players = await RemoteStorageService.listTeamPlayers(teamInfo.team_id);
         const created = players.find(p => p.name.toLowerCase() === newPlayerName.trim().toLowerCase());
         if (created) {
-          await RemoteStorageService.claimPlayer(created.id);
+          await RemoteStorageService.claimPlayerForTeam(created.id, teamInfo.team_id);
         }
         toast({ title: "שחקן נוצר וקושר!", description: newPlayerName.trim() });
         navigate('/');
