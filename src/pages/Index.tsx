@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { TournamentHome } from "@/components/TournamentHome";
+import { TeamDashboard } from "@/components/TeamDashboard";
 import { EveningSetup } from "@/components/EveningSetup";
 import { TournamentTypeSelection } from "@/components/TournamentTypeSelection";
 import { SinglesSetup } from "@/components/SinglesSetup";
