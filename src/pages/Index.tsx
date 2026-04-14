@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { TournamentHome } from "@/components/TournamentHome";
+import { TeamDashboard } from "@/components/TeamDashboard";
 import { EveningSetup } from "@/components/EveningSetup";
 import { TournamentTypeSelection } from "@/components/TournamentTypeSelection";
 import { SinglesSetup } from "@/components/SinglesSetup";
@@ -443,28 +443,45 @@ const handleGoHome = () => {
 
   const renderCurrentState = () => {
     switch (appState) {
-      case 'home':
+      case 'home': {
+        // Determine active tournament info for dashboard
+        const activeFP = fpEvening && !fpEvening.completed;
+        const activeRegular = currentEvening && !currentEvening.completed;
+        let tournamentMode: string | null = null;
+        let tournamentProgress: string | null = null;
+        if (activeFP && fpEvening) {
+          tournamentMode = "ליגת 5 שחקנים";
+          const completed = fpEvening.schedule.filter(m => m.scoreA !== undefined).length;
+          tournamentProgress = `${completed} / ${fpEvening.schedule.length} משחקים`;
+        } else if (activeRegular && currentEvening) {
+          tournamentMode = currentEvening.type === 'singles' ? "טורניר יחידים" : "טורניר זוגות";
+          const completedMatches = currentEvening.rounds.reduce((s, r) => s + r.matches.filter(m => m.completed).length, 0);
+          tournamentProgress = `${completedMatches} משחקים שהושלמו`;
+        }
+
         return (
-          <TournamentHome
+          <TeamDashboard
             onStartNew={handleStartNewEvening}
+            onStartFivePlayer={() => goTo('fp-setup')}
+            onStartPairs={() => { setSelectedTournamentType('pairs'); goTo('setup'); }}
+            onStartSingles={() => { setSelectedTournamentType('singles'); goTo('singles-setup'); }}
             onViewHistory={handleViewHistory}
             onViewFPHistory={() => goTo('fp-history')}
             onResume={
-              fpEvening && !fpEvening.completed
+              activeFP
                 ? () => goTo('fp-game')
-                : currentEvening && !currentEvening.completed
+                : activeRegular
                   ? () => goTo('game')
                   : undefined
             }
             onCloseTournament={
-              fpEvening && !fpEvening.completed
+              activeFP
                 ? () => {
-                    // Delete remote record so spectator link doesn't show stale cancelled tournament
-                    RemoteStorageService.deleteEvening(fpEvening.id).catch(() => {});
+                    RemoteStorageService.deleteEvening(fpEvening!.id).catch(() => {});
                     StorageService.clearFPActive();
                     setFpEvening(null);
                   }
-                : currentEvening && !currentEvening.completed
+                : activeRegular
                   ? handleCloseTournament
                   : undefined
             }
@@ -473,8 +490,12 @@ const handleGoHome = () => {
             isAuthed={isAuthed}
             userEmail={userEmail}
             onSignOut={handleSignOut}
+            activeTournamentMode={tournamentMode}
+            activeTournamentProgress={tournamentProgress}
+            fpTeamId={fpTeamId}
           />
         );
+      }
       
       case 'tournament-type':
         return (
