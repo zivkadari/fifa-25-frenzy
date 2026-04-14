@@ -57,16 +57,18 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   }, []);
 
   useEffect(() => {
-    if (!selectedTeamId) return;
+    if (!selectedTeamId) { setInviteCode(null); return; }
     const loadTeam = async () => {
       setLoading(true);
       try {
-        const [players, stats] = await Promise.all([
+        const [players, stats, code] = await Promise.all([
           RemoteStorageService.listTeamPlayers(selectedTeamId),
           RemoteStorageService.getTeamLeaderboard(selectedTeamId),
+          RemoteStorageService.getTeamInviteCode(selectedTeamId),
         ]);
         setTeamPlayers(players);
         setLeaderboard(stats);
+        setInviteCode(code);
       } finally {
         setLoading(false);
       }
