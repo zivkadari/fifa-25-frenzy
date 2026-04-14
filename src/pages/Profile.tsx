@@ -116,9 +116,12 @@ const Profile = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Reload stats when claimed player changes
+  // Derive first claimed player for stats display
+  const primaryClaim = claimedPlayers.length > 0 ? claimedPlayers[0] : null;
+
+  // Reload stats when claimed players change
   useEffect(() => {
-    if (!claimedPlayer) {
+    if (!primaryClaim) {
       setGlobalStats(null);
       setTeamStats([]);
       return;
@@ -129,8 +132,8 @@ const Profile = () => {
       setStatsLoading(true);
       try {
         const [global, byTeam] = await Promise.all([
-          RemoteStorageService.getPlayerStatsGlobal(claimedPlayer.player_id),
-          RemoteStorageService.getPlayerStatsByTeam(claimedPlayer.player_id)
+          RemoteStorageService.getPlayerStatsGlobal(primaryClaim.player_id),
+          RemoteStorageService.getPlayerStatsByTeam(primaryClaim.player_id)
         ]);
         if (mounted) {
           setGlobalStats(global);
@@ -140,7 +143,7 @@ const Profile = () => {
       if (mounted) setStatsLoading(false);
     })();
     return () => { mounted = false; };
-  }, [claimedPlayer?.player_id]);
+  }, [primaryClaim?.player_id]);
 
   const handleUpdateDisplayName = async () => {
     if (!newDisplayName.trim()) {
@@ -157,22 +160,10 @@ const Profile = () => {
     }
   };
 
-  const handleClaimPlayer = async (playerId: string) => {
-    const success = await RemoteStorageService.claimPlayer(playerId);
+  const handleUnclaimForTeam = async (teamId: string) => {
+    const success = await RemoteStorageService.unclaimPlayerForTeam(teamId);
     if (success) {
-      const player = allPlayers.find(p => p.id === playerId);
-      setClaimedPlayer({ player_id: playerId, player_name: player?.name || playerId });
-      setShowClaimSelect(false);
-      toast.success("השחקן קושר לחשבון שלך בהצלחה");
-    } else {
-      toast.error("שגיאה בקישור השחקן - ייתכן שכבר קושר למשתמש אחר");
-    }
-  };
-
-  const handleUnclaimPlayer = async () => {
-    const success = await RemoteStorageService.unclaimPlayer();
-    if (success) {
-      setClaimedPlayer(null);
+      setClaimedPlayers(prev => prev.filter(c => c.team_id !== teamId));
       toast.success("הקישור לשחקן הוסר");
     } else {
       toast.error("שגיאה בהסרת הקישור");
