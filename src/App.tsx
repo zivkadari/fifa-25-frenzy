@@ -13,12 +13,14 @@ import AdminClubs from "./pages/AdminClubs";
 import AdminPoolConfig from "./pages/AdminPoolConfig";
 import Spectate from "./pages/Spectate";
 import FPHub from "./pages/FPHub";
+import { TeamProvider } from "./contexts/TeamContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <TeamProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -36,6 +38,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </TeamProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
