@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import JoinTournament from "./pages/JoinTournament";
+import JoinTeam from "./pages/JoinTeam";
 import AdminClubs from "./pages/AdminClubs";
 import AdminPoolConfig from "./pages/AdminPoolConfig";
 import Spectate from "./pages/Spectate";
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/join/:code" element={<JoinTournament />} />
+          <Route path="/join-team/:code" element={<JoinTeam />} />
           <Route path="/admin/clubs" element={<AdminClubs />} />
           <Route path="/admin/pool-config" element={<AdminPoolConfig />} />
           <Route path="/spectate/:code" element={<Spectate />} />
