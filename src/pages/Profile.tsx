@@ -267,7 +267,7 @@ const Profile = () => {
             </Card>
 
             {/* Global Stats */}
-            {claimedPlayer && (
+            {claimedPlayers.length > 0 && (
               <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
                 <div className="flex items-center gap-2 mb-3">
                   <BarChart3 className="h-5 w-5 text-neon-green" />
@@ -331,7 +331,7 @@ const Profile = () => {
             )}
 
             {/* Per-Team Stats Breakdown */}
-            {claimedPlayer && teamStats.length > 0 && (
+            {claimedPlayers.length > 0 && teamStats.length > 0 && (
               <Card className="bg-gradient-card border-neon-green/30 p-4 mb-6 shadow-card">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-neon-green" />
