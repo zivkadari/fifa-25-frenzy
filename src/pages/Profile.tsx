@@ -441,12 +441,13 @@ const Profile = () => {
       </div>
 
       {/* Claim player dialog */}
-      {showClaimDialog && (
+      {showClaimDialog && activeTeamId && (
         <SelectExistingPlayerDialog
           open={showClaimDialog}
           onOpenChange={setShowClaimDialog}
-          players={availablePlayers}
-          onSelect={handleClaimPlayer}
+          currentTeamId={activeTeamId}
+          currentTeamPlayers={availablePlayers}
+          onPlayerSelected={async (playerId) => { await handleClaimPlayer(playerId); }}
         />
       )}
 
