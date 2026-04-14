@@ -282,8 +282,16 @@ useEffect(() => {
 
     setCurrentEvening(newEvening);
     setCurrentTeamId(effectiveTeamId);
-    // Push an initial copy to Supabase for realtime collaboration (with team relation if chosen)
-    await RemoteStorageService.upsertEveningLiveWithTeam(newEvening, effectiveTeamId).catch(() => {});
+    // Create via server-side RPC (enforces one active evening per team)
+    try {
+      await RemoteStorageService.createTeamEvening(newEvening, effectiveTeamId);
+    } catch (err: any) {
+      if (err?.message?.includes('team already has an active evening')) {
+        console.warn('Team already has an active evening – creation blocked');
+        // TODO: surface a toast to the user in a future iteration
+      }
+      // Still let them proceed locally for now
+    }
     
     goTo('game');
   };
@@ -723,8 +731,8 @@ const handleGoHome = () => {
                     setFpTeamId(teamId);
                   } catch {}
                 }
-                // Sync to remote for spectator mode
-                RemoteStorageService.upsertEveningLiveWithTeam(result as any, teamId).catch(() => {});
+                // Create via RPC (enforces one active evening per team)
+                RemoteStorageService.createTeamEvening(result as any, teamId).catch(() => {});
                 goTo('fp-bank-overview');
               }}
             />
