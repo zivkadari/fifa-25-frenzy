@@ -790,6 +790,47 @@ export class RemoteStorageService {
     }));
   }
 
+  // ========== Team Invite ==========
+  static async getTeamInviteCode(teamId: string): Promise<string | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc('get_team_invite_code', { _team_id: teamId });
+    if (error) {
+      console.error('getTeamInviteCode error:', error.message);
+      return null;
+    }
+    return data;
+  }
+
+  static async regenerateTeamInviteCode(teamId: string): Promise<string | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc('regenerate_team_invite_code', { _team_id: teamId });
+    if (error) {
+      console.error('regenerateTeamInviteCode error:', error.message);
+      return null;
+    }
+    return data;
+  }
+
+  static async joinTeamByCode(code: string): Promise<{ team_id: string; team_name: string } | null> {
+    if (!supabase) return null;
+    const cleaned = code.trim().toUpperCase();
+    if (cleaned.length === 0 || cleaned.length > 20 || !/^[A-Z0-9]+$/.test(cleaned)) {
+      console.error('Invalid team code format');
+      return null;
+    }
+    try {
+      const { data, error } = await supabase.rpc('join_team_by_code', { _code: cleaned });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        return { team_id: data[0].team_id, team_name: data[0].team_name };
+      }
+      return null;
+    } catch (error: any) {
+      console.error('joinTeamByCode error:', error?.message);
+      throw error;
+    }
+  }
+
   // ========== All Players (for claiming) ==========
   static async listAllPlayers(): Promise<Array<{ id: string; name: string }>> {
     if (!supabase) return [];

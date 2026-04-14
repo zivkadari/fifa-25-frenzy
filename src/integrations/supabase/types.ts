@@ -500,6 +500,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invite_code: string
           name: string
           owner_id: string
           updated_at: string
@@ -507,6 +508,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          invite_code?: string
           name: string
           owner_id: string
           updated_at?: string
@@ -514,6 +516,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          invite_code?: string
           name?: string
           owner_id?: string
           updated_at?: string
@@ -531,6 +534,7 @@ export type Database = {
         Returns: string
       }
       get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
+      get_team_invite_code: { Args: { _team_id: string }; Returns: string }
       is_clubs_admin: { Args: { user_id: string }; Returns: boolean }
       is_evening_member: {
         Args: { _evening_id: string; _user_id: string }
@@ -549,6 +553,17 @@ export type Database = {
         Returns: {
           evening_id: string
         }[]
+      }
+      join_team_by_code: {
+        Args: { _code: string }
+        Returns: {
+          team_id: string
+          team_name: string
+        }[]
+      }
+      regenerate_team_invite_code: {
+        Args: { _team_id: string }
+        Returns: string
       }
       trigger_stats_backfill: { Args: never; Returns: undefined }
       user_evening_ids: { Args: { _user_id: string }; Returns: string[] }

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { RemoteStorageService } from "@/services/remoteStorageService";
-import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Users, Plus, Trash2, Trophy, RefreshCw, UserPlus, Pencil, Check, X, Link2, Copy } from "lucide-react";
 import { validateTeamName, validatePlayerName } from "@/lib/validation";
 import { SelectExistingPlayerDialog } from "./SelectExistingPlayerDialog";
 
@@ -42,6 +42,8 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   const [selectPlayerOpen, setSelectPlayerOpen] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingTeamName, setEditingTeamName] = useState("");
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [loadingInvite, setLoadingInvite] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -55,16 +57,18 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
   }, []);
 
   useEffect(() => {
-    if (!selectedTeamId) return;
+    if (!selectedTeamId) { setInviteCode(null); return; }
     const loadTeam = async () => {
       setLoading(true);
       try {
-        const [players, stats] = await Promise.all([
+        const [players, stats, code] = await Promise.all([
           RemoteStorageService.listTeamPlayers(selectedTeamId),
           RemoteStorageService.getTeamLeaderboard(selectedTeamId),
+          RemoteStorageService.getTeamInviteCode(selectedTeamId),
         ]);
         setTeamPlayers(players);
         setLeaderboard(stats);
+        setInviteCode(code);
       } finally {
         setLoading(false);
       }
@@ -313,6 +317,32 @@ export const TeamsManager = ({ onBack, onStartEveningForTeam }: TeamsManagerProp
 
         {selectedTeamId && (
           <>
+            {/* Team invite link */}
+            {inviteCode && (
+              <Card className="bg-gaming-surface/50 border-border/50 p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Link2 className="h-4 w-4 text-neon-green" />
+                  <h3 className="font-semibold text-foreground text-sm">קישור הזמנה לקבוצה</h3>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <code className="bg-gaming-bg border border-border rounded px-3 py-1.5 text-sm text-foreground flex-1 overflow-hidden text-ellipsis">
+                    {`${window.location.origin}/join-team/${inviteCode}`}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/join-team/${inviteCode}`);
+                      toast({ title: "הקישור הועתק!" });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">שתף את הקישור כדי שחברים יצטרפו לקבוצה</p>
+              </Card>
+            )}
+
             {/* Players management */}
             <Card className="bg-gaming-surface/50 border-border/50 p-4 mb-6">
               <div className="flex items-center justify-between mb-3">
