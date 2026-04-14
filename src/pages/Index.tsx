@@ -275,7 +275,7 @@ useEffect(() => {
     persistActiveEveningNow(newEvening);
 
     // Determine team automatically if not provided
-    let effectiveTeamId = teamId ?? currentTeamId ?? null;
+    let effectiveTeamId = teamId ?? currentTeamId ?? contextTeamId ?? null;
     if (!effectiveTeamId && RemoteStorageService.isEnabled()) {
       try {
         effectiveTeamId = await RemoteStorageService.ensureTeamForPlayers(players);
