@@ -43,7 +43,7 @@ const Profile = () => {
   const [newDisplayName, setNewDisplayName] = useState("");
   
   // Claimed player state
-  const [claimedPlayer, setClaimedPlayer] = useState<{ player_id: string; player_name: string } | null>(null);
+  const [claimedPlayers, setClaimedPlayers] = useState<Array<{ team_id: string; player_id: string; player_name: string }>>([]);
   const [allPlayers, setAllPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [showClaimSelect, setShowClaimSelect] = useState(false);
 
@@ -67,9 +67,9 @@ const Profile = () => {
           setDisplayName(profile.display_name);
         }
 
-        // Load claimed player
-        const claimed = await RemoteStorageService.getClaimedPlayer();
-        if (mounted) setClaimedPlayer(claimed);
+        // Load claimed players (team-scoped)
+        const claims = await RemoteStorageService.getClaimedPlayersByTeam();
+        if (mounted) setClaimedPlayers(claims);
 
         // Load evenings (remote if available, otherwise local)
         let evs: Evening[] = [];
@@ -93,13 +93,14 @@ const Profile = () => {
           if (mounted) setAllPlayers(players);
         } catch {}
 
-        // Load stats if player is claimed
-        if (claimed && mounted) {
+        // Load stats from first claimed player (or skip if none)
+        const firstClaim = claims.length > 0 ? claims[0] : null;
+        if (firstClaim && mounted) {
           setStatsLoading(true);
           try {
             const [global, byTeam] = await Promise.all([
-              RemoteStorageService.getPlayerStatsGlobal(claimed.player_id),
-              RemoteStorageService.getPlayerStatsByTeam(claimed.player_id)
+              RemoteStorageService.getPlayerStatsGlobal(firstClaim.player_id),
+              RemoteStorageService.getPlayerStatsByTeam(firstClaim.player_id)
             ]);
             if (mounted) {
               setGlobalStats(global);
