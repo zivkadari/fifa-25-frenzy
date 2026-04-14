@@ -46,6 +46,32 @@ export class RemoteStorageService {
     if (error) console.error("Supabase saveEvening error:", error.message);
   }
 
+  /**
+   * Create a new evening for a team using the server-side RPC that enforces
+   * one-active-evening-per-team. Falls back to direct upsert if no teamId.
+   */
+  static async createTeamEvening(evening: Evening, teamId: string | null): Promise<void> {
+    if (!supabase) return;
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) return;
+
+    if (teamId) {
+      const { error } = await supabase.rpc("create_team_evening", {
+        _evening_id: evening.id,
+        _team_id: teamId,
+        _data: evening as any,
+      });
+      if (error) {
+        // Surface the server error so the caller can handle it
+        throw new Error(error.message);
+      }
+      return;
+    }
+
+    // No team — fallback to direct upsert (legacy / teamless flow)
+    await this.upsertEveningLiveWithTeam(evening, null);
+  }
+
   static async upsertEveningLive(evening: Evening): Promise<void> {
     if (!supabase) return;
     await supabase

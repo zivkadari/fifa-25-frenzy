@@ -526,6 +526,10 @@ export type Database = {
     }
     Functions: {
       cleanup_old_join_attempts: { Args: never; Returns: undefined }
+      create_team_evening: {
+        Args: { _data: Json; _evening_id: string; _team_id: string }
+        Returns: string
+      }
       get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
       is_clubs_admin: { Args: { user_id: string }; Returns: boolean }
       is_evening_member: {
