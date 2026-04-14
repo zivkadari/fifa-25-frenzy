@@ -707,8 +707,64 @@ export class RemoteStorageService {
     return true;
   }
 
-  // ========== Player Accounts (claim player) ==========
+  // ========== Player Accounts (team-scoped claim) ==========
+
+  /** Get all claimed players for the current user, keyed by team */
+  static async getClaimedPlayersByTeam(): Promise<Array<{ team_id: string; player_id: string; player_name: string }>> {
+    if (!supabase) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .select("player_id, team_id")
+      .eq("user_id", user.id);
+    if (error || !data || data.length === 0) return [];
+
+    // Get player names
+    const playerIds = [...new Set(data.map(d => d.player_id))];
+    const { data: players } = await supabase
+      .from(PLAYERS_TABLE)
+      .select("id, display_name")
+      .in("id", playerIds);
+    const nameMap = new Map((players || []).map(p => [p.id, p.display_name]));
+
+    return data
+      .filter(d => d.team_id)
+      .map(d => ({
+        team_id: d.team_id!,
+        player_id: d.player_id,
+        player_name: nameMap.get(d.player_id) || d.player_id
+      }));
+  }
+
+  /** Backward-compat: get the first claimed player (legacy global usage) */
   static async getClaimedPlayer(): Promise<{ player_id: string; player_name: string } | null> {
+    const claims = await this.getClaimedPlayersByTeam();
+    if (claims.length === 0) {
+      // Also check legacy claims without team_id
+      if (!supabase) return null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from(PLAYER_ACCOUNTS_TABLE)
+        .select("player_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!data) return null;
+      const { data: player } = await supabase
+        .from(PLAYERS_TABLE)
+        .select("display_name")
+        .eq("id", data.player_id)
+        .maybeSingle();
+      return { player_id: data.player_id, player_name: player?.display_name || data.player_id };
+    }
+    return { player_id: claims[0].player_id, player_name: claims[0].player_name };
+  }
+
+  /** Get claimed player for a specific team */
+  static async getClaimedPlayerForTeam(teamId: string): Promise<{ player_id: string; player_name: string } | null> {
     if (!supabase) return null;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -717,10 +773,10 @@ export class RemoteStorageService {
       .from(PLAYER_ACCOUNTS_TABLE)
       .select("player_id")
       .eq("user_id", user.id)
+      .eq("team_id", teamId)
       .maybeSingle();
     if (error || !data) return null;
 
-    // Get player name
     const { data: player } = await supabase
       .from(PLAYERS_TABLE)
       .select("display_name")
@@ -730,6 +786,23 @@ export class RemoteStorageService {
     return { player_id: data.player_id, player_name: player?.display_name || data.player_id };
   }
 
+  /** Team-scoped claim */
+  static async claimPlayerForTeam(playerId: string, teamId: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .insert({ player_id: playerId, user_id: user.id, team_id: teamId });
+    if (error) {
+      console.error("claimPlayerForTeam error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
+  /** Legacy global claim (backward compat) */
   static async claimPlayer(playerId: string): Promise<boolean> {
     if (!supabase) return false;
     const { data: { user } } = await supabase.auth.getUser();
@@ -745,6 +818,25 @@ export class RemoteStorageService {
     return true;
   }
 
+  /** Unclaim player for a specific team */
+  static async unclaimPlayerForTeam(teamId: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from(PLAYER_ACCOUNTS_TABLE)
+      .delete()
+      .eq("user_id", user.id)
+      .eq("team_id", teamId);
+    if (error) {
+      console.error("unclaimPlayerForTeam error:", error.message);
+      return false;
+    }
+    return true;
+  }
+
+  /** Legacy: unclaim all (backward compat) */
   static async unclaimPlayer(): Promise<boolean> {
     if (!supabase) return false;
     const { data: { user } } = await supabase.auth.getUser();
