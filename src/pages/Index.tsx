@@ -451,8 +451,8 @@ const handleGoHome = () => {
         let tournamentProgress: string | null = null;
         if (activeFP && fpEvening) {
           tournamentMode = "ליגת 5 שחקנים";
-          const completed = fpEvening.matches.filter(m => m.played).length;
-          tournamentProgress = `${completed} / ${fpEvening.matches.length} משחקים`;
+          const completed = fpEvening.schedule.filter(m => m.score1 !== undefined).length;
+          tournamentProgress = `${completed} / ${fpEvening.schedule.length} משחקים`;
         } else if (activeRegular && currentEvening) {
           tournamentMode = currentEvening.type === 'singles' ? "טורניר יחידים" : "טורניר זוגות";
           const completedMatches = currentEvening.rounds.reduce((s, r) => s + r.matches.filter(m => m.completed).length, 0);
