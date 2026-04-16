@@ -11,6 +11,8 @@ interface FPSetupProps {
   onBack: () => void;
   onStart: (players: Player[], matchCount: 15 | 30) => void;
   savedPlayers?: Player[];
+  /** Team players to pre-fill when starting within a team context */
+  teamPlayers?: Player[];
 }
 
 type SetupMode = 'choose' | 'new' | 'saved';
