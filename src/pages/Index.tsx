@@ -463,7 +463,24 @@ const handleGoHome = () => {
         return (
           <TeamDashboard
             onStartNew={handleStartNewEvening}
-            onStartFivePlayer={() => goTo('fp-setup')}
+            onStartFivePlayer={async () => {
+              // Load team players if we have an active team with exactly 5 players
+              if (contextTeamId && RemoteStorageService.isEnabled()) {
+                try {
+                  const tp = await RemoteStorageService.listTeamPlayers(contextTeamId);
+                  if (tp.length === 5) {
+                    setTeamPlayersForFP(tp.map(p => ({ id: p.id, name: p.name })));
+                  } else {
+                    setTeamPlayersForFP(null);
+                  }
+                } catch {
+                  setTeamPlayersForFP(null);
+                }
+              } else {
+                setTeamPlayersForFP(null);
+              }
+              goTo('fp-setup');
+            }}
             onStartPairs={() => { setSelectedTournamentType('pairs'); goTo('setup'); }}
             onStartSingles={() => { setSelectedTournamentType('singles'); goTo('singles-setup'); }}
             onViewHistory={handleViewHistory}
