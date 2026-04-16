@@ -62,6 +62,7 @@ const Index = () => {
   const [fpTeamId, setFpTeamId] = useState<string | null>(null);
   const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
   const [showFpDeadlock, setShowFpDeadlock] = useState(false);
+  const [teamPlayersForFP, setTeamPlayersForFP] = useState<Player[] | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
@@ -462,7 +463,24 @@ const handleGoHome = () => {
         return (
           <TeamDashboard
             onStartNew={handleStartNewEvening}
-            onStartFivePlayer={() => goTo('fp-setup')}
+            onStartFivePlayer={async () => {
+              // Load team players if we have an active team with exactly 5 players
+              if (contextTeamId && RemoteStorageService.isEnabled()) {
+                try {
+                  const tp = await RemoteStorageService.listTeamPlayers(contextTeamId);
+                  if (tp.length === 5) {
+                    setTeamPlayersForFP(tp.map(p => ({ id: p.id, name: p.name })));
+                  } else {
+                    setTeamPlayersForFP(null);
+                  }
+                } catch {
+                  setTeamPlayersForFP(null);
+                }
+              } else {
+                setTeamPlayersForFP(null);
+              }
+              goTo('fp-setup');
+            }}
             onStartPairs={() => { setSelectedTournamentType('pairs'); goTo('setup'); }}
             onStartSingles={() => { setSelectedTournamentType('singles'); goTo('singles-setup'); }}
             onViewHistory={handleViewHistory}
@@ -734,6 +752,7 @@ const handleGoHome = () => {
         case 'fp-setup':
           return (
             <FPSetup
+              teamPlayers={teamPlayersForFP ?? undefined}
               onBack={() => window.history.back()}
               onStart={async (players, matchCount) => {
                 // Try strict (max 2 appearances)
@@ -746,14 +765,14 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
-                // Auto-detect team for 5 players
-                let teamId = fpTeamId;
+                // Use active team context or auto-detect
+                let teamId = contextTeamId || fpTeamId;
                 if (!teamId && RemoteStorageService.isEnabled()) {
                   try {
                     teamId = await RemoteStorageService.ensureTeamForPlayers(players, 5);
-                    setFpTeamId(teamId);
                   } catch {}
                 }
+                if (teamId) setFpTeamId(teamId);
                 // Create via RPC (enforces one active evening per team)
                 RemoteStorageService.createTeamEvening(result as any, teamId).catch(() => {});
                 goTo('fp-bank-overview');

@@ -11,17 +11,24 @@ interface FPSetupProps {
   onBack: () => void;
   onStart: (players: Player[], matchCount: 15 | 30) => void;
   savedPlayers?: Player[];
+  /** Team players to pre-fill when starting within a team context */
+  teamPlayers?: Player[];
 }
 
 type SetupMode = 'choose' | 'new' | 'saved';
 
-export const FPSetup = ({ onBack, onStart, savedPlayers }: FPSetupProps) => {
+export const FPSetup = ({ onBack, onStart, savedPlayers, teamPlayers }: FPSetupProps) => {
   const { toast } = useToast();
-  const [mode, setMode] = useState<SetupMode>(savedPlayers?.length === 5 ? 'new' : 'choose');
+  const hasTeamPlayers = teamPlayers && teamPlayers.length === 5;
+  const [mode, setMode] = useState<SetupMode>(
+    hasTeamPlayers || savedPlayers?.length === 5 ? 'new' : 'choose'
+  );
   const [players, setPlayers] = useState<Player[]>(
-    savedPlayers && savedPlayers.length === 5
-      ? savedPlayers
-      : Array.from({ length: 5 }, (_, i) => ({ id: `player-${Date.now()}-${i}`, name: '' }))
+    hasTeamPlayers
+      ? teamPlayers
+      : savedPlayers && savedPlayers.length === 5
+        ? savedPlayers
+        : Array.from({ length: 5 }, (_, i) => ({ id: `player-${Date.now()}-${i}`, name: '' }))
   );
   const [matchCount, setMatchCount] = useState<15 | 30>(30);
   const [savedGroups, setSavedGroups] = useState<FPSavedGroup[]>([]);

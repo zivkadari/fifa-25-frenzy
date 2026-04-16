@@ -35,10 +35,21 @@ interface SinglesGame {
   completed: boolean;
 }
 
+// Five-player doubles match structure
+interface FPMatch {
+  pairA: { players: [Player, Player] };
+  pairB: { players: [Player, Player] };
+  scoreA?: number;
+  scoreB?: number;
+  completed: boolean;
+}
+
 interface Evening {
   id: string;
+  mode?: string;
   players: Player[];
   rounds?: Round[];
+  schedule?: FPMatch[];
   completed: boolean;
   rankings?: {
     alpha: Player[];
@@ -82,7 +93,39 @@ function calculatePlayerStats(evening: Evening): PlayerStats[] {
     });
   });
 
-  if (evening.type === "singles" && evening.gameSequence) {
+  if (evening.mode === "five-player-doubles" && evening.schedule) {
+    // Process five-player doubles matches
+    for (const match of evening.schedule) {
+      if (!match.completed || match.scoreA === undefined || match.scoreB === undefined) continue;
+
+      const scoreA = match.scoreA;
+      const scoreB = match.scoreB;
+
+      // Update goals for pairA players
+      for (const p of match.pairA.players) {
+        const s = statsMap.get(p.id);
+        if (s) {
+          s.goalsFor += scoreA;
+          s.goalsAgainst += scoreB;
+          if (scoreA > scoreB) s.wins++;
+          else if (scoreB > scoreA) s.losses++;
+          else s.draws++;
+        }
+      }
+
+      // Update goals for pairB players
+      for (const p of match.pairB.players) {
+        const s = statsMap.get(p.id);
+        if (s) {
+          s.goalsFor += scoreB;
+          s.goalsAgainst += scoreA;
+          if (scoreB > scoreA) s.wins++;
+          else if (scoreA > scoreB) s.losses++;
+          else s.draws++;
+        }
+      }
+    }
+  } else if (evening.type === "singles" && evening.gameSequence) {
     // Process singles games
     evening.gameSequence.forEach((game) => {
       if (game.completed && game.score) {
@@ -119,7 +162,6 @@ function calculatePlayerStats(evening: Evening): PlayerStats[] {
           const [score1, score2] = match.score;
           const [pair1, pair2] = match.pairs;
 
-          // Update goals for/against
           pair1.players.forEach((player) => {
             const stats = statsMap.get(player.id);
             if (stats) {
@@ -136,7 +178,6 @@ function calculatePlayerStats(evening: Evening): PlayerStats[] {
             }
           });
 
-          // Update wins/losses/draws
           if (score1 > score2) {
             pair1.players.forEach((player) => {
               const stats = statsMap.get(player.id);
@@ -187,6 +228,32 @@ function calculatePlayerStats(evening: Evening): PlayerStats[] {
   }
 
   return Array.from(statsMap.values());
+}
+
+/**
+ * Build a mapping from tournament player IDs to canonical team player IDs
+ * by matching on player name (normalized).
+ */
+function buildPlayerIdMapping(
+  eveningPlayers: Player[],
+  teamPlayers: { player_id: string; display_name: string }[]
+): Map<string, string> {
+  const mapping = new Map<string, string>();
+  const teamByName = new Map<string, string>();
+  for (const tp of teamPlayers) {
+    teamByName.set(tp.display_name.trim().toLowerCase(), tp.player_id);
+  }
+  for (const p of eveningPlayers) {
+    const canonical = teamByName.get(p.name.trim().toLowerCase());
+    if (canonical && canonical !== p.id) {
+      mapping.set(p.id, canonical);
+    }
+  }
+  return mapping;
+}
+
+function remapPlayerId(id: string, mapping: Map<string, string>): string {
+  return mapping.get(id) || id;
 }
 
 Deno.serve(async (req) => {
@@ -245,7 +312,6 @@ Deno.serve(async (req) => {
     let evenings: { id: string; data: Evening; team_id: string | null }[] = [];
 
     if (backfill_all) {
-      // Fetch all evenings
       const { data, error } = await supabase
         .from("evenings")
         .select("id, data, team_id");
@@ -254,7 +320,6 @@ Deno.serve(async (req) => {
       evenings = data || [];
       console.log(`Backfilling ${evenings.length} evenings`);
     } else if (evening_id) {
-      // Fetch single evening
       const { data, error } = await supabase
         .from("evenings")
         .select("id, data, team_id")
@@ -270,6 +335,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Pre-fetch team players for name-to-canonical-ID mapping
+    const teamIds = [...new Set(evenings.filter(e => e.team_id).map(e => e.team_id!))];
+    const teamPlayersMap = new Map<string, { player_id: string; display_name: string }[]>();
+
+    if (teamIds.length > 0) {
+      const { data: tpData } = await supabase
+        .from("team_players")
+        .select("team_id, player_id")
+        .in("team_id", teamIds);
+
+      if (tpData && tpData.length > 0) {
+        const allPlayerIds = [...new Set(tpData.map(tp => tp.player_id))];
+        const { data: playersData } = await supabase
+          .from("players")
+          .select("id, display_name")
+          .in("id", allPlayerIds);
+
+        const playerNameMap = new Map((playersData || []).map(p => [p.id, p.display_name]));
+
+        for (const tp of tpData) {
+          if (!teamPlayersMap.has(tp.team_id)) {
+            teamPlayersMap.set(tp.team_id, []);
+          }
+          teamPlayersMap.get(tp.team_id)!.push({
+            player_id: tp.player_id,
+            display_name: playerNameMap.get(tp.player_id) || tp.player_id,
+          });
+        }
+      }
+    }
+
     // Aggregate stats across all evenings per player per team
     const byTeamStats = new Map<string, Map<string, PlayerStats>>();
     const globalStats = new Map<string, PlayerStats>();
@@ -283,10 +379,21 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Build name-to-canonical-ID mapping for this evening's team
+      const idMapping = new Map<string, string>();
+      if (teamId && teamPlayersMap.has(teamId)) {
+        const mapping = buildPlayerIdMapping(evening.players, teamPlayersMap.get(teamId)!);
+        for (const [from, to] of mapping) {
+          idMapping.set(from, to);
+        }
+      }
+
       const stats = calculatePlayerStats(evening);
 
       for (const stat of stats) {
-        const playerId = stat.player.id;
+        // Remap to canonical player ID
+        const canonicalId = remapPlayerId(stat.player.id, idMapping);
+        const canonicalPlayer = { ...stat.player, id: canonicalId };
 
         // Update team-specific stats
         if (teamId) {
@@ -295,9 +402,9 @@ Deno.serve(async (req) => {
           }
           const teamMap = byTeamStats.get(teamId)!;
 
-          if (!teamMap.has(playerId)) {
-            teamMap.set(playerId, {
-              player: stat.player,
+          if (!teamMap.has(canonicalId)) {
+            teamMap.set(canonicalId, {
+              player: canonicalPlayer,
               wins: 0,
               losses: 0,
               draws: 0,
@@ -310,7 +417,7 @@ Deno.serve(async (req) => {
             });
           }
 
-          const existing = teamMap.get(playerId)!;
+          const existing = teamMap.get(canonicalId)!;
           existing.wins += stat.wins;
           existing.losses += stat.losses;
           existing.draws += stat.draws;
@@ -323,9 +430,9 @@ Deno.serve(async (req) => {
         }
 
         // Update global stats
-        if (!globalStats.has(playerId)) {
-          globalStats.set(playerId, {
-            player: stat.player,
+        if (!globalStats.has(canonicalId)) {
+          globalStats.set(canonicalId, {
+            player: canonicalPlayer,
             wins: 0,
             losses: 0,
             draws: 0,
@@ -338,7 +445,7 @@ Deno.serve(async (req) => {
           });
         }
 
-        const existing = globalStats.get(playerId)!;
+        const existing = globalStats.get(canonicalId)!;
         existing.wins += stat.wins;
         existing.losses += stat.losses;
         existing.draws += stat.draws;
@@ -351,12 +458,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For single evening sync, we need to recalculate from scratch
-    // Delete existing and reinsert to ensure idempotency
+    // For backfill, clear existing stats first
     if (backfill_all) {
-      // Clear all existing stats and repopulate
       console.log("Clearing existing stats for full backfill");
-
       await supabase.from("player_stats_by_team").delete().neq("player_id", "");
       await supabase.from("player_stats_global").delete().neq("player_id", "");
     }
