@@ -752,6 +752,7 @@ const handleGoHome = () => {
         case 'fp-setup':
           return (
             <FPSetup
+              teamPlayers={teamPlayersForFP ?? undefined}
               onBack={() => window.history.back()}
               onStart={async (players, matchCount) => {
                 // Try strict (max 2 appearances)
