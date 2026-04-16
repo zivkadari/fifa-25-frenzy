@@ -62,6 +62,7 @@ const Index = () => {
   const [fpTeamId, setFpTeamId] = useState<string | null>(null);
   const [fpDeadlockPlayers, setFpDeadlockPlayers] = useState<Player[] | null>(null);
   const [showFpDeadlock, setShowFpDeadlock] = useState(false);
+  const [teamPlayersForFP, setTeamPlayersForFP] = useState<Player[] | null>(null);
 
    // Navigation helper that also pushes into browser history so Back goes to previous screen
   function goTo(next: AppState) {
