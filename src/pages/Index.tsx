@@ -765,14 +765,14 @@ const handleGoHome = () => {
                 }
                 setFpEvening(result);
                 StorageService.saveFPActive(result);
-                // Auto-detect team for 5 players
-                let teamId = fpTeamId;
+                // Use active team context or auto-detect
+                let teamId = contextTeamId || fpTeamId;
                 if (!teamId && RemoteStorageService.isEnabled()) {
                   try {
                     teamId = await RemoteStorageService.ensureTeamForPlayers(players, 5);
-                    setFpTeamId(teamId);
                   } catch {}
                 }
+                if (teamId) setFpTeamId(teamId);
                 // Create via RPC (enforces one active evening per team)
                 RemoteStorageService.createTeamEvening(result as any, teamId).catch(() => {});
                 goTo('fp-bank-overview');
