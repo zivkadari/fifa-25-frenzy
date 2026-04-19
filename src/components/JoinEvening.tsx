@@ -10,9 +10,10 @@ import { RemoteStorageService } from "@/services/remoteStorageService";
 interface JoinEveningProps {
   onBack: () => void;
   onJoinSuccess: (eveningId: string) => void;
+  onJoinTeamSuccess?: (teamId: string, teamName: string) => void;
 }
 
-export const JoinEvening = ({ onBack, onJoinSuccess }: JoinEveningProps) => {
+export const JoinEvening = ({ onBack, onJoinSuccess, onJoinTeamSuccess }: JoinEveningProps) => {
   const { toast } = useToast();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export const JoinEvening = ({ onBack, onJoinSuccess }: JoinEveningProps) => {
 
     setLoading(true);
     try {
+      // 1) Try as evening/tournament code first
       const eveningId = await RemoteStorageService.joinEveningByCode(trimmedCode);
       if (eveningId) {
         toast({
@@ -37,17 +39,39 @@ export const JoinEvening = ({ onBack, onJoinSuccess }: JoinEveningProps) => {
           description: "אתה יכול כעת לצפות ולהשתתף בטורניר",
         });
         onJoinSuccess(eveningId);
-      } else {
-        toast({
-          title: "קוד לא תקין",
-          description: "הקוד שהזנת לא נמצא או פג תוקפו",
-          variant: "destructive",
-        });
+        return;
       }
+
+      // 2) Fallback: maybe the user pasted a TEAM invite code by mistake.
+      //    Try the team-join flow as a safety net.
+      try {
+        const teamResult = await RemoteStorageService.joinTeamByCode(trimmedCode);
+        if (teamResult) {
+          toast({
+            title: "הצטרפת לקבוצה!",
+            description: `${teamResult.team_name} — לקישור שחקן עבור לפרופיל`,
+          });
+          if (onJoinTeamSuccess) {
+            onJoinTeamSuccess(teamResult.team_id, teamResult.team_name);
+          } else {
+            // Default: send the user to the team-join flow which handles linking
+            window.location.href = `/join-team/${trimmedCode}`;
+          }
+          return;
+        }
+      } catch {
+        // ignore — fall through to generic error
+      }
+
+      toast({
+        title: "קוד לא תקין",
+        description: "הקוד לא נמצא כקוד טורניר ולא כקוד קבוצה",
+        variant: "destructive",
+      });
     } catch (error) {
       toast({
         title: "שגיאה",
-        description: "לא ניתן להצטרף לערב כרגע",
+        description: "לא ניתן להצטרף כרגע",
         variant: "destructive",
       });
     } finally {

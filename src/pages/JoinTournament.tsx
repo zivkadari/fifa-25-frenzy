@@ -34,7 +34,7 @@ const JoinTournament = () => {
         return;
       }
 
-      // User is logged in - attempt to join
+      // User is logged in - attempt to join as evening first
       setStatus('joining');
       try {
         const eveningId = await RemoteStorageService.joinEveningByCode(code);
@@ -43,12 +43,24 @@ const JoinTournament = () => {
             title: "הצטרפת בהצלחה!",
             description: "מעביר אותך לטורניר...",
           });
-          // Navigate to home with state indicating we should open this tournament
           navigate('/', { state: { joinedEveningId: eveningId } });
-        } else {
-          setStatus('error');
-          setErrorMessage('קוד לא תקין או שהטורניר לא נמצא');
+          return;
         }
+
+        // Fallback: maybe this is actually a TEAM invite code shared via the
+        // wrong link format. Redirect to the team-join flow as a safety net.
+        try {
+          const teamResult = await RemoteStorageService.joinTeamByCode(code);
+          if (teamResult) {
+            navigate(`/join-team/${code}`);
+            return;
+          }
+        } catch {
+          // ignore — fall through to error state
+        }
+
+        setStatus('error');
+        setErrorMessage('קוד לא תקין — לא נמצא כטורניר ולא כקבוצה');
       } catch (error: any) {
         setStatus('error');
         if (error?.message?.includes('rate limit')) {

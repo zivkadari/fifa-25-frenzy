@@ -157,10 +157,23 @@ const Profile = () => {
   const winRate = activeTeamStats && activeTeamStats.games_played > 0
     ? Math.round((activeTeamStats.games_won / activeTeamStats.games_played) * 100) : 0;
 
-  // Filter evenings for active team context
-  const teamEvenings = activeTeamId
-    ? evenings.filter(e => (e as any)._team_id === activeTeamId)
-    : evenings;
+  // Filter evenings for active team + linked player context.
+  // Show an evening if:
+  //   (a) it is explicitly tagged with the active team_id, OR
+  //   (b) the active linked player participated in it (player-aware history,
+  //       covers historical evenings that pre-date team_id tagging)
+  const teamEvenings = (() => {
+    if (!activeTeamId) return evenings;
+    const linkedPlayerId = activePlayer?.player_id ?? null;
+    return evenings.filter((e) => {
+      const taggedTeamId = (e as any)._team_id as string | undefined;
+      if (taggedTeamId === activeTeamId) return true;
+      if (linkedPlayerId && Array.isArray(e.players)) {
+        return e.players.some((p) => p.id === linkedPlayerId);
+      }
+      return false;
+    });
+  })();
 
   // Players already claimed (exclude from selection)
   const alreadyClaimed = claimedPlayers.filter(c => c.team_id === activeTeamId).map(c => c.player_id);
