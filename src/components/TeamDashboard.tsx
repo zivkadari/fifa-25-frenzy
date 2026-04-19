@@ -5,7 +5,9 @@ import {
   Eye, Settings, UserPlus, Star, LogOut, LogIn, X, Play, Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { RemoteStorageService } from "@/services/remoteStorageService";
 import { useTeam } from "@/contexts/TeamContext";
 import {
   DropdownMenu,
