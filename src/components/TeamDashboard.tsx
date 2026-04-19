@@ -69,12 +69,32 @@ export const TeamDashboard = ({
   activeTournamentProgress,
   fpTeamId,
 }: TeamDashboardProps) => {
-  const { teams, activeTeamId, setActiveTeamId } = useTeam();
+  const { teams, activeTeamId, setActiveTeamId, activePlayer } = useTeam();
   const [manageOpen, setManageOpen] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const isAdmin = userEmail === "zivkad12@gmail.com";
+
+  // Load profile display name for the greeting
+  useEffect(() => {
+    let mounted = true;
+    if (!isAuthed) { setDisplayName(null); return; }
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const profile = await RemoteStorageService.getProfile(user.id);
+        if (mounted && profile?.display_name) setDisplayName(profile.display_name);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, [isAuthed, userEmail]);
 
   const activeTeam = teams.find((t) => t.team_id === activeTeamId);
   const hasActiveTournament = !!onResume;
+  // Best-effort greeting name: profile display_name → claimed player name → email local-part
+  const greetingName = displayName
+    || activePlayer?.player_name
+    || (userEmail ? userEmail.split("@")[0] : null);
 
   return (
     <div
@@ -83,13 +103,19 @@ export const TeamDashboard = ({
     >
       {/* ── 0. Auth strip ── */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0">
+          {isAuthed && greetingName && (
+            <p className="text-sm text-foreground truncate">
+              שלום, <span className="font-semibold">{greetingName}</span>
+            </p>
+          )}
+        </div>
         {isAuthed ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button asChild variant="ghost" size="sm">
               <Link to="/profile">פרופיל</Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={onSignOut} className="text-muted-foreground">
+            <Button variant="ghost" size="sm" onClick={onSignOut} className="text-muted-foreground" title="התנתק">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
