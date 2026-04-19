@@ -540,6 +540,16 @@ export type Database = {
         Returns: string
       }
       get_evening_share_code: { Args: { _evening_id: string }; Returns: string }
+      get_team_evenings: {
+        Args: { _team_id: string }
+        Returns: {
+          created_at: string
+          data: Json
+          id: string
+          team_id: string
+          updated_at: string
+        }[]
+      }
       get_team_invite_code: { Args: { _team_id: string }; Returns: string }
       is_clubs_admin: { Args: { user_id: string }; Returns: boolean }
       is_evening_member: {
@@ -570,6 +580,15 @@ export type Database = {
       regenerate_team_invite_code: {
         Args: { _team_id: string }
         Returns: string
+      }
+      resolve_invite_code: {
+        Args: { _code: string }
+        Returns: {
+          evening_id: string
+          kind: string
+          team_id: string
+          team_name: string
+        }[]
       }
       trigger_stats_backfill: { Args: never; Returns: undefined }
       user_evening_ids: { Args: { _user_id: string }; Returns: string[] }
